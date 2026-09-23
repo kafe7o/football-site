@@ -1,0 +1,299 @@
+<title>Моделът срещу пазара</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eef1f4; --panel: #ffffff; --ink: #0f1419; --muted: #626d7a; --line: #dbe1e8;
+  --rail: #c3ccd6; --chip: #e4e9ef; --accent: #12263f; --accent-ink: #ffffff;
+  --home: #2b5fb8; --draw: #7d8794; --away: #c25a21;
+  --ok: #17663c; --ok-bg: rgba(23,102,60,.12);
+  --bad: #a52218; --bad-bg: rgba(165,34,24,.10);
+  --sig: #7a4c00; --sig-bg: rgba(122,76,0,.12);
+  --shadow: 0 1px 2px rgba(15,20,25,.06), 0 8px 24px rgba(15,20,25,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1217; --panel: #161b22; --ink: #e7ecf2; --muted: #8e9aa8; --line: #232b35;
+    --rail: #39434f; --chip: #1f262f; --accent: #d7e5f5; --accent-ink: #0e1217;
+    --home: #7aa6ee; --draw: #8e98a5; --away: #ef9560;
+    --ok: #5fc98c; --ok-bg: rgba(95,201,140,.14);
+    --bad: #f0796f; --bad-bg: rgba(240,121,111,.13);
+    --sig: #e0b25f; --sig-bg: rgba(224,178,95,.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1217; --panel: #161b22; --ink: #e7ecf2; --muted: #8e9aa8; --line: #232b35;
+  --rail: #39434f; --chip: #1f262f; --accent: #d7e5f5; --accent-ink: #0e1217;
+  --home: #7aa6ee; --draw: #8e98a5; --away: #ef9560;
+  --ok: #5fc98c; --ok-bg: rgba(95,201,140,.14);
+  --bad: #f0796f; --bad-bg: rgba(240,121,111,.13);
+  --sig: #e0b25f; --sig-bg: rgba(224,178,95,.14);
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); margin: 0;
+  font: 15px/1.55 "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 72px; padding-left: 16px; padding-right: 16px; }
+h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--muted); font-size: 14px; margin: 6px 0 22px; max-width: 62ch; }
+.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+/* --- измереното --- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.scoreboard { padding: 16px 18px; margin-bottom: 10px; }
+.eyebrow { font: 600 11px/1 "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+.tile .v { font: 500 23px/1.15 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 13px; color: var(--muted); }
+.tile .k { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.verdict { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.verdict b { color: var(--ink); font-weight: 600; }
+
+/* --- проверката --- */
+.proof { padding: 16px 18px; }
+.proof-lede { margin: 0 0 14px; font-size: 14px; max-width: 64ch; }
+.proof-lede b { font-weight: 600; }
+.ptab { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ptab caption { text-align: left; font-size: 11.5px; color: var(--muted); padding-bottom: 6px; }
+.ptab th { text-align: right; font-weight: 500; font-size: 11px; color: var(--muted);
+           text-transform: uppercase; letter-spacing: .06em; padding: 0 0 6px; border-bottom: 1px solid var(--line); }
+.ptab th:first-child { text-align: left; }
+.ptab td { padding: 7px 0; border-bottom: 1px solid var(--line); text-align: right;
+           font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.ptab td:first-child { text-align: left; font-family: "IBM Plex Sans", sans-serif; }
+.ptab tr:last-child td { border-bottom: 0; }
+.ptab .pos { color: var(--ok); } .ptab .neg { color: var(--bad); }
+.proof-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); max-width: 64ch; }
+
+/* --- дни --- */
+.days { display: flex; gap: 6px; overflow-x: auto; padding: 14px 0 12px; scrollbar-width: thin; }
+.day {
+  flex: 0 0 auto; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap;
+  font: 500 13px/1.2 "IBM Plex Sans", sans-serif; display: flex; gap: 7px; align-items: center;
+}
+.day:hover { border-color: var(--rail); }
+.day .n { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+.day[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.day[aria-selected="true"] .n { color: var(--accent-ink); opacity: .7; }
+.day:focus-visible, .day[aria-selected="true"]:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+
+/* --- мачове --- */
+.lgroup { margin-top: 18px; }
+.lgroup > h3 { font: 600 12px/1 "IBM Plex Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase;
+               color: var(--muted); margin: 0 0 8px; }
+.list { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); box-shadow: var(--shadow); }
+.match { display: grid; grid-template-columns: 52px 1fr; gap: 0 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.match:first-child { border-top: 0; }
+.kick { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); padding-top: 2px; }
+.fixture { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.fixture .t { font-size: 15.5px; font-weight: 500; }
+.res { font-family: "IBM Plex Mono", monospace; font-weight: 500; background: var(--chip); border-radius: 5px; padding: 1px 7px; font-size: 13.5px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.tag { font-size: 11.5px; font-weight: 600; border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.bad { background: var(--bad-bg); color: var(--bad); }
+.tag.sig { background: var(--sig-bg); color: var(--sig); }
+
+.grid { display: grid; grid-template-columns: 46px repeat(3, 1fr); gap: 4px 8px; margin-top: 10px; align-items: center; }
+.gh { font-size: 11px; color: var(--muted); text-align: center; letter-spacing: .04em; }
+.gh:first-child { text-align: left; }
+.rowlbl { font-size: 11.5px; color: var(--muted); }
+.cell { position: relative; height: 24px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.cell i { position: absolute; left: 0; top: 0; bottom: 0; opacity: .32; }
+.cell.h i { background: var(--home); } .cell.d i { background: var(--draw); } .cell.a i { background: var(--away); }
+.cell span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+             font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.cell.pick { box-shadow: inset 0 0 0 1.5px var(--rail); }
+.oddsrow { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+.oddsrow span { font-family: "IBM Plex Mono", monospace; }
+.await { margin-top: 9px; font-size: 12px; color: var(--muted); }
+
+.empty { padding: 30px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.empty b { display: block; color: var(--ink); font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+footer p { margin: 0 0 8px; max-width: 70ch; }
+footer b { color: var(--ink); font-weight: 600; }
+@media (max-width: 520px) {
+  .match { grid-template-columns: 1fr; }
+  .kick { padding-top: 0; }
+  .tags { margin-left: 0; width: 100%; }
+}
+</style>
+
+<div class="wrap">
+  <h1>Моделът срещу пазара</h1>
+  <p class="lede" id="lede"></p>
+
+  <section class="panel scoreboard">
+    <p class="eyebrow">Измерено, не обещано</p>
+    <div class="tiles" id="tiles"></div>
+    <p class="verdict" id="verdict"></p>
+  </section>
+
+  <section class="panel proof" id="proof" hidden>
+    <p class="eyebrow">Проверката, която реши въпроса</p>
+    <p class="proof-lede" id="proof-lede"></p>
+    <table class="ptab">
+      <caption>Едни и същи залози, платени на различна цена</caption>
+      <thead><tr><th>цена</th><th>ROI</th><th>залози</th></tr></thead>
+      <tbody id="ptab"></tbody>
+    </table>
+    <p class="proof-note" id="proof-note"></p>
+  </section>
+
+  <nav class="days" id="days" role="tablist" aria-label="Дни"></nav>
+  <div id="list"></div>
+
+  <footer>
+    <p><b>Как се прави прогнозата.</b> Poisson модел с атака и защита за всеки отбор, домакинско
+    предимство и затихване по време (мач отпреди 180 дни тежи наполовина). Записва се сутринта в деня
+    на мача, преди началния час, и после се сверява с резултата. Пазарните проценти са коефициентите
+    без маржа на букмейкъра.</p>
+    <p><b>Какво не е.</b> Не е съвет за залагане и не е услуга за сигнали. Правилото за сигнал е
+    измерено на шест сезона и губи пари — числото стои горе. Когато моделът и пазарът не са съгласни,
+    по-вероятното обяснение е грешка на модела.</p>
+    <p>Данни: football-data.co.uk и the-odds-api.com. Последен цикъл: <span class="num" id="pipe"></span></p>
+  </footer>
+</div>
+
+<script>
+const DATA = {"generated_at": "24.09.2026 00:12", "today": "2026-09-24", "days": ["2026-09-14", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02"], "matches": [{"date": "2026-09-14", "time": "19:30", "league": "Италия · Serie A", "home": "Torino", "away": "AS Roma", "model": [0.14418073027455422, 0.1976469696385188, 0.6581723000869271], "market": [0.1611136890951276, 0.2261345707656612, 0.6127517401392111], "odds": [5.895, 4.2, 1.55], "signal": null, "outcome": 2, "score": [0, 2], "predicted_at": "2026-09-14 03:07", "kind": "live"}, {"date": "2026-09-14", "time": "19:30", "league": "Италия · Serie A", "home": "Como", "away": "Parma", "model": [0.672440347425461, 0.21815882501716333, 0.10940082755737573], "market": [0.7817004754248329, 0.1519800127519197, 0.0663195118232473], "odds": [1.22, 6.275, 14.379999999999999], "signal": {"pick": 2, "name": "Parma", "odds": 14.379999999999999, "p": 0.10940082755737573, "value": 0.5731839002750629}, "outcome": 0, "score": [2, 1], "predicted_at": "2026-09-14 03:07", "kind": "live"}, {"date": "2026-09-14", "time": "21:45", "league": "Италия · Serie A", "home": "Inter Milan", "away": "Udinese", "model": [0.6991409898695403, 0.17289730568003567, 0.12796170445042399], "market": [0.7667731629392971, 0.15335463258785942, 0.07987220447284343], "odds": [1.25, 6.25, 12.0], "signal": {"pick": 2, "name": "Udinese", "odds": 12.0, "p": 0.12796170445042399, "value": 0.5355404534050878}, "outcome": 0, "score": [5, 3], "predicted_at": "2026-09-14 03:07", "kind": "live"}, {"date": "2026-09-14", "time": "22:00", "league": "Англия · Premier League", "home": "Leeds United", "away": "Newcastle United", "model": [0.4061647230570425, 0.25780865329491887, 0.3360266236480387], "market": [0.41091028231311094, 0.2723748157046907, 0.3167149019821985], "odds": [2.32, 3.5, 3.01], "signal": null, "outcome": 0, "score": [4, 1], "predicted_at": "2026-09-14 03:07", "kind": "live"}, {"date": "2026-09-14", "time": "22:00", "league": "Испания · La Liga", "home": "Villarreal", "away": "Real Betis", "model": [0.5443718425890592, 0.21745725696475499, 0.2381709004461859], "market": [0.4922451422497858, 0.2454931016335249, 0.2622617561166891], "odds": [1.95, 3.91, 3.66], "signal": {"pick": 0, "name": "Villarreal", "odds": 1.95, "p": 0.5443718425890592, "value": 0.06152509304866549}, "outcome": 2, "score": [1, 2], "predicted_at": "2026-09-14 03:07", "kind": "live"}, {"date": "2026-09-20", "time": "13:30", "league": "Италия · Serie A", "home": "Fiorentina", "away": "Napoli", "model": [0.22186499127582407, 0.24824046007986153, 0.5298945486443144], "market": [0.29393262704165946, 0.2805524340338893, 0.42551493892445125], "odds": [3.25, 3.4050000000000002, 2.245], "signal": {"pick": 2, "name": "Napoli", "odds": 2.245, "p": 0.5298945486443144, "value": 0.18961326170648585}, "outcome": 1, "score": [1, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "16:00", "league": "Англия · Premier League", "home": "Bournemouth", "away": "Liverpool", "model": [0.39573436272938234, 0.24146076413902404, 0.36280487313159354], "market": [0.30420280186791193, 0.25216811207471646, 0.44362908605737156], "odds": [3.15, 3.8, 2.16], "signal": {"pick": 0, "name": "Bournemouth", "odds": 3.15, "p": 0.39573436272938234, "value": 0.24656324259755436}, "outcome": 2, "score": [0, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "16:00", "league": "Англия · Premier League", "home": "Leeds United", "away": "Crystal Palace", "model": [0.5529402022784256, 0.2350150521201953, 0.21204474560137887], "market": [0.5612015599402699, 0.2429505487336358, 0.19584789132609418], "odds": [1.71, 3.95, 4.9], "signal": null, "outcome": 1, "score": [0, 0], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "16:00", "league": "Англия · Premier League", "home": "Manchester City", "away": "Sunderland", "model": [0.6779951299579823, 0.20595195926247423, 0.11605291077954355], "market": [0.7230224307878842, 0.17357758717470867, 0.10339998203740709], "odds": [1.33, 5.54, 9.3], "signal": {"pick": 1, "name": "Равен", "odds": 5.54, "p": 0.20595195926247423, "value": 0.14097385431410725}, "outcome": 0, "score": [5, 3], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "16:00", "league": "Италия · Serie A", "home": "Parma", "away": "Genoa", "model": [0.32124394160506364, 0.3247630103052391, 0.3539930480896973], "market": [0.3095129722348657, 0.31725079654073735, 0.3732362312243969], "odds": [3.075, 3.0, 2.55], "signal": null, "outcome": 0, "score": [2, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "16:00", "league": "Франция · Ligue 1", "home": "Auxerre", "away": "Brest", "model": [0.4110710162274357, 0.2521099859626375, 0.3368189978099265], "market": [0.3220536756126021, 0.2753792298716453, 0.4025670945157527], "odds": [2.95, 3.45, 2.36], "signal": {"pick": 0, "name": "Auxerre", "odds": 2.95, "p": 0.4110710162274357, "value": 0.2126594978709353}, "outcome": 0, "score": [2, 1], "predicted_at": "2026-09-20 06:08", "kind": "live"}, {"date": "2026-09-20", "time": "16:30", "league": "Германия · Bundesliga", "home": "Bayer Leverkusen", "away": "RB Leipzig", "model": [0.5192034089016682, 0.21424408593355293, 0.26655250516477896], "market": [0.48949732354953157, 0.22745504375714756, 0.2830476326933208], "odds": [1.94, 4.175000000000001, 3.355], "signal": null, "outcome": 0, "score": [2, 0], "predicted_at": "2026-09-20 06:08", "kind": "live"}, {"date": "2026-09-20", "time": "17:15", "league": "Испания · La Liga", "home": "Atlético Madrid", "away": "Real Madrid", "model": [0.37627590946542755, 0.2414640854695987, 0.38226000506497354], "market": [0.2756956142272729, 0.25139086928881593, 0.4729135164839111], "odds": [3.465, 3.8, 2.02], "signal": {"pick": 0, "name": "Atlético Madrid", "odds": 3.465, "p": 0.37627590946542755, "value": 0.3037960262977064}, "outcome": 0, "score": [2, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "18:15", "league": "Франция · Ligue 1", "home": "Nice", "away": "Lille", "model": [0.21157152807614055, 0.2755915427041471, 0.5128369292197124], "market": [0.2642238998342847, 0.2717731541152642, 0.46400294605045117], "odds": [3.6, 3.5, 2.05], "signal": {"pick": 2, "name": "Lille", "odds": 2.05, "p": 0.5128369292197124, "value": 0.051315704900410264}, "outcome": 0, "score": [2, 1], "predicted_at": "2026-09-20 06:08", "kind": "live"}, {"date": "2026-09-20", "time": "18:30", "league": "Англия · Premier League", "home": "Fulham", "away": "Manchester United", "model": [0.32070138655741653, 0.2506520062364567, 0.42864660720612663], "market": [0.2736932182842473, 0.25208585894601726, 0.47422092276973543], "odds": [3.5, 3.8, 2.02], "signal": {"pick": 0, "name": "Fulham", "odds": 3.5, "p": 0.32070138655741653, "value": 0.12245485295095793}, "outcome": 1, "score": [1, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "19:00", "league": "Италия · Serie A", "home": "Juventus", "away": "Atalanta BC", "model": [0.4133353257560951, 0.2803273440970065, 0.30633733014689835], "market": [0.5576083305340948, 0.2509237487403426, 0.19146792072556262], "odds": [1.71, 3.8, 4.98], "signal": {"pick": 2, "name": "Atalanta BC", "odds": 4.98, "p": 0.30633733014689835, "value": 0.525559904131554}, "outcome": 0, "score": [2, 0], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "19:30", "league": "Испания · La Liga", "home": "Villarreal", "away": "Levante", "model": [0.6559773461055298, 0.17986724914653926, 0.1641554047479308], "market": [0.6351585014409222, 0.20057636887608069, 0.16426512968299714], "odds": [1.5, 4.75, 5.8], "signal": null, "outcome": 0, "score": [3, 1], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "21:45", "league": "Италия · Serie A", "home": "AC Milan", "away": "Lecce", "model": [0.5985675770128427, 0.2470161803043375, 0.15441624268281984], "market": [0.758260322948179, 0.1592346678191176, 0.08250500923270342], "odds": [1.26, 6.0, 11.58], "signal": {"pick": 2, "name": "Lecce", "odds": 11.58, "p": 0.15441624268281984, "value": 0.7881400902670537}, "outcome": 0, "score": [3, 0], "predicted_at": "2026-09-20 06:07", "kind": "live"}, {"date": "2026-09-20", "time": "21:45", "league": "Франция · Ligue 1", "home": "Marseille", "away": "Paris Saint Germain", "model": [0.28625104384780975, 0.2253581503820196, 0.4883908057701705], "market": [0.13592741862608662, 0.1745856752995608, 0.6894869060743526], "odds": [7.0, 5.45, 1.38], "signal": {"pick": 0, "name": "Marseille", "odds": 7.0, "p": 0.28625104384780975, "value": 1.0037573069346681}, "outcome": 2, "score": [1, 2], "predicted_at": "2026-09-20 06:08", "kind": "live"}, {"date": "2026-09-20", "time": "22:00", "league": "Испания · La Liga", "home": "Valencia", "away": "Real Sociedad", "model": [0.4325684296965855, 0.2581601264148581, 0.30927144388855654], "market": [0.34490764106187544, 0.2831331381851216, 0.371959220753003], "odds": [2.75, 3.35, 2.55], "signal": {"pick": 0, "name": "Valencia", "odds": 2.75, "p": 0.4325684296965855, "value": 0.18956318166561004}, "outcome": 2, "score": [2, 3], "predicted_at": "2026-09-20 06:07", "kind": "live"}], "record": {"n": 20, "brier_model": 0.5289562049237737, "brier_market": 0.48413009040120814, "signals": {"n": 14, "wins": 2, "profit": -7.585, "roi": -0.5417857142857143, "roi_se": 0.3124634515519055}, "note": "Само 14 залога - под 30 резултатът е почти изцяло късмет.", "backtest": {"threshold": 0.05, "leagues": ["E0", "SP1", "I1", "D1", "F1"], "seasons": ["1920", "2021", "2122", "2223", "2324", "2425"], "matches": 10360, "bets": 6755, "wins": 1917, "profit": -729.9, "roi": -0.1081, "roi_se": 0.0211, "margin": 0.0547, "period": "2019-08-09 - 2025-05-25"}}, "sim": {"n": 181, "brier_model": 0.577864288841244, "brier_market": 0.5725447450171571}, "research": {"matches": 94188, "brier_best": 0.593522816592707, "brier_market": 0.594171163549462, "shrink_weight": 0.0, "price": {"MAX": {"n": 8326, "roi": 0.02843862599087197, "roi_se": 0.018524554366190858, "avg_odds": 3.8387040595724238}, "AVG": {"n": 8326, "roi": -0.04886019697333654, "roi_se": 0.016527527657198803, "avg_odds": 3.4370538073504684}, "B365": {"n": 8310, "roi": -0.03484837545126353, "roi_se": 0.017021246699204715, "avg_odds": 3.5002406738868834}}, "bets": 8326}, "pipeline": {"last": "2026-09-23 23:55:46", "text": "116 INFO [daily_update] ===== Край. Стъпки: 4, паднали: 0 ====="}};
+const WD = ["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"];
+const WD3 = ["нед","пон","вто","сря","чет","пет","съб"];
+const MN = ["яну","фев","мар","апр","май","юни","юли","авг","сеп","окт","ное","дек"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = x => (x == null ? "–" : Math.round(x * 100) + "%");
+const d3 = iso => { const d = new Date(iso + "T12:00:00"); return WD3[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1); };
+const dFull = iso => { const d = new Date(iso + "T12:00:00"); return WD[d.getDay()] + ", " + d.getDate() + " " + MN[d.getMonth()]; };
+
+const byDay = {};
+for (const d of DATA.days) byDay[d] = [];
+for (const m of DATA.matches) (byDay[m.date] ||= []).push(m);
+const days = Object.keys(byDay).sort();
+// Отваря се на днес. Ако днес няма мачове (например почивка за националните отбори),
+// показва най-близкия ден с мачове - напред, ако има, иначе последния изигран кръг.
+let current = (byDay[DATA.today] || []).length ? DATA.today
+  : (days.filter(d => d > DATA.today && byDay[d].length)[0]
+     || days.filter(d => d < DATA.today && byDay[d].length).pop()
+     || DATA.today);
+
+function tile(v, k) { return `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`; }
+
+function renderScoreboard() {
+  const r = DATA.record, s = DATA.sim, t = [];
+  t.push(tile(`<span class="num">${r.n}</span>`, "прогнози, сверени с резултата"));
+  if (r.brier_model != null)
+    t.push(tile(`${r.brier_model.toFixed(3)} <small>/ ${r.brier_market.toFixed(3)}</small>`,
+                "Brier: модел / пазар — по-ниското печели"));
+  if (s.n)
+    t.push(tile(`${s.brier_model.toFixed(3)} <small>/ ${s.brier_market.toFixed(3)}</small>`,
+                `същото в симулация на ${s.n} мача`));
+  if (DATA.record.backtest)
+    t.push(tile(`${(DATA.record.backtest.roi * 100).toFixed(1)}%`,
+                `ROI на правилото за сигнал · ${DATA.record.backtest.bets} залога, 6 сезона`));
+  document.getElementById("tiles").innerHTML = t.join("");
+
+  const v = [];
+  if (r.brier_model != null)
+    v.push(r.brier_model < r.brier_market
+      ? `На тези ${r.n} мача моделът е по-точен от пазара — твърде малко, за да значи нещо.`
+      : `На тези ${r.n} мача пазарът е по-точен от модела.`);
+  if (r.note) v.push(r.note);
+  v.push("Във всяка досегашна проверка — 6 сезона, 5 лиги, над 10 000 мача — пазарът бие модела.");
+  document.getElementById("verdict").innerHTML = "<b>" + esc(v[0]) + "</b> " + v.slice(1).map(esc).join(" ");
+  document.getElementById("lede").textContent =
+    `Всеки ден: какво казва моделът, какво казва букмейкърът и кой е познал. Обновено ${DATA.generated_at}.`;
+  document.getElementById("pipe").textContent = (DATA.pipeline.last || "няма") + " " + (DATA.pipeline.text || "");
+}
+
+function renderProof() {
+  const r = DATA.research;
+  if (!r || !r.price) return;
+  const NAMES = { MAX: "най-добрата от ~40 букмейкъра", B365: "Bet365", AVG: "средната на пазара" };
+  document.getElementById("proof").hidden = false;
+  document.getElementById("proof-lede").innerHTML =
+    `Шест подхода — Poisson, градиентен бустинг, логистична регресия, стек и смес с пазара —
+     на <span class="num">${r.matches.toLocaleString("bg")}</span> мача от 18 лиги, с обучение само
+     върху миналото. <b>Най-добрият от тях е с ${Math.abs(r.brier_best - r.brier_market).toFixed(4)}
+     Brier разлика от пазара, а оптималната тежест на модела в смес с коефициента излезе
+     ${r.shrink_weight === 0 ? "нула" : r.shrink_weight}.</b>`;
+  document.getElementById("ptab").innerHTML = ["MAX", "B365", "AVG"].filter(k => r.price[k]).map(k => {
+    const p = r.price[k], cls = p.roi >= 0 ? "pos" : "neg";
+    return `<tr><td>${NAMES[k] || k}</td><td class="${cls}">${(p.roi * 100).toFixed(2)}% ± ${(p.roi_se * 100).toFixed(2)}</td><td>${p.n.toLocaleString("bg")}</td></tr>`;
+  }).join("");
+  document.getElementById("proof-note").textContent =
+    "Печалбата на първия ред е разликата между най-добрата и средната цена, не прогноза: същите залози на средния пазар губят повече от маржа на букмейкъра.";
+}
+
+function renderDays() {
+  document.getElementById("days").innerHTML = days.map(d => {
+    const n = byDay[d].length;
+    return `<button class="day" role="tab" data-d="${d}" aria-selected="${d === current}">
+      ${d === DATA.today ? "днес" : d3(d)}${n ? `<span class="n">${n}</span>` : ""}</button>`;
+  }).join("");
+  for (const b of document.querySelectorAll(".day"))
+    b.onclick = () => { current = b.dataset.d; renderDays(); renderList(); };
+  const sel = document.querySelector('.day[aria-selected="true"]');
+  if (sel) sel.scrollIntoView({ block: "nearest", inline: "center" });
+}
+
+function cell(kind, p, isPick) {
+  const w = p == null ? 0 : Math.round(p * 100);
+  return `<div class="cell ${kind}${isPick ? " pick" : ""}"><i style="width:${w}%"></i><span>${pct(p)}</span></div>`;
+}
+
+function matchRow(m) {
+  const played = m.outcome != null;
+  const top = p => (p ? p.indexOf(Math.max(...p)) : null);
+  const mp = top(m.model), kp = top(m.market);
+  const tags = [];
+  if (m.signal) tags.push(`<span class="tag sig">сигнал · ${esc(m.signal.name)} @ ${m.signal.odds.toFixed(2)}</span>`);
+  if (played && mp != null) tags.push(`<span class="tag ${mp === m.outcome ? "ok" : "bad"}">модел ${mp === m.outcome ? "позна" : "сгреши"}</span>`);
+  if (played && kp != null) tags.push(`<span class="tag ${kp === m.outcome ? "ok" : "bad"}">пазар ${kp === m.outcome ? "позна" : "сгреши"}</span>`);
+
+  const head = `<div class="fixture">
+      <span class="t">${esc(m.home)} – ${esc(m.away)}</span>
+      ${m.score ? `<span class="res">${m.score[0]}:${m.score[1]}</span>` : ""}
+      <span class="tags">${tags.join("")}</span>
+    </div>`;
+
+  const rows = [`<div class="gh">&nbsp;</div><div class="gh">1</div><div class="gh">X</div><div class="gh">2</div>`];
+  if (m.model)
+    rows.push(`<div class="rowlbl">модел</div>${cell("h", m.model[0], mp === 0)}${cell("d", m.model[1], mp === 1)}${cell("a", m.model[2], mp === 2)}`);
+  rows.push(`<div class="rowlbl">пазар</div>${cell("h", m.market && m.market[0], kp === 0)}${cell("d", m.market && m.market[1], kp === 1)}${cell("a", m.market && m.market[2], kp === 2)}`);
+
+  const odds = m.odds && m.odds[0]
+    ? `<div class="oddsrow"><span>коеф. ${m.odds[0].toFixed(2)} · ${m.odds[1].toFixed(2)} · ${m.odds[2].toFixed(2)}</span>${m.predicted_at ? `<span>записано ${esc(m.predicted_at)}</span>` : ""}</div>`
+    : "";
+  const await_ = m.model ? "" : `<div class="await">прогнозата на модела излиза сутринта в деня на мача</div>`;
+
+  return `<div class="match">
+    <div class="kick">${esc(m.time || "—")}</div>
+    <div>${head}<div class="grid">${rows.join("")}</div>${odds}${await_}</div>
+  </div>`;
+}
+
+function renderList() {
+  const items = byDay[current] || [];
+  const el = document.getElementById("list");
+  if (!items.length) {
+    const near = days.filter(d => d > current && byDay[d].length)[0];
+    el.innerHTML = `<div class="panel empty"><b>${dFull(current)} — няма мачове.</b>
+      ${near ? `Следващите обявени мачове са ${dFull(near)}.` : "Още няма обявени мачове напред. Списъкът идва от football-data.co.uk няколко дни преди кръга."}</div>`;
+    return;
+  }
+  const groups = {};
+  for (const m of items) (groups[m.league] ||= []).push(m);
+  el.innerHTML = Object.keys(groups).sort().map(lg =>
+    `<section class="lgroup"><h3>${esc(lg)}</h3><div class="list">${groups[lg].map(matchRow).join("")}</div></section>`).join("");
+}
+
+renderScoreboard(); renderProof(); renderDays(); renderList();
+</script>
