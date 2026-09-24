@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS fair_prices (
     sharp_odds    REAL NOT NULL,
     best_book     TEXT,               -- най-добрата цена, която API-то вижда
     best_odds     REAL,
+    prices_json   TEXT,               -- всички цени за изхода, {букмейкър: цена}
     updated_at    TEXT NOT NULL,
     UNIQUE(event_id, selection)
 );
@@ -134,6 +135,7 @@ CREATE INDEX IF NOT EXISTS idx_value_open ON value_bets(result) WHERE result IS 
 # облакът падна на 2026-09-25, защото неговата база нямаше колоната n_books.
 MIGRATIONS = [
     ("value_bets", "n_books", "INTEGER"),
+    ("fair_prices", "prices_json", "TEXT"),   # {букмейкър: цена} за изхода
     ("matches", "hthg", "INTEGER"),
     ("matches", "htag", "INTEGER"),
     ("matches", "kickoff", "TEXT"),

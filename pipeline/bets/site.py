@@ -145,6 +145,36 @@ def value_section(conn, limit=50):
             "by_tier": value.record_by_tier(conn)}
 
 
+# Къде са букмейкърите от odds API. НИТО ЕДИН от тях не е лицензиран в България (НАП):
+# efbet и winbet ги няма в никое API. Цените са истински и служат за сравнение.
+BOOK_LINKS = {
+    "onexbet": ("1xBet", "https://1xbet.com"),
+    "leovegas_se": ("LeoVegas", "https://www.leovegas.com"),
+    "leovegas": ("LeoVegas", "https://www.leovegas.com"),
+    "nordicbet": ("NordicBet", "https://www.nordicbet.com"),
+    "betsson": ("Betsson", "https://www.betsson.com"),
+    "unibet_se": ("Unibet", "https://www.unibet.com"),
+    "unibet_nl": ("Unibet", "https://www.unibet.com"),
+    "unibet_fr": ("Unibet", "https://www.unibet.com"),
+    "unibet_uk": ("Unibet", "https://www.unibet.com"),
+    "williamhill": ("William Hill", "https://www.williamhill.com"),
+    "marathonbet": ("Marathonbet", "https://www.marathonbet.com"),
+    "coolbet": ("Coolbet", "https://www.coolbet.com"),
+    "sport888": ("888sport", "https://www.888sport.com"),
+    "betclic_fr": ("Betclic", "https://www.betclic.fr"),
+    "tipico_de": ("Tipico", "https://www.tipico.de"),
+    "winamax_fr": ("Winamax", "https://www.winamax.fr"),
+    "winamax_de": ("Winamax", "https://www.winamax.de"),
+    "pinnacle": ("Pinnacle", "https://www.pinnacle.com"),
+    "betfair_ex_eu": ("Betfair", "https://www.betfair.com"),
+    "betano_uk": ("Betano", "https://www.betano.com"),
+    "betway": ("Betway", "https://www.betway.com"),
+    "paddypower": ("Paddy Power", "https://www.paddypower.com"),
+    "codere_it": ("Codere", "https://www.codere.it"),
+    "everygame": ("Everygame", "https://www.everygame.eu"),
+}
+SOON_HOURS = 3      # "Започват скоро": мачовете в следващите три часа
+
 MIN_EDGE_SHEET = 0.02
 CHANGE_THRESHOLD = 0.02     # под 2 процентни пункта е шум от преобучаването, не новина
 PREVIEW_DAYS = 30   # таблото показва 3 дни напред, но пази повече,
@@ -243,13 +273,26 @@ def preview(conn, days=PREVIEW_DAYS, exported=None):
 
 
 def attach_bets(conn, rows):
-    """Закача към всеки мач залозите по цена, които скенерът е намерил за него."""
+    """Закача към всеки мач залозите по цена и всички цени по букмейкър."""
+    conn = value_conn(conn)
     for m in rows:
         if not m.get("event_id"):
             continue
+        outcomes = conn.execute(
+            """SELECT outcome_idx, selection, prices_json, updated_at FROM fair_prices
+                WHERE event_id = ? ORDER BY outcome_idx""", (m["event_id"],)).fetchall()
+        m["books"] = []
+        for o in outcomes:
+            prices = json.loads(o["prices_json"]) if o["prices_json"] else {}
+            m["books"].append({
+                "selection": o["selection"],
+                "prices": [{"book": b, "name": BOOK_LINKS.get(b, (b, None))[0],
+                            "url": BOOK_LINKS.get(b, (b, None))[1], "odds": odds}
+                           for b, odds in list(prices.items())[:6]],
+                "updated": o["updated_at"]})
         found = conn.execute(
             """SELECT selection, bookmaker, odds, sharp_book, sharp_odds, p_fair, edge,
-                      found_at, closing_odds, result, profit
+                      n_books, found_at, closing_odds, result, profit
                  FROM value_bets WHERE event_id = ? ORDER BY edge DESC""",
             (m["event_id"],)).fetchall()
         m["bets"] = [dict(b) for b in found]

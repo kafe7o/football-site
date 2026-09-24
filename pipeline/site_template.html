@@ -68,6 +68,17 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 .tabs button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
 
+/* --- започват скоро --- */
+.soon { border: 1px solid var(--accent); border-radius: 10px; padding: 14px; margin-bottom: 14px;
+        background: var(--panel); }
+.soon h2 { font: 600 15px/1.2 "IBM Plex Sans", sans-serif; margin: 0 0 4px; }
+.soon .sub2 { color: var(--muted); font-size: 12.5px; margin: 0 0 10px; }
+.prow { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-size: 12.5px; }
+.prow a { color: var(--home); text-decoration: none; font-weight: 600; }
+.prow a:hover { text-decoration: underline; }
+.prow span:last-child { font-family: "IBM Plex Mono", monospace; }
+.licence { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+
 /* --- подробният изглед --- */
 .mcard { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
          margin-bottom: 8px; overflow: hidden; }
@@ -247,6 +258,11 @@ footer b { color: var(--ink); font-weight: 600; }
   </nav>
 
 <div id="tab-board">
+  <section class="soon" id="soon" hidden>
+    <h2>Започват скоро</h2>
+    <p class="sub2" id="soon-sub"></p>
+    <div id="soon-list"></div>
+  </section>
   <section class="panel scoreboard">
     <p class="eyebrow">Измерено, не обещано</p>
     <div class="tiles" id="tiles"></div>
@@ -470,6 +486,34 @@ function probRow(label, values, mark) {
     `<div class="v${mark === i ? " best" : ""}">${v == null ? "\u2013" : v}</div>`).join("");
 }
 
+function booksBlock(m) {
+  if (!m.books || !m.books.length) return "";
+  return `<div class="msec"><b>цени по букмейкър (най-добрата отгоре)</b>` + m.books.map(o =>
+    `<div style="margin-bottom:6px"><div class="prow"><span><b style="display:inline;text-transform:none;letter-spacing:0">${esc(o.selection)}</b></span><span></span></div>` +
+    o.prices.map((p, i) => `<div class="prow"><span>${p.url
+        ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name)}${i === 0 ? " \u00b7 най-добра" : ""}</span>
+        <span>${p.odds.toFixed(2)}</span></div>`).join("") + `</div>`).join("")
+    + `<p class="licence">Нито един от тези букмейкъри не е лицензиран в България. Цените са за сравнение. efbet и winbet ги няма в никое API.</p></div>`;
+}
+
+function renderSoon() {
+  const now = Date.now();
+  const soon = AHEAD.filter(m => {
+    const t = new Date(m.commence_iso).getTime();
+    return t > now && t - now <= 3 * 3600 * 1000;
+  });
+  if (!soon.length) return;
+  document.getElementById("soon").hidden = false;
+  document.getElementById("soon-sub").textContent =
+    `Последните данни преди началото. Цените се обновяват на всеки час. Обновено ${DATA.generated_at}.`;
+  document.getElementById("soon-list").innerHTML = soon.map(m => {
+    const mins = Math.round((new Date(m.commence_iso).getTime() - now) / 60000);
+    const best = (m.books || []).map(o => o.prices[0] ? `${esc(o.selection)} ${o.prices[0].odds.toFixed(2)} (${esc(o.prices[0].name)})` : "").filter(Boolean).join(" \u00b7 ");
+    return `<div class="mline"><span><b style="display:inline;text-transform:none;letter-spacing:0;color:var(--ink)">${esc(m.home)} \u2013 ${esc(m.away)}</b>
+      \u00b7 след ${mins} мин<br>модел ${m.model ? m.model.map(pct).join(" / ") : "\u2013"}${m.market ? " \u00b7 пазар " + m.market.map(pct).join(" / ") : ""}<br>${best}</span><span></span></div>`;
+  }).join("");
+}
+
 function matchBody(m) {
   const top = m.model.indexOf(Math.max(...m.model));
   const bets = (m.bets || []).map(b =>
@@ -488,6 +532,7 @@ function matchBody(m) {
       ${probRow("най-добра цена", (m.best_odds || [null, null, null]).map(o => o == null ? null : o.toFixed(2)), null)}
     </div>
     ${bets ? `<div class="msec"><b>намерени цени над честната</b>${bets}</div>` : ""}
+    ${booksBlock(m)}
     <div class="msec"><b>как се е менила прогнозата</b>${hist ||
       `<div class="mline"><span>само един запис засега \u2014 промените ще се появят тук</span><span></span></div>`}</div>
     <div class="abooks">
@@ -609,7 +654,7 @@ function renderAheadDays() {
       ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}</span></button>`;
   }).join("") || "";
   for (const b of el.querySelectorAll(".day"))
-    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); };
+    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon(); };
 }
 
 function renderAheadList() {
@@ -655,7 +700,7 @@ for (const b of document.querySelectorAll(".tabs button")) {
 }
 
 renderScoreboard(); renderProof(); renderPnl(); renderValue(); renderFair(); renderDays(); renderList();
-renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail();
+renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
 </script>
 </body>
 </html>

@@ -17,6 +17,7 @@
 Тук не се отварят и не се ползват никакви сметки при букмейкъри. Само публични коефициенти.
 """
 
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -150,17 +151,19 @@ def store_fair(conn, event, sport, books, order, sharp, sharp_prices, fair):
     for i, name in enumerate(order):
         prices = [(b, p[name]) for b, p in books.items() if name in p and b not in EXCHANGES]
         best_book, best_odds = max(prices, key=lambda x: x[1], default=(None, None))
+        all_prices = json.dumps(dict(sorted(prices, key=lambda x: -x[1])))
         conn.execute(
             """INSERT INTO fair_prices (sport, event_id, home_team, away_team, commence_time,
                    selection, outcome_idx, p_fair, sharp_book, sharp_odds, best_book, best_odds,
-                   updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   prices_json, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(event_id, selection) DO UPDATE SET
                    p_fair = excluded.p_fair, sharp_odds = excluded.sharp_odds,
                    sharp_book = excluded.sharp_book, best_book = excluded.best_book,
-                   best_odds = excluded.best_odds, updated_at = excluded.updated_at""",
+                   best_odds = excluded.best_odds, prices_json = excluded.prices_json,
+                   updated_at = excluded.updated_at""",
             (sport, event["id"], event["home_team"], event["away_team"], event["commence_time"],
-             name, i, fair[i], sharp, sharp_prices[i], best_book, best_odds, now))
+             name, i, fair[i], sharp, sharp_prices[i], best_book, best_odds, all_prices, now))
 
 
 def store(conn, rows):

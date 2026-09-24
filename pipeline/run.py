@@ -22,7 +22,7 @@ import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-from bets import config, db, model, odds_api, predict, publish, results, site, value
+from bets import config, db, model, notify, odds_api, predict, publish, results, site, value
 
 
 def setup_logging():
@@ -153,8 +153,13 @@ def main():
         # Пуска се от GitHub Actions: няма база с история, има snapshot.json от лаптопа.
         conn = db.init()
         ok = [step(log, "1. Скенер за цени", value.scan, conn),
-              step(log, "2. Уреждане", value.settle, conn),
-              step(log, "3. Сайт от снимката", site.build, conn, True)]
+              step(log, "2. Уреждане", value.settle, conn)]
+        built = {}
+        ok.append(step(log, "3. Сайт от снимката",
+                       lambda: built.update(site.build(conn, True))))
+        if built:
+            ok.append(step(log, "4. Известия час преди мача",
+                           notify.prematch, conn, built.get("preview", [])))
         conn.close()
         return 1 if ok.count(False) else 0
 

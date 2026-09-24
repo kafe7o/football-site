@@ -34,6 +34,7 @@ jobs:
       - name: Сканиране и построяване
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           FOOTBALL_DB: ${{ github.workspace }}/cloud.db
           FOOTBALL_SITE: ${{ github.workspace }}
           FOOTBALL_LOGS: ${{ runner.temp }}/logs
