@@ -118,7 +118,7 @@ def run():
 
     git("config", "user.name", "football-bot")
     git("config", "user.email", "football-bot@users.noreply.github.com")
-    git("add", "index.html", ".nojekyll")
+    git("add", "-A")   # в тази папка живее само сайтът: HTML, снимката, кодът за облака
     if not git("status", "--porcelain"):
         log.info("Сайтът не се е променил - няма какво да се качва.")
     else:

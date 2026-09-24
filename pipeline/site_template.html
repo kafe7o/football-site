@@ -221,6 +221,15 @@ footer b { color: var(--ink); font-weight: 600; }
     <p class="proof-note" id="proof-note"></p>
   </section>
 
+  <section class="panel proof" id="pnl" hidden>
+    <p class="eyebrow">Ден по ден, при 10 евро на залог</p>
+    <table class="ptab">
+      <thead><tr><th>ден</th><th>мача</th><th>познати</th><th>по модела</th><th>по сигналите</th></tr></thead>
+      <tbody id="pnltab"></tbody>
+    </table>
+    <p class="proof-note">Броят се всички прогнози за деня, не само познатите. Кой мач влиза е решено преди мача - записано е с час и минута. Затова числото тук е по-малко от сбора на спечелените.</p>
+  </section>
+
   <section class="panel value" id="value" hidden>
     <p class="eyebrow">Залози по цена, не по прогноза</p>
     <p class="value-lede" id="value-lede"></p>
@@ -323,6 +332,18 @@ function renderProof() {
   }).join("");
   document.getElementById("proof-note").textContent =
     "Печалбата на първия ред е разликата между най-добрата и средната цена, не прогноза: същите залози на средния пазар губят повече от маржа на букмейкъра.";
+}
+
+function renderPnl() {
+  const p = DATA.pnl;
+  if (!p || !p.days.length) return;
+  document.getElementById("pnl").hidden = false;
+  const money = v => `<span class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : ""}${v.toFixed(2)}</span>`;
+  document.getElementById("pnltab").innerHTML = p.days.map(d => `
+    <tr><td>${esc(d3(d.date))}</td><td>${d.n}</td><td>${d.wins}</td>
+        <td>${money(d.model)}</td><td>${d.sig_n ? money(d.signal) : "–"}</td></tr>`).join("")
+    + `<tr><td><b>общо</b></td><td></td><td></td><td><b>${money(p.total_model)}</b></td>
+        <td><b>${money(p.total_signal)}</b></td></tr>`;
 }
 
 function renderValue() {
@@ -498,7 +519,7 @@ for (const b of document.querySelectorAll(".tabs button")) {
   };
 }
 
-renderScoreboard(); renderProof(); renderValue(); renderFair(); renderDays(); renderList();
+renderScoreboard(); renderProof(); renderPnl(); renderValue(); renderFair(); renderDays(); renderList();
 renderAheadDays(); renderAheadList();
 </script>
 </body>

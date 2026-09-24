@@ -8,16 +8,22 @@
   2. Записът е immutable. Веднъж записана прогноза не се променя - иначе статистиката
      после е нагласена.
 
-Цените идват от разписанието на football-data (средните на пазара). Нарочно не се ползва
-odds API тук: имената на отборите там са различни и всяко разминаване е източник на тихи
-грешки, а квотата трябва за скенера на цени (value.py), където имената идват от самото API.
+Цената, с която се записва прогнозата, е НАЙ-ДОБРАТА налична от всички букмейкъри в
+odds API (виж best_prices). Ако мачът не се намери там, се пада на средната от
+football-data. Причината е измерена: същите избори дават -5.1% на средната цена и +2.6%
+на най-добрата - разликата от 8.3% е по-голяма от всичко, което моделът може да добави.
+
+До 2026-09-24 се ползваше само средната цена, защото безплатният план не стигаше за
+повече заявки. Имената на отборите в двата източника се разминават и минават през
+teams.match(), който при несигурност връща None и цената пада обратно на football-data.
 """
 
 import logging
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from . import db, model, results
+from . import db, model, odds_api, results, teams
+from .value import EXCHANGES, prices_by_book, outcome_order
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +38,63 @@ def kickoff_time(day, kickoff):
     except ValueError:
         start = datetime.fromisoformat(day).replace(hour=12, tzinfo=UK)
     return start
+
+
+# Лигите в базата -> ключът им в odds API, за да се вземе най-добрата цена.
+LEAGUE_TO_SPORT = {
+    "E0": "soccer_epl", "E1": "soccer_efl_champ", "E2": "soccer_england_league1",
+    "E3": "soccer_england_league2", "SP1": "soccer_spain_la_liga",
+    "SP2": "soccer_spain_segunda_division", "I1": "soccer_italy_serie_a",
+    "I2": "soccer_italy_serie_b", "D1": "soccer_germany_bundesliga",
+    "D2": "soccer_germany_bundesliga2", "F1": "soccer_france_ligue_one",
+    "F2": "soccer_france_ligue_two", "N1": "soccer_netherlands_eredivisie",
+    "B1": "soccer_belgium_first_div", "P1": "soccer_portugal_primeira_liga",
+    "T1": "soccer_turkey_super_league", "G1": "soccer_greece_super_league",
+    "SC0": "soccer_spl",
+}
+
+
+def best_prices(league, known_teams):
+    """Най-добрата цена за всеки изход, от всички букмейкъри в odds API.
+
+    Защо е важно: измерено е на 8326 залога, че същите избори дават -5.1% на средната
+    цена и +2.6% на най-добрата (виж legacy/price_check.py). Разликата е 8.3% и е по-голяма
+    от всичко, което моделът може да добави. Затова прогнозата се записва с най-добрата
+    налична цена, а не със средната на football-data.
+
+    Изисква повече заявки, отколкото позволява безплатният план - затова стана възможно
+    едва с платения (2026-09-24). Борсите се изключват: цената им е брутна.
+    """
+    sport = LEAGUE_TO_SPORT.get(league)
+    if not sport:
+        return {}
+    try:
+        events = odds_api.odds(sport)
+    except RuntimeError as e:
+        log.error("%s: цените не се изтеглиха - %s", league, e)
+        return {}
+    index = {}
+    for event in events:
+        books = prices_by_book(event)
+        order = outcome_order(event, books)
+        if len(order) != 3:
+            continue
+        home = teams.match(event["home_team"], known_teams)
+        away = teams.match(event["away_team"], known_teams)
+        if not home or not away:
+            continue
+        best, names = [], []
+        for name in order:
+            prices = [(b, p[name]) for b, p in books.items()
+                      if name in p and b not in EXCHANGES]
+            if not prices:
+                break
+            book, odds = max(prices, key=lambda x: x[1])
+            best.append(odds)
+            names.append(book)
+        if len(best) == 3:
+            index[(home, away)] = (best, f"best_of_{len(books)}")
+    return index
 
 
 def market_odds(conn, match_id):
@@ -61,6 +124,7 @@ def run(conn=None, day=None):
             log.warning("%s: само %d мача в базата - пропуска се", league, len(history))
             continue
         fitted = model.Poisson().fit(history)
+        best = best_prices(league, fitted.teams)
 
         for fixture in fixtures:
             start = kickoff_time(fixture["date"], fixture["kickoff"])
@@ -71,7 +135,11 @@ def run(conn=None, day=None):
             if probs is None:
                 skipped += 1
                 continue
-            home_odds, draw_odds, away_odds, book = market_odds(conn, fixture["id"])
+            found = best.get((fixture["home_team"], fixture["away_team"]))
+            if found:
+                (home_odds, draw_odds, away_odds), book = found
+            else:
+                home_odds, draw_odds, away_odds, book = market_odds(conn, fixture["id"])
             cursor = conn.execute(
                 """INSERT OR IGNORE INTO predictions
                    (league, home_team, away_team, match_date, predicted_at, model_version,

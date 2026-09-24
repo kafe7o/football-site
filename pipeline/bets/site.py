@@ -78,6 +78,40 @@ def signal_backtest():
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
+def daily_pnl(conn, stake=10):
+    """Резултатът ден по ден, за да не се смята на ръка - и за да няма спор кой мач влиза.
+
+    Броят се ВСИЧКИ прогнози за деня, не само познатите. Изборът кой мач влиза е направен
+    преди мача (записан е с час), а не след като резултатите са известни.
+    """
+    rows = conn.execute(
+        """SELECT match_date, home_team, away_team, p_home, p_draw, p_away,
+                  odds_home, odds_draw, odds_away, outcome
+             FROM predictions WHERE outcome IS NOT NULL ORDER BY match_date""").fetchall()
+    days = {}
+    for r in rows:
+        probs = [r["p_home"], r["p_draw"], r["p_away"]]
+        odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
+        if any(o is None for o in odds):
+            continue
+        day = days.setdefault(r["match_date"][:10],
+                              {"date": r["match_date"][:10], "n": 0, "wins": 0,
+                               "model": 0.0, "signal": 0.0, "sig_n": 0})
+        pick = max(range(3), key=lambda i: probs[i])
+        won = pick == r["outcome"]
+        day["n"] += 1
+        day["wins"] += int(won)
+        day["model"] += stake * (odds[pick] - 1) if won else -stake
+        sig = signal(probs, odds, r["home_team"], r["away_team"])
+        if sig:
+            day["sig_n"] += 1
+            day["signal"] += (stake * (sig["odds"] - 1)
+                              if sig["pick"] == r["outcome"] else -stake)
+    return {"stake": stake, "days": sorted(days.values(), key=lambda d: d["date"]),
+            "total_model": sum(d["model"] for d in days.values()),
+            "total_signal": sum(d["signal"] for d in days.values())}
+
+
 def value_section(conn, limit=50):
     rows = conn.execute(
         """SELECT * FROM value_bets WHERE result IS NULL AND commence_time > ?
@@ -251,6 +285,7 @@ def write_snapshot(conn):
             "matches": day_matches(conn, since, until),
             "preview": preview(conn),
             "record": {**predict.record(conn), "backtest": signal_backtest()},
+            "pnl": daily_pnl(conn),
             "research": research_summary()}
     config.SITE_DIR.mkdir(exist_ok=True)
     SNAPSHOT.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
@@ -275,6 +310,7 @@ def build(conn=None, from_snapshot=False):
         matches, preview_rows = day_matches(conn, since, until), preview(conn)
         record = {**predict.record(conn), "backtest": signal_backtest()}
         research, source = research_summary(), None
+        snap = {"pnl": daily_pnl(conn)}
 
     data = {
         "generated_at": datetime.now().astimezone().strftime("%d.%m.%Y %H:%M"),
@@ -285,6 +321,7 @@ def build(conn=None, from_snapshot=False):
         "fair": fair_sheet(conn),
         "preview": preview_rows,
         "record": record,
+        "pnl": snap.get("pnl"),
         "research": research,
         "source": source,
         "pipeline": pipeline_status(),
