@@ -284,12 +284,19 @@ def attach_bets(conn, rows):
         m["books"] = []
         for o in outcomes:
             prices = json.loads(o["prices_json"]) if o["prices_json"] else {}
-            m["books"].append({
-                "selection": o["selection"],
-                "prices": [{"book": b, "name": BOOK_LINKS.get(b, (b, None))[0],
-                            "url": BOOK_LINKS.get(b, (b, None))[1], "odds": odds}
-                           for b, odds in list(prices.items())[:6]],
-                "updated": o["updated_at"]})
+            # Един букмейкър с няколко национални сайта (unibet_se, unibet_nl) - веднъж,
+            # с по-добрата цена. Цените вече идват подредени от най-добрата.
+            seen, listed = set(), []
+            for b, odds in prices.items():
+                name, url = BOOK_LINKS.get(b, (b, None))
+                if name in seen:
+                    continue
+                seen.add(name)
+                listed.append({"book": b, "name": name, "url": url, "odds": odds})
+                if len(listed) == 6:
+                    break
+            m["books"].append({"selection": o["selection"], "prices": listed,
+                               "updated": o["updated_at"]})
         found = conn.execute(
             """SELECT selection, bookmaker, odds, sharp_book, sharp_odds, p_fair, edge,
                       n_books, found_at, closing_odds, result, profit
