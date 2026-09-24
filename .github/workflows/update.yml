@@ -1,0 +1,49 @@
+# Обновява сайта на всеки час НА СЪРВЪРИТЕ НА GITHUB - лаптопът може да е изключен.
+#
+# Какво прави в облака: сканира цените, урежда старите залози и построява сайта наново.
+# Какво НЕ прави: не тренира модела и не тегли историята - за това трябва базата с 94 000
+# мача, която е само на лаптопа. Прогнозите идват от snapshot.json, който лаптопът качва
+# при всяко свое пускане. Затова горе на сайта пише откога е историята.
+name: update
+
+on:
+  schedule:
+    - cron: "7 * * * *"      # на всеки час, 7-ата минута (UTC)
+  workflow_dispatch:          # и с бутон от Actions, за проверка
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Сканиране и построяване
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FOOTBALL_DB: ${{ github.workspace }}/cloud.db
+          FOOTBALL_SITE: ${{ github.workspace }}
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          PYTHONIOENCODING: utf-8
+        run: cd pipeline && python run.py cloud
+
+      - name: Записване на промените
+        run: |
+          git config user.name "football-bot"
+          git config user.email "football-bot@users.noreply.github.com"
+          git add index.html cloud.db
+          git diff --staged --quiet || git commit -m "Обновено от облака"
+          git push
