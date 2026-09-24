@@ -1,0 +1,484 @@
+<title>Моделът срещу пазара</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eef1f4; --panel: #ffffff; --ink: #0f1419; --muted: #626d7a; --line: #dbe1e8;
+  --rail: #c3ccd6; --chip: #e4e9ef; --accent: #12263f; --accent-ink: #ffffff;
+  --home: #2b5fb8; --draw: #7d8794; --away: #c25a21;
+  --ok: #17663c; --ok-bg: rgba(23,102,60,.12);
+  --bad: #a52218; --bad-bg: rgba(165,34,24,.10);
+  --sig: #7a4c00; --sig-bg: rgba(122,76,0,.12);
+  --shadow: 0 1px 2px rgba(15,20,25,.06), 0 8px 24px rgba(15,20,25,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1217; --panel: #161b22; --ink: #e7ecf2; --muted: #8e9aa8; --line: #232b35;
+    --rail: #39434f; --chip: #1f262f; --accent: #d7e5f5; --accent-ink: #0e1217;
+    --home: #7aa6ee; --draw: #8e98a5; --away: #ef9560;
+    --ok: #5fc98c; --ok-bg: rgba(95,201,140,.14);
+    --bad: #f0796f; --bad-bg: rgba(240,121,111,.13);
+    --sig: #e0b25f; --sig-bg: rgba(224,178,95,.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1217; --panel: #161b22; --ink: #e7ecf2; --muted: #8e9aa8; --line: #232b35;
+  --rail: #39434f; --chip: #1f262f; --accent: #d7e5f5; --accent-ink: #0e1217;
+  --home: #7aa6ee; --draw: #8e98a5; --away: #ef9560;
+  --ok: #5fc98c; --ok-bg: rgba(95,201,140,.14);
+  --bad: #f0796f; --bad-bg: rgba(240,121,111,.13);
+  --sig: #e0b25f; --sig-bg: rgba(224,178,95,.14);
+  --shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); margin: 0;
+  font: 15px/1.55 "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 72px; padding-left: 16px; padding-right: 16px; }
+h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { color: var(--muted); font-size: 14px; margin: 6px 0 22px; max-width: 62ch; }
+.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+/* --- табове --- */
+.tabs { display: flex; gap: 4px; margin: 16px 0 14px; border-bottom: 1px solid var(--line); }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
+  font: 600 14px/1 "IBM Plex Sans", sans-serif; padding: 10px 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
+
+/* --- прегледът напред --- */
+.abooks { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.abooks a { font-size: 11.5px; font-weight: 600; text-decoration: none; border-radius: 5px;
+            padding: 2px 8px; background: var(--chip); color: var(--ink); border: 1px solid var(--line); }
+.abooks a:hover { border-color: var(--rail); }
+.abooks a:focus-visible { outline: 2px solid var(--home); outline-offset: 1px; }
+.ahead-note { color: var(--muted); font-size: 13.5px; margin: 0 0 14px; max-width: 64ch; }
+.ahead { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+         border-radius: 10px; overflow: hidden; }
+.arow { background: var(--panel); padding: 11px 14px; display: grid;
+        grid-template-columns: 48px 1fr 168px; gap: 12px; align-items: center; }
+.atime { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); }
+.ateams { font-size: 14.5px; min-width: 0; }
+.ateams span { display: block; color: var(--muted); font-size: 11.5px; }
+.aprob { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center; }
+.aprob div { background: var(--chip); border-radius: 4px; padding: 3px 0;
+             font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.aprob div b { display: block; font-size: 10px; color: var(--muted); font-weight: 500; }
+.aprob .top { background: rgba(43,95,184,.16); }
+.anone { color: var(--muted); font-size: 12px; text-align: right; }
+@media (max-width: 560px) { .arow { grid-template-columns: 44px 1fr; } .aprob, .anone { grid-column: 1 / -1; } }
+
+/* --- измереното --- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.scoreboard { padding: 16px 18px; margin-bottom: 10px; }
+.eyebrow { font: 600 11px/1 "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+.tile .v { font: 500 23px/1.15 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 13px; color: var(--muted); }
+.tile .k { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.verdict { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.verdict b { color: var(--ink); font-weight: 600; }
+
+/* --- проверката --- */
+.proof { padding: 16px 18px; }
+.proof-lede { margin: 0 0 14px; font-size: 14px; max-width: 64ch; }
+.proof-lede b { font-weight: 600; }
+.ptab { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ptab caption { text-align: left; font-size: 11.5px; color: var(--muted); padding-bottom: 6px; }
+.ptab th { text-align: right; font-weight: 500; font-size: 11px; color: var(--muted);
+           text-transform: uppercase; letter-spacing: .06em; padding: 0 0 6px 14px;
+           border-bottom: 1px solid var(--line); white-space: nowrap; }
+.ptab th:first-child { text-align: left; padding-left: 0; }
+.ptab td { padding: 7px 0 7px 14px; border-bottom: 1px solid var(--line); text-align: right;
+           font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+           white-space: nowrap; }
+.ptab td:first-child { padding-left: 0; white-space: normal; text-align: left;
+                       font-family: "IBM Plex Sans", sans-serif; }
+.ptab tr:last-child td { border-bottom: 0; }
+.ptab .pos { color: var(--ok); } .ptab .neg { color: var(--bad); }
+.proof-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); max-width: 64ch; }
+
+/* --- залози по цена --- */
+.value { padding: 16px 18px; margin-top: 10px; }
+.value-lede { margin: 0 0 12px; font-size: 14px; max-width: 64ch; }
+.vlist { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.vrow { background: var(--panel); display: grid; grid-template-columns: 58px 1fr auto; gap: 10px;
+        align-items: center; padding: 9px 12px; }
+.vwhen { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+.vmatch { font-size: 13.5px; min-width: 0; }
+.vmatch b { font-weight: 600; }
+.vmatch span { color: var(--muted); font-size: 12px; display: block; }
+.vedge { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; text-align: right; white-space: nowrap; }
+.vedge b { color: var(--ok); display: block; }
+.vedge span { color: var(--muted); font-size: 11.5px; }
+@media (max-width: 520px) { .vrow { grid-template-columns: 1fr auto; } .vwhen { grid-column: 1 / -1; } }
+
+/* --- дни --- */
+.days { display: flex; gap: 6px; overflow-x: auto; padding: 14px 0 12px; scrollbar-width: thin; }
+.day {
+  flex: 0 0 auto; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap;
+  font: 500 13px/1.2 "IBM Plex Sans", sans-serif; display: flex; gap: 7px; align-items: center;
+}
+.day:hover { border-color: var(--rail); }
+.day .n { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+.day[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.day[aria-selected="true"] .n { color: var(--accent-ink); opacity: .7; }
+.day:focus-visible, .day[aria-selected="true"]:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+
+/* --- мачове --- */
+.lgroup { margin-top: 18px; }
+.lgroup > h3 { font: 600 12px/1 "IBM Plex Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase;
+               color: var(--muted); margin: 0 0 8px; }
+.list { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); box-shadow: var(--shadow); }
+.match { display: grid; grid-template-columns: 52px 1fr; gap: 0 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.match:first-child { border-top: 0; }
+.kick { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); padding-top: 2px; }
+.fixture { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.fixture .t { font-size: 15.5px; font-weight: 500; }
+.res { font-family: "IBM Plex Mono", monospace; font-weight: 500; background: var(--chip); border-radius: 5px; padding: 1px 7px; font-size: 13.5px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.tag { font-size: 11.5px; font-weight: 600; border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.bad { background: var(--bad-bg); color: var(--bad); }
+.tag.sig { background: var(--sig-bg); color: var(--sig); }
+
+.grid { display: grid; grid-template-columns: 46px repeat(3, 1fr); gap: 4px 8px; margin-top: 10px; align-items: center; }
+.gh { font-size: 11px; color: var(--muted); text-align: center; letter-spacing: .04em; }
+.gh:first-child { text-align: left; }
+.gh.hit { color: var(--ok); font-weight: 600; }
+.rowlbl { font-size: 11.5px; color: var(--muted); }
+.cell { position: relative; height: 24px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.cell i { position: absolute; left: 0; top: 0; bottom: 0; opacity: .32; }
+.cell.h i { background: var(--home); } .cell.d i { background: var(--draw); } .cell.a i { background: var(--away); }
+.cell span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+             font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.cell.pick { box-shadow: inset 0 0 0 1.5px var(--rail); }
+.oddsrow { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+.oddsrow span { font-family: "IBM Plex Mono", monospace; }
+.await { margin-top: 9px; font-size: 12px; color: var(--muted); }
+
+.empty { padding: 30px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.empty b { display: block; color: var(--ink); font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+footer p { margin: 0 0 8px; max-width: 70ch; }
+footer b { color: var(--ink); font-weight: 600; }
+@media (max-width: 520px) {
+  .match { grid-template-columns: 1fr; }
+  .kick { padding-top: 0; }
+  .tags { margin-left: 0; width: 100%; }
+}
+</style>
+
+<div class="wrap">
+  <h1>Моделът срещу пазара</h1>
+  <p class="lede" id="lede"></p>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="board" aria-selected="true">Табло</button>
+    <button role="tab" data-tab="ahead" aria-selected="false">Прогнози напред</button>
+  </nav>
+
+<div id="tab-board">
+  <section class="panel scoreboard">
+    <p class="eyebrow">Измерено, не обещано</p>
+    <div class="tiles" id="tiles"></div>
+    <p class="verdict" id="verdict"></p>
+  </section>
+
+  <section class="panel proof" id="proof" hidden>
+    <p class="eyebrow">Проверката, която реши въпроса</p>
+    <p class="proof-lede" id="proof-lede"></p>
+    <table class="ptab" role="table">
+      <caption>Едни и същи залози, платени на различна цена</caption>
+      <thead><tr><th>цена</th><th>ROI</th><th>залози</th></tr></thead>
+      <tbody id="ptab"></tbody>
+    </table>
+    <p class="proof-note" id="proof-note"></p>
+  </section>
+
+  <section class="panel value" id="value" hidden>
+    <p class="eyebrow">Залози по цена, не по прогноза</p>
+    <p class="value-lede" id="value-lede"></p>
+    <div class="vlist" id="vlist"></div>
+    <p class="proof-note" id="value-note"></p>
+  </section>
+
+  <section class="panel value" id="fair" hidden>
+    <p class="eyebrow">Каква цена си струва при твоя букмейкър</p>
+    <p class="value-lede">efbet и winbet ги няма в никое API. Затова ето числото: отваряш техния сайт и сравняваш. Ако дават <b>над</b> посочения коефициент, залогът има стойност спрямо острия пазар.</p>
+    <div class="vlist" id="fairlist"></div>
+  </section>
+
+  <nav class="days" id="days" role="tablist" aria-label="Дни"></nav>
+  <div id="list"></div>
+</div>
+
+<div id="tab-ahead" hidden>
+  <p class="ahead-note" id="ahead-note"></p>
+  <nav class="days" id="ahead-days" role="tablist" aria-label="Дни напред"></nav>
+  <div class="ahead" id="ahead-list"></div>
+</div>
+
+  <footer>
+    <p><b>Как се прави прогнозата.</b> Poisson модел с атака и защита за всеки отбор, домакинско
+    предимство и затихване по време (мач отпреди 180 дни тежи наполовина). Записва се сутринта в деня
+    на мача, преди началния час, и после се сверява с резултата. Пазарните проценти са коефициентите
+    без маржа на букмейкъра.</p>
+    <p><b>Какво не е.</b> Не е съвет за залагане и не е услуга за сигнали. Правилото за сигнал е
+    измерено на шест сезона и губи пари — числото стои горе. Когато моделът и пазарът не са съгласни,
+    по-вероятното обяснение е грешка на модела.</p>
+    <p>Данни: football-data.co.uk и the-odds-api.com. Последен цикъл: <span class="num" id="pipe"></span></p>
+  </footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+const WD = ["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"];
+const WD3 = ["нед","пон","вто","сря","чет","пет","съб"];
+const MN = ["яну","фев","мар","апр","май","юни","юли","авг","сеп","окт","ное","дек"];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = x => (x == null ? "–" : Math.round(x * 100) + "%");
+const d3 = iso => { const d = new Date(iso + "T12:00:00"); return WD3[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1); };
+const dFull = iso => { const d = new Date(iso + "T12:00:00"); return WD[d.getDay()] + ", " + d.getDate() + " " + MN[d.getMonth()]; };
+
+const byDay = {};
+for (const d of DATA.days) byDay[d] = [];
+for (const m of DATA.matches) (byDay[m.date] ||= []).push(m);
+const days = Object.keys(byDay).sort();
+// Отваря се на днес. Ако днес няма мачове (например почивка за националните отбори),
+// показва най-близкия ден с мачове - напред, ако има, иначе последния изигран кръг.
+let current = (byDay[DATA.today] || []).length ? DATA.today
+  : (days.filter(d => d > DATA.today && byDay[d].length)[0]
+     || days.filter(d => d < DATA.today && byDay[d].length).pop()
+     || DATA.today);
+
+function tile(v, k) { return `<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`; }
+
+function renderScoreboard() {
+  const r = DATA.record, v = DATA.value.record, t = [];
+  t.push(tile(`<span class="num">${r.n}</span>`, "прогнози, сверени с резултата"));
+  if (r.brier_model != null)
+    t.push(tile(`${r.brier_model.toFixed(3)} <small>/ ${r.brier_market.toFixed(3)}</small>`,
+                "Brier: модел / пазар — по-ниското печели"));
+  t.push(tile(`<span class="num">${v.n}</span>`, "залози по цена, уредени"));
+  if (v.clv)
+    t.push(tile(`${(v.clv.avg * 100).toFixed(2)}%`,
+                `движение на цената след записа · ${v.clv.n} залога`));
+  else if (r.backtest)
+    t.push(tile(`${(r.backtest.roi * 100).toFixed(1)}%`,
+                `ROI на правилото за сигнал · ${r.backtest.bets} залога, 6 сезона`));
+  document.getElementById("tiles").innerHTML = t.join("");
+
+  const lines = [];
+  if (r.brier_model != null)
+    lines.push(r.brier_model < r.brier_market
+      ? `На тези ${r.n} мача моделът е по-точен от пазара — твърде малко, за да значи нещо.`
+      : `На тези ${r.n} мача пазарът е по-точен от модела.`);
+  lines.push("Проверено на 94 188 мача: пазарът бие модела, а оптималната тежест на модела в смес с коефициента е нула. Затова тук работата е цената, не прогнозата.");
+  document.getElementById("verdict").innerHTML = "<b>" + esc(lines[0]) + "</b> " + lines.slice(1).map(esc).join(" ");
+  document.getElementById("lede").textContent =
+    `Всеки ден: къде цената изостава, какво казва моделът и кой е познал. Обновено ${DATA.generated_at}.`;
+  document.getElementById("pipe").textContent = (DATA.pipeline.last || "няма") + " " + (DATA.pipeline.text || "");
+}
+
+function renderProof() {
+  const r = DATA.research;
+  if (!r || !r.price) return;
+  const NAMES = { MAX: "най-добрата от ~40 букмейкъра", B365: "Bet365", AVG: "средната на пазара" };
+  document.getElementById("proof").hidden = false;
+  document.getElementById("proof-lede").innerHTML =
+    `Шест подхода — Poisson, градиентен бустинг, логистична регресия, стек и смес с пазара —
+     на <span class="num">${r.matches.toLocaleString("bg")}</span> мача от 18 лиги, с обучение само
+     върху миналото. <b>Най-добрият от тях е с ${Math.abs(r.brier_best - r.brier_market).toFixed(4)}
+     Brier разлика от пазара, а оптималната тежест на модела в смес с коефициента излезе
+     ${r.shrink_weight === 0 ? "нула" : r.shrink_weight}.</b>`;
+  document.getElementById("ptab").innerHTML = ["MAX", "B365", "AVG"].filter(k => r.price[k]).map(k => {
+    const p = r.price[k], cls = p.roi >= 0 ? "pos" : "neg";
+    return `<tr><td>${NAMES[k] || k}</td><td class="${cls}">${(p.roi * 100).toFixed(2)}% ± ${(p.roi_se * 100).toFixed(2)}</td><td>${p.n.toLocaleString("bg")}</td></tr>`;
+  }).join("");
+  document.getElementById("proof-note").textContent =
+    "Печалбата на първия ред е разликата между най-добрата и средната цена, не прогноза: същите залози на средния пазар губят повече от маржа на букмейкъра.";
+}
+
+function renderValue() {
+  const v = DATA.value;
+  if (!v || (!v.upcoming.length && !v.record.n)) return;
+  document.getElementById("value").hidden = false;
+  const r = v.record;
+  const parts = [];
+  if (r.n) {
+    parts.push(`Уредени ${r.n} залога, ROI ${(r.roi * 100).toFixed(1)}%` +
+      (r.roi_se ? ` ± ${(r.roi_se * 100).toFixed(1)}` : "") + (r.n < 100 ? " — под 100 залога това е шум." : "."));
+  } else {
+    parts.push("Още няма уреден залог — числата идват, когато мачовете се изиграят.");
+  }
+  if (r.clv) {
+    parts.push(`Проследена цена на ${r.clv.n} залога: хванатата е средно ${(r.clv.avg * 100).toFixed(2)}% по-добра от тази преди мача` +
+      `, в ${Math.round(100 * r.clv.better / r.clv.n)}% от случаите пазарът е дошъл към нас.`);
+  }
+  document.getElementById("value-lede").textContent = parts.join(" ");
+  document.getElementById("vlist").innerHTML = v.upcoming.map(b => `
+    <div class="vrow">
+      <div class="vwhen">${esc(d3(b.date))}<br>${esc(b.time)}</div>
+      <div class="vmatch"><b>${esc(b.selection)}</b> <span>${esc(b.home)} – ${esc(b.away)}</span></div>
+      <div class="vedge"><b>${(b.edge * 100).toFixed(1)}%</b>
+        <span>${b.odds.toFixed(2)} при ${esc(b.book)} · честна ${pct(b.p_fair)}</span></div>
+    </div>`).join("") || `<div class="vrow"><div class="vmatch">В момента няма цена над прага.</div></div>`;
+  document.getElementById("value-note").textContent =
+    "Това не е прогноза за мача. Сравнява се цената на бавен букмейкър с честната вероятност от острия (Pinnacle, борсата или медианата на пазара). Дали разликата е истинска, се вижда по движението на цената, не по един спечелен залог.";
+}
+
+function renderFair() {
+  const rows = (DATA.fair || []).filter(e => e.outcomes.length);
+  if (!rows.length) return;
+  document.getElementById("fair").hidden = false;
+  document.getElementById("fairlist").innerHTML = rows.slice(0, 20).map(e => `
+    <div class="vrow">
+      <div class="vwhen">${esc(d3(e.date))}<br>${esc(e.time)}</div>
+      <div class="vmatch"><b>${esc(e.home)} – ${esc(e.away)}</b>
+        <span>${e.outcomes.map(o => `${esc(o.name)}: <b class="num">${o.min_odds ? o.min_odds.toFixed(2) : "–"}</b> (${pct(o.p_fair)})`).join(" · ")}</span></div>
+    </div>`).join("");
+}
+
+function renderDays() {
+  document.getElementById("days").innerHTML = days.map(d => {
+    const n = byDay[d].length;
+    return `<button class="day" role="tab" data-d="${d}" aria-selected="${d === current}">
+      ${d === DATA.today ? "днес" : d3(d)}${n ? `<span class="n">${n}</span>` : ""}</button>`;
+  }).join("");
+  for (const b of document.querySelectorAll(".day"))
+    b.onclick = () => { current = b.dataset.d; renderDays(); renderList(); };
+  const sel = document.querySelector('.day[aria-selected="true"]');
+  if (sel) sel.scrollIntoView({ block: "nearest", inline: "center" });
+}
+
+function cell(kind, p, isPick) {
+  const w = p == null ? 0 : Math.round(p * 100);
+  return `<div class="cell ${kind}${isPick ? " pick" : ""}"><i style="width:${w}%"></i><span>${pct(p)}</span></div>`;
+}
+
+function matchRow(m) {
+  const played = m.outcome != null;
+  const top = p => (p ? p.indexOf(Math.max(...p)) : null);
+  const mp = top(m.model), kp = top(m.market);
+  const tags = [];
+
+  // Какво каза всеки за изхода, който наистина се случи. "Позна ли фаворита" е лоша
+  // мярка при три изхода: при 38/24/38 моделът казва "не знам", а етикет "сгреши"
+  // го представя като твърдение. Печели този, който е дал повече на станалото.
+  if (played && m.model && m.market) {
+    const pm = m.model[m.outcome], pk = m.market[m.outcome];
+    const cls = Math.abs(pm - pk) < 0.005 ? "" : (pm > pk ? " ok" : " bad");
+    tags.push(`<span class="tag${cls}">модел даде ${pct(pm)}</span>`);
+    tags.push(`<span class="tag${cls ? (cls === " ok" ? " bad" : " ok") : ""}">пазар даде ${pct(pk)}</span>`);
+  }
+  if (m.signal) {
+    const res = played ? (m.signal.pick === m.outcome ? " · позна" : " · сгреши") : "";
+    const cls = played ? (m.signal.pick === m.outcome ? "ok" : "bad") : "sig";
+    tags.push(`<span class="tag ${cls}">сигнал · ${esc(m.signal.name)} @ ${m.signal.odds.toFixed(2)}${res}</span>`);
+  }
+
+  const head = `<div class="fixture">
+      <span class="t">${esc(m.home)} – ${esc(m.away)}</span>
+      ${m.score ? `<span class="res">${m.score[0]}:${m.score[1]}</span>` : ""}
+      <span class="tags">${tags.join("")}</span>
+    </div>`;
+
+  const head3 = ["1", "X", "2"].map((lbl, i) =>
+    `<div class="gh${played && m.outcome === i ? " hit" : ""}">${lbl}${played && m.outcome === i ? " ✓" : ""}</div>`).join("");
+  const rows = [`<div class="gh">&nbsp;</div>${head3}`];
+  if (m.model)
+    rows.push(`<div class="rowlbl">модел</div>${cell("h", m.model[0], mp === 0)}${cell("d", m.model[1], mp === 1)}${cell("a", m.model[2], mp === 2)}`);
+  rows.push(`<div class="rowlbl">пазар</div>${cell("h", m.market && m.market[0], kp === 0)}${cell("d", m.market && m.market[1], kp === 1)}${cell("a", m.market && m.market[2], kp === 2)}`);
+
+  const odds = m.odds && m.odds[0]
+    ? `<div class="oddsrow"><span>коеф. ${m.odds[0].toFixed(2)} · ${m.odds[1].toFixed(2)} · ${m.odds[2].toFixed(2)}</span>${m.predicted_at ? `<span>записано ${esc(m.predicted_at)}</span>` : ""}</div>`
+    : "";
+  const await_ = m.model ? "" : `<div class="await">прогнозата на модела излиза сутринта в деня на мача</div>`;
+
+  return `<div class="match">
+    <div class="kick">${esc(m.time || "—")}</div>
+    <div>${head}<div class="grid">${rows.join("")}</div>${odds}${await_}</div>
+  </div>`;
+}
+
+function renderList() {
+  const items = byDay[current] || [];
+  const el = document.getElementById("list");
+  if (!items.length) {
+    const near = days.filter(d => d > current && byDay[d].length)[0];
+    el.innerHTML = `<div class="panel empty"><b>${dFull(current)} — няма мачове.</b>
+      ${near ? `Следващите обявени мачове са ${dFull(near)}.` : "Още няма обявени мачове напред. Списъкът идва от football-data.co.uk няколко дни преди кръга."}</div>`;
+    return;
+  }
+  const groups = {};
+  for (const m of items) (groups[m.league] ||= []).push(m);
+  el.innerHTML = Object.keys(groups).sort().map(lg =>
+    `<section class="lgroup"><h3>${esc(lg)}</h3><div class="list">${groups[lg].map(matchRow).join("")}</div></section>`).join("");
+}
+
+const AHEAD = DATA.preview || [];
+const aheadDays = [...new Set(AHEAD.map(m => m.date))].sort();
+let aheadCurrent = aheadDays.includes(DATA.today) ? DATA.today : aheadDays[0];
+
+function renderAheadDays() {
+  const el = document.getElementById("ahead-days");
+  el.innerHTML = aheadDays.map(d => {
+    const n = AHEAD.filter(m => m.date === d).length;
+    return `<button class="day" role="tab" data-d="${d}" aria-selected="${d === aheadCurrent}">
+      ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}</span></button>`;
+  }).join("") || "";
+  for (const b of el.querySelectorAll(".day"))
+    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); };
+}
+
+function renderAheadList() {
+  const rows = AHEAD.filter(m => m.date === aheadCurrent);
+  const el = document.getElementById("ahead-list");
+  const note = document.getElementById("ahead-note");
+  if (!AHEAD.length) {
+    note.textContent = "Още няма обявени мачове напред.";
+    el.innerHTML = ""; return;
+  }
+  const withModel = AHEAD.filter(m => m.model).length;
+  note.innerHTML = `Какво казва моделът за следващите мачове — <b>${withModel}</b> от ${AHEAD.length} имат прогноза.
+    Това е поглед напред, пресметнат сега. Записаната прогноза се прави в деня на мача, с последните резултати и цени,
+    и само тя влиза в статистиката.`;
+  el.innerHTML = rows.map(m => {
+    const labels = ["1", "X", "2"];
+    const top = m.model ? m.model.indexOf(Math.max(...m.model)) : -1;
+    const probs = m.model
+      ? `<div class="aprob">${m.model.map((p, i) =>
+          `<div class="${i === top ? "top" : ""}"><b>${labels[i]}</b>${pct(p)}</div>`).join("")}</div>`
+      : `<div class="anone">${esc(m.reason || "няма прогноза")}${m.market ? ` · пазар ${m.market.map(pct).join(" / ")}` : ""}</div>`;
+    return `<div class="arow">
+      <div class="atime">${esc(m.time)}</div>
+      <div class="ateams">${esc(m.home)} – ${esc(m.away)}<span>${esc(m.league)}${
+        m.min_odds ? " · струва си над " + m.min_odds.map(o => o.toFixed(2)).join(" / ") : ""}</span>
+        <div class="abooks">
+          <a href="https://winbet.bg/sports/football" target="_blank" rel="noopener">winbet</a>
+          <a href="https://www.efbet.com/sports" target="_blank" rel="noopener">efbet</a>
+          <a href="https://www.oddsportal.com/search/results/${encodeURIComponent(m.home + " " + m.away)}/" target="_blank" rel="noopener">сравни цените</a>
+        </div></div>
+      ${probs}</div>`;
+  }).join("") || `<div class="arow"><div class="ateams">За този ден няма мачове.</div></div>`;
+}
+
+for (const b of document.querySelectorAll(".tabs button")) {
+  b.onclick = () => {
+    for (const other of document.querySelectorAll(".tabs button"))
+      other.setAttribute("aria-selected", String(other === b));
+    document.getElementById("tab-board").hidden = b.dataset.tab !== "board";
+    document.getElementById("tab-ahead").hidden = b.dataset.tab !== "ahead";
+  };
+}
+
+renderScoreboard(); renderProof(); renderValue(); renderFair(); renderDays(); renderList();
+renderAheadDays(); renderAheadList();
+</script>
