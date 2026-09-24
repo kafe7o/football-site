@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS value_bets (
     sharp_odds    REAL NOT NULL,
     p_fair        REAL NOT NULL,
     edge          REAL NOT NULL,
+    n_books       INTEGER,              -- колко букмейкъра са имали цена за мача
     found_at      TEXT NOT NULL,
     closing_odds  REAL,                 -- последната видяна цена преди мача
     closing_fair  REAL,

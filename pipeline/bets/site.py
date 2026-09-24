@@ -15,6 +15,9 @@ from datetime import datetime, timedelta, timezone
 
 from . import config, db, model, predict, results, teams, value
 from .market import implied_row
+from zoneinfo import ZoneInfo
+
+SOFIA = ZoneInfo("Europe/Sofia")   # облакът е в UTC - часовете се показват в българско
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ DAYS_BACK, DAYS_FORWARD = 10, 8
 
 
 def local(iso):
-    return datetime.fromisoformat(iso).astimezone()
+    return datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(SOFIA)
 
 
 def day_matches(conn, since, until):
@@ -124,8 +127,12 @@ def value_section(conn, limit=50):
                          "home": r["home_team"], "away": r["away_team"],
                          "selection": r["selection"], "book": r["bookmaker"],
                          "odds": r["odds"], "sharp": r["sharp_book"],
-                         "p_fair": r["p_fair"], "edge": r["edge"]})
-    return {"upcoming": upcoming, "record": value.record(conn)}
+                         "p_fair": r["p_fair"], "edge": r["edge"],
+                         "tier": value.tier(r["sharp_book"], r["edge"], r["n_books"])})
+    order = {"A": 0, "B": 1, "C": 2}
+    upcoming.sort(key=lambda b: (order[b["tier"]], -b["edge"]))
+    return {"upcoming": upcoming, "record": value.record(conn),
+            "by_tier": value.record_by_tier(conn)}
 
 
 MIN_EDGE_SHEET = 0.02
@@ -376,7 +383,7 @@ def write_snapshot(conn):
 def build(conn=None, from_snapshot=False):
     """from_snapshot=True: в облака - историята идва от snapshot.json, цените се смятат наново."""
     conn = conn or db.init()
-    today = datetime.now().astimezone().date()
+    today = datetime.now(SOFIA).date()
     window = {(today + timedelta(days=k)).isoformat() for k in range(-DAYS_BACK, DAYS_FORWARD + 1)}
 
     if from_snapshot and SNAPSHOT.exists():
@@ -403,7 +410,7 @@ def build(conn=None, from_snapshot=False):
         log.info("Променени прогнози: %d", len(changed))
 
     data = {
-        "generated_at": datetime.now().astimezone().strftime("%d.%m.%Y %H:%M"),
+        "generated_at": datetime.now(SOFIA).strftime("%d.%m.%Y %H:%M"),
         "today": today.isoformat(),
         "days": sorted(window | {m["date"] for m in matches}),
         "matches": matches,

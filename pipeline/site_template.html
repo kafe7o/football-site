@@ -154,6 +154,15 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .proof-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); max-width: 64ch; }
 
 /* --- залози по цена --- */
+.tier { display: inline-block; min-width: 20px; text-align: center; border-radius: 4px; font-size: 11px;
+        font-weight: 700; padding: 1px 5px; margin-right: 6px; font-family: "IBM Plex Mono", monospace; }
+.tierA { background: var(--ok-bg); color: var(--ok); }
+.tierB { background: var(--chip); color: var(--ink); }
+.tierC { background: var(--bad-bg); color: var(--bad); }
+.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 12px; }
+.tiers div { background: var(--chip); border-radius: 6px; padding: 8px 10px; font-size: 12px; }
+.tiers b { display: block; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+@media (max-width: 560px) { .tiers { grid-template-columns: 1fr; } }
 .value { padding: 16px 18px; margin-top: 10px; }
 .value-lede { margin: 0 0 12px; font-size: 14px; max-width: 64ch; }
 .vlist { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -267,6 +276,7 @@ footer b { color: var(--ink); font-weight: 600; }
   <section class="panel value" id="value" hidden>
     <p class="eyebrow">Залози по цена, не по прогноза</p>
     <p class="value-lede" id="value-lede"></p>
+    <div class="tiers" id="tiers"></div>
     <div class="vlist" id="vlist"></div>
     <p class="proof-note" id="value-note"></p>
   </section>
@@ -403,10 +413,21 @@ function renderValue() {
       `, в ${Math.round(100 * r.clv.better / r.clv.n)}% от случаите пазарът е дошъл към нас.`);
   }
   document.getElementById("value-lede").textContent = parts.join(" ");
+  const T = v.by_tier || {};
+  const TIER_TEXT = {
+    A: "остър еталон, разлика 2-8%, 10+ букмейкъра",
+    B: "разлика 2-8%, по-слаб еталон",
+    C: "над 8% - почти винаги замръзнала цена",
+  };
+  document.getElementById("tiers").innerHTML = ["A", "B", "C"].map(k => {
+    const d = T[k];
+    const clv = d && d.clv != null ? `${(d.clv * 100).toFixed(1)}% движение · ${d.clv_n}` : "още няма данни";
+    return `<div><span class="tier tier${k}">${k}</span>${TIER_TEXT[k]}<b>${clv}</b></div>`;
+  }).join("");
   document.getElementById("vlist").innerHTML = v.upcoming.map(b => `
     <div class="vrow">
       <div class="vwhen">${esc(d3(b.date))}<br>${esc(b.time)}</div>
-      <div class="vmatch"><b>${esc(b.selection)}</b> <span>${esc(b.home)} – ${esc(b.away)}</span></div>
+      <div class="vmatch"><span class="tier tier${b.tier}">${b.tier}</span><b>${esc(b.selection)}</b> <span>${esc(b.home)} – ${esc(b.away)}</span></div>
       <div class="vedge"><b>${(b.edge * 100).toFixed(1)}%</b>
         <span>${b.odds.toFixed(2)} при ${esc(b.book)} · честна ${pct(b.p_fair)}</span></div>
     </div>`).join("") || `<div class="vrow"><div class="vmatch">В момента няма цена над прага.</div></div>`;

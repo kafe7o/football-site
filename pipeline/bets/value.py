@@ -33,6 +33,25 @@ MIN_CONSENSUS = 8      # медиана за еталон само при пон
 MIN_EDGE = 0.02
 SUSPICIOUS_EDGE = 0.15  # над това почти винаги е замръзнала или сбъркана цена
 
+# Степен на сигурност - кои разлики е най-вероятно да са истински, а не грешка в четенето.
+# НЕ е гаранция: това е подредба по качество на доказателството. Коя степен реално работи,
+# се мери отделно по движението на цената (record) - след 30+ залога във всяка степен
+# ще е ясно дали "A" наистина е по-добра от "B", или подредбата е била само надежда.
+#   A: еталонът е остър (Pinnacle/борса), разликата е 2-8%, поне 10 букмейкъра видели мача
+#   B: разликата е 2-8%, но еталонът е по-слаб или букмейкърите са по-малко
+#   C: разликата е над 8% - при остър еталон това почти винаги е замръзнала цена
+SHARP_BOOKS = {"pinnacle", "betfair_ex_eu", "betfair_ex_uk", "smarkets", "matchbook"}
+TIER_MAX_EDGE = 0.08
+TIER_MIN_BOOKS = 10
+
+
+def tier(sharp_book, edge, n_books):
+    if edge > TIER_MAX_EDGE:
+        return "C"
+    if sharp_book in SHARP_BOOKS and (n_books or 0) >= TIER_MIN_BOOKS:
+        return "A"
+    return "B"
+
 FOOTBALL = ["soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
             "soccer_germany_bundesliga", "soccer_france_ligue_one", "soccer_efl_champ"]
 OTHER_SPORTS = ["basketball_euroleague", "basketball_nba", "americanfootball_nfl",
@@ -120,7 +139,7 @@ def scan_event(event, sport, min_edge=MIN_EDGE, allowed=None, include_exchanges=
                           "commence_time": event["commence_time"], "selection": name,
                           "outcome_idx": i, "bookmaker": book, "odds": odds,
                           "sharp_book": sharp, "sharp_odds": sharp_prices[i],
-                          "p_fair": fair[i], "edge": edge})
+                          "p_fair": fair[i], "edge": edge, "n_books": len(books)})
     return found
 
 
@@ -152,10 +171,10 @@ def store(conn, rows):
         cursor = conn.execute(
             """INSERT OR IGNORE INTO value_bets
                (sport, event_id, home_team, away_team, commence_time, selection, outcome_idx,
-                bookmaker, odds, sharp_book, sharp_odds, p_fair, edge, found_at)
+                bookmaker, odds, sharp_book, sharp_odds, p_fair, edge, n_books, found_at)
                VALUES (:sport, :event_id, :home_team, :away_team, :commence_time, :selection,
                        :outcome_idx, :bookmaker, :odds, :sharp_book, :sharp_odds, :p_fair,
-                       :edge, :found_at)""", {**row, "found_at": now})
+                       :edge, :n_books, :found_at)""", {**row, "found_at": now})
         added += cursor.rowcount
     conn.commit()
     return added
@@ -268,6 +287,30 @@ def _from_db(conn, bet, start):
     if row is None:
         return None
     return (0 if row["fthg"] > row["ftag"] else (1 if row["fthg"] == row["ftag"] else 2)), row["id"]
+
+
+def record_by_tier(conn):
+    """Движение на цената и ROI поотделно за A, B и C. Това е проверката дали
+    "най-сигурните" наистина са по-добри - или подредбата е само подредба."""
+    rows = conn.execute(
+        """SELECT sharp_book, edge, n_books, odds, closing_odds, result, profit
+             FROM value_bets""").fetchall()
+    out = {}
+    for r in rows:
+        t = tier(r["sharp_book"], r["edge"], r["n_books"])
+        d = out.setdefault(t, {"n": 0, "drift": [], "profits": []})
+        d["n"] += 1
+        if r["closing_odds"]:
+            d["drift"].append(r["odds"] / r["closing_odds"] - 1)
+        if r["result"] is not None:
+            d["profits"].append(r["profit"])
+    for t, d in out.items():
+        drift, profits = d.pop("drift"), d.pop("profits")
+        d["clv"] = sum(drift) / len(drift) if drift else None
+        d["clv_n"] = len(drift)
+        d["roi"] = sum(profits) / len(profits) if profits else None
+        d["settled"] = len(profits)
+    return out
 
 
 def record(conn):
