@@ -7,6 +7,7 @@
     python run.py status     какво има в базата и колко квота е останала
     python run.py snapshot   записва site/snapshot.json за облака (историята + прегледът напред)
     python run.py cloud      сканиране + сайт БЕЗ история - това пуска GitHub Actions
+    python run.py changes    кои прогнози са се променили осезаемо (за известията)
 
 Редът в `daily` не е произволен: първо резултати, после уреждане (има с какво да сверява),
 после нови прогнози върху вече обновената история, и накрая сайтът.
@@ -73,7 +74,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command",
-                        choices=["daily", "scan", "site", "status", "snapshot", "cloud"])
+                        choices=["daily", "scan", "site", "status", "snapshot", "cloud", "changes"])
     parser.add_argument("--years-back", type=int, default=2)
     parser.add_argument("--skip-predictions", action="store_true",
                         help="само резултати и уреждане, без да яде квота")
@@ -105,6 +106,24 @@ def main():
                   f"{bet['selection'][:18]:<20}{bet['odds']:>6.2f} {bet['bookmaker'][:14]:<16}"
                   f"{bet['edge']:>+7.1%}")
         value.settle(conn)
+        conn.close()
+        return 0
+
+    if args.command == "changes":
+        # За известията: кои мачове са се променили осезаемо, откакто са видени за пръв път.
+        conn = db.init()
+        rows = site.preview(conn)
+        site.log_forecasts(conn, rows)
+        changed = site.forecast_changes(conn, rows)
+        if not changed:
+            print("Няма осезаема промяна в прогнозите.")
+        for m in changed:
+            first, last = m["history"][0], m["history"][-1]
+            fmt = lambda h, k: " / ".join("–" if h[f"{k}_{x}"] is None else f"{h[f'{k}_{x}']:.0%}"
+                                          for x in "hda")
+            print(f"{m['date']} {m['time']}  {m['home']} - {m['away']}")
+            print(f"    модел: {fmt(first, 'p_model')}  ->  {fmt(last, 'p_model')}")
+            print(f"    пазар: {fmt(first, 'p_fair')}  ->  {fmt(last, 'p_fair')}   (от {m['shift']['since']})")
         conn.close()
         return 0
 

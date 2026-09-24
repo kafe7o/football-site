@@ -116,6 +116,20 @@ def run():
         git("remote", "add", "origin", f"https://github.com/{repo}.git")
     (SITE_DIR / ".nojekyll").write_text("", encoding="utf-8")   # иначе Pages пуска Jekyll
 
+    # Облакът също пише тук на всеки час, затова двете страни се разминават редовно.
+    # Правилото е просто и без конфликти: cloud.db е на облака (в нея са залозите, които
+    # той намира), всичко останало е на лаптопа. Взима се неговата база, HEAD се мести
+    # върху неговия последен комит, а работните файлове остават местните - така новият
+    # комит е пряко продължение и качването минава без сливане и без --force.
+    if (SITE_DIR / ".git").exists():
+        try:
+            git("fetch", "-q", "origin", "main", token=token)
+            if git("rev-parse", "--verify", "-q", "origin/main"):
+                git("checkout", "origin/main", "--", "cloud.db")
+                git("reset", "-q", "--mixed", "origin/main")
+        except RuntimeError as e:
+            log.warning("Изравняването с облака не стана (%s) - качвам местната версия.", e)
+
     git("config", "user.name", "football-bot")
     git("config", "user.email", "football-bot@users.noreply.github.com")
     git("add", "-A")   # в тази папка живее само сайтът: HTML, снимката, кодът за облака

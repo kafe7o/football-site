@@ -11,7 +11,7 @@
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from . import config, db, model, predict, results, teams, value
 from .market import implied_row
@@ -129,6 +129,7 @@ def value_section(conn, limit=50):
 
 
 MIN_EDGE_SHEET = 0.02
+CHANGE_THRESHOLD = 0.02     # под 2 процентни пункта е шум от преобучаването, не новина
 PREVIEW_DAYS = 30   # таблото показва 3 дни напред, но пази повече,
                     # за да има какво да се види и по време на пауза за националните отбори
 
@@ -209,6 +210,7 @@ def preview(conn, days=PREVIEW_DAYS, exported=None):
         start = local(e["commence_time"])
         market = [e["p_home"], e["p_draw"], e["p_away"]]
         out.append({
+            "event_id": e["event_id"], "commence_iso": e["commence_time"],
             "date": start.date().isoformat(), "time": start.strftime("%H:%M"),
             "league": results.LEAGUES.get(league, e["sport"].replace("soccer_", "")),
             "home": e["home_team"], "away": e["away_team"],
@@ -221,6 +223,73 @@ def preview(conn, days=PREVIEW_DAYS, exported=None):
     log.info("Преглед напред: %d мача, с прогноза %d",
              len(out), sum(1 for m in out if m["model"]))
     return out
+
+
+def attach_bets(conn, rows):
+    """Закача към всеки мач залозите по цена, които скенерът е намерил за него."""
+    for m in rows:
+        if not m.get("event_id"):
+            continue
+        found = conn.execute(
+            """SELECT selection, bookmaker, odds, sharp_book, sharp_odds, p_fair, edge,
+                      found_at, closing_odds, result, profit
+                 FROM value_bets WHERE event_id = ? ORDER BY edge DESC""",
+            (m["event_id"],)).fetchall()
+        m["bets"] = [dict(b) for b in found]
+
+
+def log_forecasts(conn, rows):
+    """Записва промените в прогнозата. Нов ред само при осезаема промяна - иначе всяко
+    сканиране би добавяло по ред за всеки мач и таблицата щеше да стане безполезна."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    added = 0
+    for m in rows:
+        if not m.get("event_id"):
+            continue
+        last = conn.execute(
+            """SELECT p_model_h, p_model_d, p_model_a, p_fair_h, p_fair_d, p_fair_a
+                 FROM forecast_log WHERE event_id = ? ORDER BY recorded_at DESC LIMIT 1""",
+            (m["event_id"],)).fetchone()
+        now_values = (m["model"] or [None] * 3) + (m["market"] or [None] * 3)
+        if last is not None:
+            old = [last[k] for k in range(6)]
+            diffs = [abs(a - b) for a, b in zip(now_values, old) if a is not None and b is not None]
+            if diffs and max(diffs) < CHANGE_THRESHOLD:
+                continue
+        conn.execute(
+            """INSERT INTO forecast_log (event_id, home_team, away_team, commence_time,
+                   p_model_h, p_model_d, p_model_a, p_fair_h, p_fair_d, p_fair_a, recorded_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (m["event_id"], m["home"], m["away"], m["commence_iso"], *now_values, now))
+        added += 1
+    conn.commit()
+    if added:
+        log.info("Записани %d промени в прогнозите", added)
+    return added
+
+
+def forecast_changes(conn, rows, min_change=CHANGE_THRESHOLD):
+    """Кои мачове са се променили осезаемо от първия запис досега."""
+    changed = []
+    for m in rows:
+        if not m.get("event_id") or not m.get("model"):
+            continue
+        history = conn.execute(
+            """SELECT p_model_h, p_model_d, p_model_a, p_fair_h, p_fair_d, p_fair_a, recorded_at
+                 FROM forecast_log WHERE event_id = ? ORDER BY recorded_at""",
+            (m["event_id"],)).fetchall()
+        if len(history) < 2:
+            m["history"] = [dict(h) for h in history]
+            continue
+        first, last = history[0], history[-1]
+        model_shift = max((abs((last[k] or 0) - (first[k] or 0)) for k in range(3)), default=0)
+        fair_shift = max((abs((last[k] or 0) - (first[k] or 0)) for k in range(3, 6)), default=0)
+        m["history"] = [dict(h) for h in history]
+        m["shift"] = {"model": model_shift, "market": fair_shift,
+                      "since": first["recorded_at"][:16].replace("T", " ")}
+        if max(model_shift, fair_shift) >= min_change:
+            changed.append(m)
+    return changed
 
 
 def fair_sheet(conn, limit=200):
@@ -327,6 +396,12 @@ def build(conn=None, from_snapshot=False):
         research, source = research_summary(), None
         snap = {"pnl": daily_pnl(conn)}
 
+    attach_bets(conn, preview_rows)
+    log_forecasts(conn, preview_rows)
+    changed = forecast_changes(conn, preview_rows)
+    if changed:
+        log.info("Променени прогнози: %d", len(changed))
+
     data = {
         "generated_at": datetime.now().astimezone().strftime("%d.%m.%Y %H:%M"),
         "today": today.isoformat(),
@@ -335,6 +410,7 @@ def build(conn=None, from_snapshot=False):
         "value": value_section(conn),
         "fair": fair_sheet(conn),
         "preview": preview_rows,
+        "changed": [m["event_id"] for m in changed],
         "record": record,
         "pnl": snap.get("pnl"),
         "research": research,

@@ -68,6 +68,39 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 .tabs button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
 
+/* --- подробният изглед --- */
+.mcard { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+         margin-bottom: 8px; overflow: hidden; }
+.mhead2 { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center;
+          padding: 12px 14px; cursor: pointer; width: 100%; background: none; border: 0;
+          color: var(--ink); text-align: left; font: inherit; }
+.mhead2:hover { background: var(--chip); }
+.mhead2:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
+.mhead2 .t { font-size: 15px; font-weight: 500; }
+.mhead2 .s { display: block; color: var(--muted); font-size: 11.5px; }
+.chip2 { font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+.chip2.warn { background: var(--sig-bg); color: var(--sig); }
+.chip2.val { background: var(--ok-bg); color: var(--ok); }
+.mbody { border-top: 1px solid var(--line); padding: 14px; display: grid; gap: 14px; }
+.mgrid { display: grid; grid-template-columns: 96px repeat(3, 1fr); gap: 6px 8px; align-items: center; }
+.mgrid .h { color: var(--muted); font-size: 11px; text-align: center; }
+.mgrid .l { color: var(--muted); font-size: 11.5px; }
+.mgrid .v { background: var(--chip); border-radius: 4px; padding: 5px 0; text-align: center;
+            font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+.mgrid .v.best { box-shadow: inset 0 0 0 1.5px var(--rail); }
+.msec b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+          color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+.mline { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0;
+         border-bottom: 1px dashed var(--line); font-size: 12px; }
+.mline:last-child { border-bottom: 0; }
+.mline span:last-child { font-family: "IBM Plex Mono", monospace; text-align: right; }
+@media (max-width: 560px) {
+  .mhead2 { grid-template-columns: 48px 1fr; }
+  .mgrid { grid-template-columns: 78px repeat(3, 1fr); }
+  .mline { flex-direction: column; gap: 2px; }
+  .mline span:last-child { text-align: left; }
+}
+
 /* --- прегледът напред --- */
 .abooks { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
 .abooks a { font-size: 11.5px; font-weight: 600; text-decoration: none; border-radius: 5px;
@@ -201,6 +234,7 @@ footer b { color: var(--ink); font-weight: 600; }
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="board" aria-selected="true">Табло</button>
     <button role="tab" data-tab="ahead" aria-selected="false">Прогнози напред</button>
+    <button role="tab" data-tab="detail" aria-selected="false">Мач по мач</button>
   </nav>
 
 <div id="tab-board">
@@ -245,6 +279,12 @@ footer b { color: var(--ink); font-weight: 600; }
 
   <nav class="days" id="days" role="tablist" aria-label="Дни"></nav>
   <div id="list"></div>
+</div>
+
+<div id="tab-detail" hidden>
+  <p class="ahead-note">Всеки мач с прогноза, подробно. Цъкни върху мача, за да видиш числата, намерените цени и как се е менила прогнозата.</p>
+  <nav class="days" id="detail-days" role="tablist" aria-label="Дни"></nav>
+  <div id="detail-list"></div>
 </div>
 
 <div id="tab-ahead" hidden>
@@ -386,6 +426,79 @@ function renderFair() {
     </div>`).join("");
 }
 
+const CHANGED = new Set(DATA.changed || []);
+const detailRows = AHEAD.filter(m => m.model);
+const detailDays = [...new Set(detailRows.map(m => m.date))].sort();
+let detailCurrent = detailDays[0];
+const openMatches = new Set();
+
+function renderDetailDays() {
+  const el = document.getElementById("detail-days");
+  el.innerHTML = detailDays.map(d => {
+    const n = detailRows.filter(m => m.date === d).length;
+    const ch = detailRows.filter(m => m.date === d && CHANGED.has(m.event_id)).length;
+    return `<button class="day" role="tab" data-d="${d}" aria-selected="${d === detailCurrent}">
+      ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}${ch ? " \u00b7" + ch : ""}</span></button>`;
+  }).join("");
+  for (const b of el.querySelectorAll(".day"))
+    b.onclick = () => { detailCurrent = b.dataset.d; renderDetailDays(); renderDetail(); };
+}
+
+function probRow(label, values, mark) {
+  return `<div class="l">${label}</div>` + values.map((v, i) =>
+    `<div class="v${mark === i ? " best" : ""}">${v == null ? "\u2013" : v}</div>`).join("");
+}
+
+function matchBody(m) {
+  const top = m.model.indexOf(Math.max(...m.model));
+  const bets = (m.bets || []).map(b =>
+    `<div class="mline"><span>${esc(b.selection)} @ ${b.odds.toFixed(2)} \u00b7 ${esc(b.bookmaker)}</span>
+     <span>${(b.edge * 100).toFixed(1)}%${b.result == null ? "" : (b.result ? " \u00b7 спечелен" : " \u00b7 загубен")}</span></div>`).join("");
+  const hist = (m.history || []).map(h =>
+    `<div class="mline"><span>${esc(h.recorded_at.slice(5, 16).replace("T", " "))}</span>
+     <span>модел ${[h.p_model_h, h.p_model_d, h.p_model_a].map(x => x == null ? "\u2013" : pct(x)).join(" / ")}
+     \u00b7 пазар ${[h.p_fair_h, h.p_fair_d, h.p_fair_a].map(x => x == null ? "\u2013" : pct(x)).join(" / ")}</span></div>`).join("");
+  return `<div class="mbody">
+    <div class="mgrid">
+      <div></div><div class="h">1</div><div class="h">X</div><div class="h">2</div>
+      ${probRow("модел", m.model.map(pct), top)}
+      ${probRow("пазар", (m.market || [null, null, null]).map(x => x == null ? null : pct(x)), null)}
+      ${probRow("струва си над", (m.min_odds || [null, null, null]).map(o => o == null ? null : o.toFixed(2)), null)}
+      ${probRow("най-добра цена", (m.best_odds || [null, null, null]).map(o => o == null ? null : o.toFixed(2)), null)}
+    </div>
+    ${bets ? `<div class="msec"><b>намерени цени над честната</b>${bets}</div>` : ""}
+    <div class="msec"><b>как се е менила прогнозата</b>${hist ||
+      `<div class="mline"><span>само един запис засега \u2014 промените ще се появят тук</span><span></span></div>`}</div>
+    <div class="abooks">
+      <a href="https://winbet.bg/sports/football" target="_blank" rel="noopener">winbet</a>
+      <a href="https://www.efbet.com/sports" target="_blank" rel="noopener">efbet</a>
+      <a href="https://www.oddsportal.com/search/results/${encodeURIComponent(m.home + " " + m.away)}/" target="_blank" rel="noopener">сравни цените</a>
+    </div></div>`;
+}
+
+function renderDetail() {
+  const rows = detailRows.filter(m => m.date === detailCurrent);
+  document.getElementById("detail-list").innerHTML = rows.map(m => {
+    const open = openMatches.has(m.event_id);
+    const chips = [];
+    if (CHANGED.has(m.event_id)) chips.push(`<span class="chip2 warn">променена</span>`);
+    if (m.bets && m.bets.length) chips.push(`<span class="chip2 val">${m.bets.length} цени</span>`);
+    return `<div class="mcard">
+      <button class="mhead2" data-id="${esc(m.event_id)}" aria-expanded="${open}">
+        <span class="atime">${esc(d3(m.date))}<br>${esc(m.time)}</span>
+        <span><span class="t">${esc(m.home)} \u2013 ${esc(m.away)}</span>
+          <span class="s">${esc(m.league)} \u00b7 модел ${m.model.map(pct).join(" / ")}</span></span>
+        <span>${chips.join(" ")}</span>
+      </button>${open ? matchBody(m) : ""}</div>`;
+  }).join("") || `<p class="empty">За този ден няма мач с прогноза.</p>`;
+  for (const b of document.querySelectorAll(".mhead2"))
+    b.onclick = () => {
+      const id = b.dataset.id;
+      openMatches.has(id) ? openMatches.delete(id) : openMatches.add(id);
+      renderDetail();
+    };
+}
+
 function renderDays() {
   document.getElementById("days").innerHTML = days.map(d => {
     const n = byDay[d].length;
@@ -475,7 +588,7 @@ function renderAheadDays() {
       ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}</span></button>`;
   }).join("") || "";
   for (const b of el.querySelectorAll(".day"))
-    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); };
+    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); };
 }
 
 function renderAheadList() {
@@ -516,11 +629,12 @@ for (const b of document.querySelectorAll(".tabs button")) {
       other.setAttribute("aria-selected", String(other === b));
     document.getElementById("tab-board").hidden = b.dataset.tab !== "board";
     document.getElementById("tab-ahead").hidden = b.dataset.tab !== "ahead";
+    document.getElementById("tab-detail").hidden = b.dataset.tab !== "detail";
   };
 }
 
 renderScoreboard(); renderProof(); renderPnl(); renderValue(); renderFair(); renderDays(); renderList();
-renderAheadDays(); renderAheadList();
+renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail();
 </script>
 </body>
 </html>

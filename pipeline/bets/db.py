@@ -105,6 +105,21 @@ CREATE TABLE IF NOT EXISTS fair_prices (
     UNIQUE(event_id, selection)
 );
 
+-- Как се мени прогнозата за един и същ мач през дните. Записва се нов ред само когато
+-- нещо се е променило осезаемо (над CHANGE_THRESHOLD), за да не расте безсмислено.
+-- Оттук идват известията "този мач се промени" и историята в подробния изглед.
+CREATE TABLE IF NOT EXISTS forecast_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id      TEXT NOT NULL,
+    home_team     TEXT NOT NULL,
+    away_team     TEXT NOT NULL,
+    commence_time TEXT NOT NULL,
+    p_model_h     REAL, p_model_d REAL, p_model_a REAL,
+    p_fair_h      REAL, p_fair_d  REAL, p_fair_a  REAL,
+    recorded_at   TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_forecast_event ON forecast_log(event_id, recorded_at);
 CREATE INDEX IF NOT EXISTS idx_fair_time ON fair_prices(commence_time);
 CREATE INDEX IF NOT EXISTS idx_matches_league_date ON matches(league, date);
 CREATE INDEX IF NOT EXISTS idx_predictions_open ON predictions(outcome) WHERE outcome IS NULL;
@@ -158,5 +173,5 @@ def upsert_odds(conn, match_id, bookmaker, home, draw, away):
 
 
 def counts(conn):
-    tables = ["matches", "odds", "predictions", "value_bets"]
+    tables = ["matches", "odds", "predictions", "value_bets", "fair_prices", "forecast_log"]
     return {t: conn.execute(f"SELECT COUNT(*) c FROM {t}").fetchone()["c"] for t in tables}
