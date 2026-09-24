@@ -128,6 +128,30 @@ CREATE INDEX IF NOT EXISTS idx_value_open ON value_bets(result) WHERE result IS 
 """
 
 
+# Колони, добавени след първото създаване на таблиците. CREATE TABLE IF NOT EXISTS не пипа
+# вече съществуваща таблица, затова всяка база - на лаптопа, резервното копие, базата в
+# облака - се надгражда тук при отваряне. Без това кодът и базата се разминават тихо:
+# облакът падна на 2026-09-25, защото неговата база нямаше колоната n_books.
+MIGRATIONS = [
+    ("value_bets", "n_books", "INTEGER"),
+    ("matches", "hthg", "INTEGER"),
+    ("matches", "htag", "INTEGER"),
+    ("matches", "kickoff", "TEXT"),
+]
+
+
+def migrate(conn):
+    added = []
+    for table, column, kind in MIGRATIONS:
+        existing = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if existing and column not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {kind}")
+            added.append(f"{table}.{column}")
+    if added:
+        conn.commit()
+    return added
+
+
 def connect(path=None):
     conn = sqlite3.connect(path or config.DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -138,6 +162,7 @@ def connect(path=None):
 def init(path=None):
     conn = connect(path)
     conn.executescript(SCHEMA)
+    migrate(conn)
     conn.commit()
     return conn
 
