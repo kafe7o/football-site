@@ -115,17 +115,21 @@ def daily_pnl(conn, stake=10):
             "total_signal": sum(d["signal"] for d in days.values())}
 
 
-def value_conn(conn):
+def open_value_db(conn):
     """Залозите по цена са в книгата на облака (site/cloud.db). На лаптопа сайтът чете
-    оттам, в облака - това е самата му база."""
+    оттам, в облака - това е самата му база. Връща (връзка, трябва_ли_да_се_затвори).
+
+    ВАЖНО: връзката се затваря в края на build(). На Windows отворен файл не може да се
+    подмени, а publish.py подменя cloud.db с версията на облака - незатворена връзка
+    чупеше качването (2026-09-25).
+    """
     cloud = config.SITE_DIR / "cloud.db"
     if cloud.exists() and cloud.resolve() != config.DB_PATH.resolve():
-        return db.init(cloud)
-    return conn
+        return db.init(cloud), True
+    return conn, False
 
 
 def value_section(conn, limit=50):
-    conn = value_conn(conn)
     rows = conn.execute(
         """SELECT * FROM value_bets WHERE result IS NULL AND commence_time > ?
             ORDER BY commence_time, edge DESC LIMIT ?""",
@@ -207,7 +211,7 @@ def fitted_models(conn, exported=None):
     return models
 
 
-def preview(conn, days=PREVIEW_DAYS, exported=None):
+def preview(conn, days=PREVIEW_DAYS, exported=None, events_conn=None):
     """Какво казва моделът за мачовете напред.
 
     Това НЕ са записаните прогнози: те се правят само в деня на мача, за да ползват
@@ -220,7 +224,7 @@ def preview(conn, days=PREVIEW_DAYS, exported=None):
     с пазарните проценти и с обяснение защо няма прогноза.
     """
     now = datetime.now().astimezone()
-    events = conn.execute(
+    events = (events_conn or conn).execute(
         """SELECT sport, event_id, home_team, away_team, commence_time,
                   MAX(CASE WHEN outcome_idx = 0 THEN p_fair END) AS p_home,
                   MAX(CASE WHEN outcome_idx = 1 THEN p_fair END) AS p_draw,
@@ -274,7 +278,6 @@ def preview(conn, days=PREVIEW_DAYS, exported=None):
 
 def attach_bets(conn, rows):
     """Закача към всеки мач залозите по цена и всички цени по букмейкър."""
-    conn = value_conn(conn)
     for m in rows:
         if not m.get("event_id"):
             continue
@@ -365,7 +368,6 @@ def forecast_changes(conn, rows, min_change=CHANGE_THRESHOLD):
 
 
 def fair_sheet(conn, limit=200):
-    conn = value_conn(conn)
     """Справочник: каква цена си струва при твоя букмейкър.
 
     efbet, winbet и другите български сайтове ги няма в никое API. Затова вместо да ги
@@ -433,10 +435,16 @@ def write_snapshot(conn):
     since = (today - timedelta(days=DAYS_BACK)).isoformat()
     until = (today + timedelta(days=DAYS_FORWARD)).isoformat()
     models = fitted_models(conn)
+    vconn, owned = open_value_db(conn)
+    try:
+        preview_rows = preview(conn, events_conn=vconn)
+    finally:
+        if owned:
+            vconn.close()
     data = {"written_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "matches": day_matches(conn, since, until),
             "models": {league: fitted.export() for league, fitted in models.items()},
-            "preview": preview(conn),
+            "preview": preview_rows,
             "record": {**predict.record(conn), "backtest": signal_backtest()},
             "pnl": daily_pnl(conn),
             "research": research_summary()}
@@ -449,6 +457,15 @@ def write_snapshot(conn):
 def build(conn=None, from_snapshot=False):
     """from_snapshot=True: в облака - историята идва от snapshot.json, цените се смятат наново."""
     conn = conn or db.init()
+    vconn, owned = open_value_db(conn)
+    try:
+        return _build(conn, vconn, from_snapshot)
+    finally:
+        if owned:
+            vconn.close()
+
+
+def _build(conn, vconn, from_snapshot):
     today = datetime.now(SOFIA).date()
     window = {(today + timedelta(days=k)).isoformat() for k in range(-DAYS_BACK, DAYS_FORWARD + 1)}
 
@@ -457,21 +474,22 @@ def build(conn=None, from_snapshot=False):
         matches = snap["matches"]
         # Прогнозите се смятат НАНОВО от параметрите в снимката: така и мач, който
         # лаптопът никога не е виждал, получава проценти - стига цените му да са дошли.
-        preview_rows = (preview(conn, exported=snap["models"]) if snap.get("models")
-                        else snap["preview"])
+        preview_rows = (preview(conn, exported=snap["models"], events_conn=vconn)
+                        if snap.get("models") else snap["preview"])
         record, research = snap["record"], snap.get("research")
         source = f"история от {snap['written_at'][:16].replace('T', ' ')}, цените са пресни"
     else:
         since = (today - timedelta(days=DAYS_BACK)).isoformat()
         until = (today + timedelta(days=DAYS_FORWARD)).isoformat()
-        matches, preview_rows = day_matches(conn, since, until), preview(conn)
+        matches = day_matches(conn, since, until)
+        preview_rows = preview(conn, events_conn=vconn)
         record = {**predict.record(conn), "backtest": signal_backtest()}
         research, source = research_summary(), None
         snap = {"pnl": daily_pnl(conn)}
 
-    attach_bets(conn, preview_rows)
-    log_forecasts(conn, preview_rows)
-    changed = forecast_changes(conn, preview_rows)
+    attach_bets(vconn, preview_rows)
+    log_forecasts(vconn, preview_rows)
+    changed = forecast_changes(vconn, preview_rows)
     if changed:
         log.info("Променени прогнози: %d", len(changed))
 
@@ -480,8 +498,8 @@ def build(conn=None, from_snapshot=False):
         "today": today.isoformat(),
         "days": sorted(window | {m["date"] for m in matches}),
         "matches": matches,
-        "value": value_section(conn),
-        "fair": fair_sheet(conn),
+        "value": value_section(vconn),
+        "fair": fair_sheet(vconn),
         "preview": preview_rows,
         "changed": [m["event_id"] for m in changed],
         "record": record,
