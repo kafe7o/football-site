@@ -68,6 +68,15 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 .tabs button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
 
+/* --- изборът --- */
+.pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 9px 12px;
+        border-radius: 8px; background: var(--ok-bg); color: var(--ink); font-size: 13.5px; }
+.pick b { font-weight: 700; }
+.pick a { color: var(--ok); font-weight: 700; text-decoration: none; }
+.pick a:hover { text-decoration: underline; }
+.pick .meta { color: var(--muted); font-size: 12px; }
+.pick.none { background: var(--chip); color: var(--muted); }
+
 /* --- започват скоро --- */
 .soon { border: 1px solid var(--accent); border-radius: 10px; padding: 14px; margin-bottom: 14px;
         background: var(--panel); }
@@ -486,6 +495,17 @@ function probRow(label, values, mark) {
     `<div class="v${mark === i ? " best" : ""}">${v == null ? "\u2013" : v}</div>`).join("");
 }
 
+function pickLine(m) {
+  const p = m.pick;
+  if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната</div>`;
+  const book = p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.book_name)}</a>` : esc(p.book_name || p.bookmaker);
+  const rec = (DATA.value.by_tier || {})[p.tier];
+  const recText = rec && rec.clv != null ? ` \u00b7 степен ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
+  return `<div class="pick"><span class="tier tier${p.tier}">${p.tier}</span>
+    <span>Избор: <b>${esc(p.selection)}</b> @ <b>${p.odds.toFixed(2)}</b> при ${book}</span>
+    <span class="meta">+${(p.edge * 100).toFixed(1)}% над честната (${pct(p.p_fair)})${recText}</span></div>`;
+}
+
 function booksBlock(m) {
   if (!m.books || !m.books.length) return "";
   return `<div class="msec"><b>цени по букмейкър (най-добрата отгоре)</b>` + m.books.map(o =>
@@ -510,7 +530,7 @@ function renderSoon() {
     const mins = Math.round((new Date(m.commence_iso).getTime() - now) / 60000);
     const best = (m.books || []).map(o => o.prices[0] ? `${esc(o.selection)} ${o.prices[0].odds.toFixed(2)} (${esc(o.prices[0].name)})` : "").filter(Boolean).join(" \u00b7 ");
     return `<div class="mline"><span><b style="display:inline;text-transform:none;letter-spacing:0;color:var(--ink)">${esc(m.home)} \u2013 ${esc(m.away)}</b>
-      \u00b7 след ${mins} мин<br>модел ${m.model ? m.model.map(pct).join(" / ") : "\u2013"}${m.market ? " \u00b7 пазар " + m.market.map(pct).join(" / ") : ""}<br>${best}</span><span></span></div>`;
+      \u00b7 след ${mins} мин<br>${m.pick ? `<b style="display:inline;color:var(--ok)">Избор: ${esc(m.pick.selection)} @ ${m.pick.odds.toFixed(2)} (${esc(m.pick.book_name || m.pick.bookmaker)})</b>` : "без избор"}<br>модел ${m.model ? m.model.map(pct).join(" / ") : "\u2013"}${m.market ? " \u00b7 пазар " + m.market.map(pct).join(" / ") : ""}<br>${best}</span><span></span></div>`;
   }).join("");
 }
 
@@ -524,6 +544,7 @@ function matchBody(m) {
      <span>модел ${[h.p_model_h, h.p_model_d, h.p_model_a].map(x => x == null ? "\u2013" : pct(x)).join(" / ")}
      \u00b7 пазар ${[h.p_fair_h, h.p_fair_d, h.p_fair_a].map(x => x == null ? "\u2013" : pct(x)).join(" / ")}</span></div>`).join("");
   return `<div class="mbody">
+    ${pickLine(m)}
     <div class="mgrid">
       <div></div><div class="h">1</div><div class="h">X</div><div class="h">2</div>
       ${probRow("модел", m.model.map(pct), top)}
@@ -548,7 +569,7 @@ function renderDetail() {
     const open = openMatches.has(m.event_id);
     const chips = [];
     if (CHANGED.has(m.event_id)) chips.push(`<span class="chip2 warn">променена</span>`);
-    if (m.bets && m.bets.length) chips.push(`<span class="chip2 val">${m.bets.length} цени</span>`);
+    if (m.pick) chips.push(`<span class="chip2 val">${esc(m.pick.selection)} @ ${m.pick.odds.toFixed(2)}</span>`);
     return `<div class="mcard">
       <button class="mhead2" data-id="${esc(m.event_id)}" aria-expanded="${open}">
         <span class="atime">${esc(d3(m.date))}<br>${esc(m.time)}</span>
@@ -680,11 +701,7 @@ function renderAheadList() {
       <div class="atime">${esc(m.time)}</div>
       <div class="ateams">${esc(m.home)} – ${esc(m.away)}<span>${esc(m.league)}${
         m.min_odds ? " · струва си над " + m.min_odds.map(o => o.toFixed(2)).join(" / ") : ""}</span>
-        <div class="abooks">
-          <a href="https://winbet.bg/sports/football" target="_blank" rel="noopener">winbet</a>
-          <a href="https://www.efbet.com/sports" target="_blank" rel="noopener">efbet</a>
-          <a href="https://www.oddsportal.com/search/results/${encodeURIComponent(m.home + " " + m.away)}/" target="_blank" rel="noopener">сравни цените</a>
-        </div></div>
+        <div style="margin-top:6px">${pickLine(m)}</div></div>
       ${probs}</div>`;
   }).join("") || `<div class="arow"><div class="ateams">За този ден няма мачове.</div></div>`;
 }

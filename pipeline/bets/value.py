@@ -292,6 +292,32 @@ def _from_db(conn, bet, start):
     return (0 if row["fthg"] > row["ftag"] else (1 if row["fthg"] == row["ftag"] else 2)), row["id"]
 
 
+def pick_for_match(bets):
+    """Изборът за мача: най-добрата цена над честната, от степен A, ако има, иначе от B.
+
+    Степен C се изключва - разлика над 8% почти винаги е замръзнала цена, а такъв залог
+    обикновено се анулира. Ако няма нищо от A или B, изборът е "без избор": никоя цена не
+    е над честната и най-добрият залог за този мач е никакъв залог.
+
+    Изборът е по ЦЕНА, не по модела: моделът е измерено губещ (-54% по правилото за сигнал),
+    а цената над честната е единственото с шанс да е на плюс. Дали е - се мери по степени
+    (record_by_tier) и стои до избора на сайта.
+    """
+    # Борсите не стават за избор: цената им е брутна (комисионата е отделно), а и те са
+    # еталонът. Стари записи отпреди изключването им още стоят в книгата.
+    usable = [b for b in bets
+              if b["bookmaker"] not in EXCHANGES
+              and tier(b["sharp_book"], b["edge"], b.get("n_books")) in ("A", "B")]
+    if not usable:
+        return None
+    order = {"A": 0, "B": 1}
+    best = min(usable, key=lambda b: (order[tier(b["sharp_book"], b["edge"], b.get("n_books"))],
+                                      -b["edge"]))
+    return {"selection": best["selection"], "odds": best["odds"], "bookmaker": best["bookmaker"],
+            "edge": best["edge"], "p_fair": best["p_fair"],
+            "tier": tier(best["sharp_book"], best["edge"], best.get("n_books"))}
+
+
 def record_by_tier(conn):
     """Движение на цената и ROI поотделно за A, B и C. Това е проверката дали
     "най-сигурните" наистина са по-добри - или подредбата е само подредба."""

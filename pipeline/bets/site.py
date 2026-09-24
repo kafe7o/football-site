@@ -303,6 +303,11 @@ def attach_bets(conn, rows):
                  FROM value_bets WHERE event_id = ? ORDER BY edge DESC""",
             (m["event_id"],)).fetchall()
         m["bets"] = [dict(b) for b in found]
+        pick = value.pick_for_match(m["bets"])
+        if pick:
+            name, url = BOOK_LINKS.get(pick["bookmaker"], (pick["bookmaker"], None))
+            pick.update({"book_name": name, "url": url})
+        m["pick"] = pick
 
 
 def log_forecasts(conn, rows):

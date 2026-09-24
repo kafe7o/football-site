@@ -7,8 +7,8 @@ ntfy и се абонира за темата в NTFY_TOPIC. Темата е д�
 
 Какво се праща: веднъж за всеки мач, между 45 и 75 минути преди началото (облакът върви на
 всеки час, значи всеки мач попада в прозореца точно веднъж). Съдържанието е фактите -
-модел, пазар, най-добра цена и къде, степента на намерен залог. НЕ съдържа "залагай на":
-това е информация за решение, което взимаш ти.
+изборът (най-добрата цена над честната, степен A или B), модел, пазар, най-добрите цени;
+изборът е по цена (виж value.pick_for_match), без размер на залога.
 
 Без NTFY_TOPIC нищо не се праща - само се записва в лога какво би се пратило.
 """
@@ -74,6 +74,12 @@ def prematch(conn, rows, now=None):
             continue
 
         lines = []
+        pick = m.get("pick")
+        if pick:
+            lines.append(f"Избор: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
+                         f" - степен {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
+        else:
+            lines.append("Без избор - никоя цена не е над честната")
         if m.get("model"):
             lines.append("модел " + " / ".join(pct(p) for p in m["model"]))
         if m.get("market"):
@@ -82,11 +88,6 @@ def prematch(conn, rows, now=None):
             if o["prices"]:
                 best = o["prices"][0]
                 lines.append(f"{o['selection']}: {best['odds']:.2f} ({best['name']})")
-        from .value import tier
-        tiers = sorted({tier(b["sharp_book"], b["edge"], b.get("n_books"))
-                        for b in m.get("bets", [])})
-        if tiers:
-            lines.append("цена над честната: степен " + ", ".join(tiers))
 
         title = f"{m['home']} - {m['away']} след {int(left.total_seconds() // 60)} мин"
         if send(title, "\n".join(lines)):
