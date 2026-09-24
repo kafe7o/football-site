@@ -115,7 +115,17 @@ def daily_pnl(conn, stake=10):
             "total_signal": sum(d["signal"] for d in days.values())}
 
 
+def value_conn(conn):
+    """Залозите по цена са в книгата на облака (site/cloud.db). На лаптопа сайтът чете
+    оттам, в облака - това е самата му база."""
+    cloud = config.SITE_DIR / "cloud.db"
+    if cloud.exists() and cloud.resolve() != config.DB_PATH.resolve():
+        return db.init(cloud)
+    return conn
+
+
 def value_section(conn, limit=50):
+    conn = value_conn(conn)
     rows = conn.execute(
         """SELECT * FROM value_bets WHERE result IS NULL AND commence_time > ?
             ORDER BY commence_time, edge DESC LIMIT ?""",
@@ -300,6 +310,7 @@ def forecast_changes(conn, rows, min_change=CHANGE_THRESHOLD):
 
 
 def fair_sheet(conn, limit=200):
+    conn = value_conn(conn)
     """Справочник: каква цена си струва при твоя букмейкър.
 
     efbet, winbet и другите български сайтове ги няма в никое API. Затова вместо да ги

@@ -59,13 +59,14 @@ def daily(log, args):
         log.info("4. Прогнози и скенер: пропуснато (--skip-predictions)")
     else:
         ok.append(step(log, "4. Прогнози за днешните мачове", predict.run, conn))
-        ok.append(step(log, "5. Скенер за изостанали цени", value.scan, conn))
-    ok.append(step(log, "6. Уреждане на залозите по цена", value.settle, conn))
-    ok.append(step(log, "7. Сайт", site.build, conn))
+    # Цените, залозите по цена и уреждането им са работа САМО на облака (на всеки час).
+    # Преди и лаптопът ги сканираше и се получаваха две отделни книги, които се разминаваха.
+    ok.append(step(log, "5. Снимка за облака (история, модел, прогнози)", site.write_snapshot, conn))
+    ok.append(step(log, "6. Сайт", site.build, conn))
     if config.GITHUB_TOKEN and config.GITHUB_REPO:
-        ok.append(step(log, "8. Качване на сайта", publish.run))
+        ok.append(step(log, "7. Качване на сайта", publish.run))
     else:
-        log.info("8. Качване: пропуснато (GITHUB_TOKEN/GITHUB_REPO липсват в .env)")
+        log.info("7. Качване: пропуснато (GITHUB_TOKEN/GITHUB_REPO липсват в .env)")
     conn.close()
     return ok
 
@@ -110,20 +111,34 @@ def main():
         return 0
 
     if args.command == "changes":
-        # За известията: кои мачове са се променили осезаемо, откакто са видени за пръв път.
-        conn = db.init()
-        rows = site.preview(conn)
-        site.log_forecasts(conn, rows)
-        changed = site.forecast_changes(conn, rows)
-        if not changed:
-            print("Няма осезаема промяна в прогнозите.")
-        for m in changed:
-            first, last = m["history"][0], m["history"][-1]
-            fmt = lambda h, k: " / ".join("–" if h[f"{k}_{x}"] is None else f"{h[f'{k}_{x}']:.0%}"
+        # За известията. Чете дневника на облака (site/cloud.db): там се записва на всеки
+        # час, дори лаптопът да е бил изключен, затова той е единственият пълен.
+        cloud = config.SITE_DIR / "cloud.db"
+        conn = db.init(cloud if cloud.exists() else None)
+        now = datetime.now().astimezone().isoformat()
+        events = conn.execute(
+            """SELECT event_id, home_team, away_team, MIN(commence_time) AS start,
+                      COUNT(*) AS n FROM forecast_log
+                WHERE commence_time > ? GROUP BY event_id HAVING n >= 2""", (now,)).fetchall()
+        shown = 0
+        for e in events:
+            log_rows = conn.execute(
+                """SELECT * FROM forecast_log WHERE event_id = ? ORDER BY recorded_at""",
+                (e["event_id"],)).fetchall()
+            first, last = log_rows[0], log_rows[-1]
+            shift = max(abs((last[k] or 0) - (first[k] or 0))
+                        for k in ("p_model_h", "p_model_d", "p_model_a",
+                                  "p_fair_h", "p_fair_d", "p_fair_a"))
+            if shift < site.CHANGE_THRESHOLD:
+                continue
+            shown += 1
+            fmt = lambda r, k: " / ".join("–" if r[f"{k}_{x}"] is None else f"{r[f'{k}_{x}']:.0%}"
                                           for x in "hda")
-            print(f"{m['date']} {m['time']}  {m['home']} - {m['away']}")
+            print(f"{e['start'][:16].replace('T', ' ')}  {e['home_team']} - {e['away_team']}")
             print(f"    модел: {fmt(first, 'p_model')}  ->  {fmt(last, 'p_model')}")
-            print(f"    пазар: {fmt(first, 'p_fair')}  ->  {fmt(last, 'p_fair')}   (от {m['shift']['since']})")
+            print(f"    пазар: {fmt(first, 'p_fair')}  ->  {fmt(last, 'p_fair')}")
+        if not shown:
+            print("Няма осезаема промяна в прогнозите.")
         conn.close()
         return 0
 
