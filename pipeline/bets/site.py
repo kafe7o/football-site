@@ -147,7 +147,19 @@ SPORT_TO_LEAGUE = {
 }
 
 
-def preview(conn, days=PREVIEW_DAYS):
+def fitted_models(conn, exported=None):
+    """Моделите по лиги: от базата (на лаптопа) или от снимката (в облака)."""
+    if exported:
+        return {league: model.Poisson.from_export(data) for league, data in exported.items()}
+    models = {}
+    for league in results.LEAGUES:
+        history = results.history(conn, league)
+        if len(history) >= model.MIN_TRAIN_MATCHES:
+            models[league] = model.Poisson().fit(history)
+    return models
+
+
+def preview(conn, days=PREVIEW_DAYS, exported=None):
     """Какво казва моделът за мачовете напред.
 
     Това НЕ са записаните прогнози: те се правят само в деня на мача, за да ползват
@@ -174,18 +186,15 @@ def preview(conn, days=PREVIEW_DAYS):
             GROUP BY event_id ORDER BY commence_time""",
         (now.date().isoformat(), (now + timedelta(days=days)).date().isoformat())).fetchall()
 
-    models, out = {}, []
+    models = fitted_models(conn, exported)
+    out = []
     for e in events:
         league = SPORT_TO_LEAGUE.get(e["sport"])
         probs, reason = None, None
         if league is None:
             reason = "лигата не е в базата с история"
         else:
-            if league not in models:
-                history = results.history(conn, league)
-                models[league] = (model.Poisson().fit(history)
-                                  if len(history) >= model.MIN_TRAIN_MATCHES else None)
-            fitted = models[league]
+            fitted = models.get(league)
             if fitted is None:
                 reason = "малко история за тази лига"
             else:
@@ -281,8 +290,10 @@ def write_snapshot(conn):
     today = datetime.now().astimezone().date()
     since = (today - timedelta(days=DAYS_BACK)).isoformat()
     until = (today + timedelta(days=DAYS_FORWARD)).isoformat()
+    models = fitted_models(conn)
     data = {"written_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "matches": day_matches(conn, since, until),
+            "models": {league: fitted.export() for league, fitted in models.items()},
             "preview": preview(conn),
             "record": {**predict.record(conn), "backtest": signal_backtest()},
             "pnl": daily_pnl(conn),
@@ -301,7 +312,11 @@ def build(conn=None, from_snapshot=False):
 
     if from_snapshot and SNAPSHOT.exists():
         snap = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-        matches, preview_rows = snap["matches"], snap["preview"]
+        matches = snap["matches"]
+        # Прогнозите се смятат НАНОВО от параметрите в снимката: така и мач, който
+        # лаптопът никога не е виждал, получава проценти - стига цените му да са дошли.
+        preview_rows = (preview(conn, exported=snap["models"]) if snap.get("models")
+                        else snap["preview"])
         record, research = snap["record"], snap.get("research")
         source = f"история от {snap['written_at'][:16].replace('T', ' ')}, цените са пресни"
     else:

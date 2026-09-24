@@ -115,6 +115,42 @@ class Poisson:
         return outcome_probabilities(*lam)
 
 
+    def export(self):
+        """Обученият модел в чист вид: атака, защита и домакинско предимство по отбор.
+
+        Така моделът пътува до облака без базата с 94 000 мача. Параметрите остаряват
+        бавно - мач отпреди 180 дни тежи наполовина, тоест една седмица без обучение
+        променя вероятностите с части от процента.
+        """
+        if self.params is None:
+            raise RuntimeError("Моделът не е обучен")
+        n = len(self.teams)
+        return {"version": VERSION, "as_of": str(self.as_of)[:10],
+                "home_advantage": float(self.params[2 * n]),
+                "teams": {team: {"attack": float(self.params[i]),
+                                 "defence": float(self.params[n + i]),
+                                 "seen": round(self.seen(team), 2)}
+                          for i, team in enumerate(self.teams)}}
+
+    @classmethod
+    def from_export(cls, data):
+        """Обратното: моделът, върнат от снимката."""
+        fitted = cls()
+        fitted.teams = sorted(data["teams"])
+        fitted.index = {t: i for i, t in enumerate(fitted.teams)}
+        n = len(fitted.teams)
+        params = np.zeros(2 * n + 1)
+        for team, values in data["teams"].items():
+            i = fitted.index[team]
+            params[i] = values["attack"]
+            params[n + i] = values["defence"]
+        params[2 * n] = data["home_advantage"]
+        fitted.params = params
+        fitted.as_of = data.get("as_of")
+        fitted.weight_by_team = {t: v["seen"] for t, v in data["teams"].items()}
+        return fitted
+
+
 def score_grid(lam_home, lam_away, max_goals=MAX_GOALS):
     k = np.arange(max_goals + 1)
     joint = np.outer(poisson.pmf(k, lam_home), poisson.pmf(k, lam_away))
