@@ -1,4 +1,14 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<!-- Без този ред телефонът рисува страницата като на монитор и после я смалява:
+     текстът става нечетим, а всички медия заявки за тесен екран не се задействат. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Дневни футболни прогнози и цени, мерени срещу пазара">
 <title>Моделът срещу пазара</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root {
@@ -39,7 +49,14 @@ body {
   background: var(--bg); color: var(--ink); margin: 0;
   font: 15px/1.55 "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-.wrap { max-width: 900px; margin: 0 auto; padding-block: 24px 72px; padding-left: 16px; padding-right: 16px; }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 20px 72px; padding-left: 16px; padding-right: 16px; }
+@media (max-width: 560px) {
+  h1 { font-size: 22px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 12px; }
+  .tile .v { font-size: 20px; }
+  .tabs button { flex: 1; padding: 11px 6px; font-size: 13.5px; }
+  .scoreboard, .proof, .value { padding: 14px; }
+}
 h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
 .lede { color: var(--muted); font-size: 14px; margin: 6px 0 22px; max-width: 62ch; }
 .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
@@ -174,6 +191,8 @@ footer b { color: var(--ink); font-weight: 600; }
   .tags { margin-left: 0; width: 100%; }
 }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <h1>Моделът срещу пазара</h1>
@@ -482,3 +501,5 @@ for (const b of document.querySelectorAll(".tabs button")) {
 renderScoreboard(); renderProof(); renderValue(); renderFair(); renderDays(); renderList();
 renderAheadDays(); renderAheadList();
 </script>
+</body>
+</html>
