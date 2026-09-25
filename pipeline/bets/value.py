@@ -315,6 +315,8 @@ def pick_for_match(bets):
                                       -b["edge"]))
     return {"selection": best["selection"], "odds": best["odds"], "bookmaker": best["bookmaker"],
             "edge": best["edge"], "p_fair": best["p_fair"],
+            "sharp_book": best["sharp_book"], "sharp_odds": best["sharp_odds"],
+            "n_books": best.get("n_books"), "found_at": best.get("found_at"),
             "tier": tier(best["sharp_book"], best["edge"], best.get("n_books"))}
 
 

@@ -77,6 +77,18 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .pick .meta { color: var(--muted); font-size: 12px; }
 .pick.none { background: var(--chip); color: var(--muted); }
 
+.why-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid currentColor;
+           background: none; color: inherit; font: 700 12px/1 "IBM Plex Sans", sans-serif;
+           cursor: pointer; padding: 0; flex: 0 0 auto; margin-left: auto; opacity: .75; }
+.why-btn:hover, .why-btn[aria-expanded="true"] { opacity: 1; }
+.why-btn:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+.why { margin-top: 6px; padding: 10px 12px; border-radius: 8px; background: var(--chip);
+       font-size: 13px; line-height: 1.55; color: var(--ink); }
+.why p { margin: 0 0 7px; }
+.why p:last-child { margin-bottom: 0; }
+.why b { font-weight: 600; }
+.why .muted { color: var(--muted); font-size: 12px; }
+
 /* --- започват скоро --- */
 .soon { border: 1px solid var(--accent); border-radius: 10px; padding: 14px; margin-bottom: 14px;
         background: var(--panel); }
@@ -498,15 +510,56 @@ function probRow(label, values, mark) {
     `<div class="v${mark === i ? " best" : ""}">${v == null ? "\u2013" : v}</div>`).join("");
 }
 
+let WHY_SEQ = 0;
+const SHARP_NAMES = { pinnacle: "Pinnacle", betfair_ex_eu: "борсата Betfair", betfair_ex_uk: "борсата Betfair",
+                      smarkets: "борсата Smarkets", matchbook: "борсата Matchbook" };
+const TIER_WHY = {
+  A: "еталонът е най-острият пазар, разликата е в разумните граници (2-8%) и мачът е видян от поне 10 букмейкъра. Най-доброто качество на доказателство, което имаме.",
+  B: "разликата е в разумните граници (2-8%), но еталонът е по-слаб или букмейкърите са по-малко. По-малко сигурно от степен A.",
+};
+
+function whyText(m) {
+  const p = m.pick;
+  if (!p) {
+    const onlyC = (m.bets || []).length > 0;
+    return `<p><b>Защо няма избор.</b> ${onlyC
+      ? "Има цена над честната, но разликата е над 8% — при толкова голяма разлика почти винаги е замръзнала или сбъркана цена, а такъв залог обикновено се анулира. Затова не я предлагам."
+      : "Нито един от ~20-те букмейкъра не дава цена над честната. Пазарът е оценил мача точно — тук най-добрият залог е никакъв залог."}</p>
+      <p class="muted">Честната цена идва от най-острия пазар (Pinnacle или борсата), с махнат марж.</p>`;
+  }
+  const sharp = SHARP_NAMES[p.sharp_book] || (String(p.sharp_book).startsWith("consensus")
+    ? `медианата на ${String(p.sharp_book).replace("consensus", "")} букмейкъра` : p.sharp_book);
+  const fairOdds = 1 / p.p_fair;
+  const idx = (m.books || []).findIndex(o => o.selection === p.selection);
+  const modelP = m.model && idx >= 0 ? m.model[idx] : null;
+  const agree = modelP == null ? "" : modelP >= p.p_fair
+    ? `Моделът дава ${pct(modelP)} — <b>съгласен е</b>, дори вижда повече шанс от пазара.`
+    : `Моделът дава ${pct(modelP)} — по-малко от пазара. Изборът е по цена, не по модела, защото моделът е измерено по-неточен от пазара.`;
+  const rec = (DATA.value.by_tier || {})[p.tier];
+  const recText = rec && rec.clv != null && rec.clv_n
+    ? `Досега при степен ${p.tier}: ${rec.clv_n} залога, цената се е движила средно с ${(rec.clv * 100).toFixed(1)}% след намирането им.${rec.clv_n < 30 ? " Под 30 залога — още е рано да се съди." : ""}`
+    : `Степен ${p.tier} още няма достатъчно измерени залози.`;
+  return `
+    <p><b>Честният шанс.</b> ${esc(sharp)} дава на ${esc(p.selection)} <b>${pct(p.p_fair)}</b> — това е честен коефициент <b>${fairOdds.toFixed(2)}</b>, след като се махне маржът.</p>
+    <p><b>Цената.</b> ${esc(p.book_name || p.bookmaker)} плаща <b>${p.odds.toFixed(2)}</b> — повече от честното. Ако честният шанс е верен, всеки такъв залог носи средно <b>+${(p.edge * 100).toFixed(1)}%</b>: при 100 залога по 10 € — около ${(p.edge * 1000).toFixed(0)} € отгоре.</p>
+    <p><b>Степен ${p.tier}:</b> ${TIER_WHY[p.tier]}</p>
+    <p><b>Моделът.</b> ${agree}</p>
+    <p><b>Не е сигурно.</b> Шансът да спечелиш <i>точно този</i> залог е ${pct(p.p_fair)}. Предимството се вижда чак след много залози — ${recText}</p>`;
+}
+
 function pickLine(m) {
   const p = m.pick;
-  if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната</div>`;
+  // уникален за всяко място: един мач стои и във втория, и в третия таб
+  const wid = "why-" + (++WHY_SEQ);
+  const btn = `<button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Защо?">?</button>`;
+  const box = `<div class="why" id="${wid}" hidden>${whyText(m)}</div>`;
+  if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната ${btn}</div>${box}`;
   const book = p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.book_name)}</a>` : esc(p.book_name || p.bookmaker);
   const rec = (DATA.value.by_tier || {})[p.tier];
   const recText = rec && rec.clv != null ? ` \u00b7 степен ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
   return `<div class="pick"><span class="tier tier${p.tier}">${p.tier}</span>
     <span>Избор: <b>${esc(p.selection)}</b> @ <b>${p.odds.toFixed(2)}</b> при ${book}</span>
-    <span class="meta">+${(p.edge * 100).toFixed(1)}% над честната (${pct(p.p_fair)})${recText}</span></div>`;
+    <span class="meta">+${(p.edge * 100).toFixed(1)}% над честната (${pct(p.p_fair)})${recText}</span>${btn}</div>${box}`;
 }
 
 function booksBlock(m) {
@@ -675,7 +728,18 @@ function renderAheadDays() {
       ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}</span></button>`;
   }).join("") || "";
   for (const b of el.querySelectorAll(".day"))
-    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon(); };
+    b.onclick = () => { aheadCurrent = b.dataset.d; document.addEventListener("click", e => {
+  const b = e.target.closest(".why-btn");
+  if (!b) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const box = document.getElementById(b.dataset.why);
+  if (!box) return;
+  box.hidden = !box.hidden;
+  b.setAttribute("aria-expanded", String(!box.hidden));
+});
+
+renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon(); };
 }
 
 function renderAheadList() {
@@ -717,6 +781,17 @@ for (const b of document.querySelectorAll(".tabs button")) {
 }
 
 renderScoreboard(); renderProof(); renderPnl(); renderValue(); renderFair(); renderDays(); renderList();
+document.addEventListener("click", e => {
+  const b = e.target.closest(".why-btn");
+  if (!b) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const box = document.getElementById(b.dataset.why);
+  if (!box) return;
+  box.hidden = !box.hidden;
+  b.setAttribute("aria-expanded", String(!box.hidden));
+});
+
 renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
 </script>
 </body>
