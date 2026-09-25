@@ -156,3 +156,19 @@ def run():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     run()
+
+
+def pull_data():
+    """Местно копие на това, което облакът е построил: сайтът и базата му.
+
+    Пипат се само двата файла с данни - кодът в site/pipeline не се пипа, за да не се
+    загубят промени, които още не са качени.
+    """
+    token, repo = config.require("GITHUB_TOKEN", "GITHUB_REPO")
+    if not (SITE_DIR / ".git").exists():
+        raise RuntimeError(f"{SITE_DIR} не е git хранилище - пусни веднъж publish.run()")
+    git("fetch", "-q", "origin", "main", token=token)
+    git("checkout", "origin/main", "--", "index.html", "cloud.db")
+    stamp = git("log", "-1", "--format=%cd", "--date=iso", "origin/main")
+    log.info("Местното копие е обновено от облака (последна промяна там: %s)", stamp)
+    return stamp

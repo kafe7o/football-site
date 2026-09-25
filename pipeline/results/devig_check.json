@@ -1,0 +1,44 @@
+{
+  "AVG": {
+    "best": "power",
+    "scores": {
+      "multiplicative": 0.595898989978936,
+      "additive": 0.5954768834433201,
+      "power": 0.5954636383937593,
+      "shin": 0.5955483326008782,
+      "odds_ratio": 0.5955671226977021,
+      "logarithmic": 0.5955671226977027,
+      "differential_margin_weighting": 0.5954768834433201,
+      "goto": 0.5955025721140997,
+      "efficient_shin": 0.5954690041347578
+    }
+  },
+  "B365": {
+    "best": "power",
+    "scores": {
+      "multiplicative": 0.5960319790971246,
+      "additive": 0.5957442985119302,
+      "power": 0.595726678644604,
+      "shin": 0.5957730030311155,
+      "odds_ratio": 0.5957715687312841,
+      "logarithmic": 0.5957715687312845,
+      "differential_margin_weighting": 0.5957442985119302,
+      "goto": 0.5958344093432254,
+      "efficient_shin": 0.5958244614028233
+    }
+  },
+  "AVGC": {
+    "best": "power",
+    "scores": {
+      "multiplicative": 0.5950970573853684,
+      "additive": 0.5947258037548845,
+      "power": 0.5947169809706881,
+      "shin": 0.59478951583396,
+      "odds_ratio": 0.5948012336616353,
+      "logarithmic": 0.594801233661636,
+      "differential_margin_weighting": 0.5947258037548845,
+      "goto": 0.5947947830039728,
+      "efficient_shin": 0.5947541569183966
+    }
+  }
+}

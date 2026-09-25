@@ -169,3 +169,31 @@ def upcoming(conn, league, day):
         """SELECT id, home_team, away_team, date, kickoff FROM matches
             WHERE league = ? AND date = ? AND fthg IS NULL ORDER BY kickoff""",
         (league, day)).fetchall()
+
+
+# Облакът пази само последните три пълни сезона + текущия. Измерено на 2026-09-25 в 8 лиги:
+# моделът, обучен от 2023-07-01, се различава от обучения върху цялата история с най-много
+# 0.66 процентни пункта (средно 0.1-0.2) - под точността, с която се показват процентите.
+# Два сезона вече дават до 2.07 пп - твърде много. Причината е затихването: мач отпреди три
+# години тежи 1.5%.
+WINDOW_SEASONS = 3
+
+
+def history_window_start(today=None):
+    today = today or datetime.now()
+    season_start = today.year - (1 if today.month < 7 else 0)
+    return f"{season_start - WINDOW_SEASONS}-07-01"
+
+
+def prune_history(conn, since=None):
+    """Маха изиграните мачове преди прозореца - за да остане базата на облака малка.
+    Мачове с прогноза или залог по цена не се махат: те са записът."""
+    since = since or history_window_start()
+    removed = conn.execute(
+        """DELETE FROM matches WHERE date < ? AND fthg IS NOT NULL
+             AND id NOT IN (SELECT match_id FROM predictions WHERE match_id IS NOT NULL)""",
+        (since,)).rowcount
+    conn.commit()
+    if removed:
+        log.info("Махнати %d мача преди %s", removed, since)
+    return removed

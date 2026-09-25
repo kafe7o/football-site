@@ -1,12 +1,13 @@
 """
 Един вход за всичко.
 
-    python run.py daily      целият дневен цикъл (това пуска и Task Scheduler)
+    python run.py daily      лаптопът: архив за бектестовете + местно копие от облака
+                             (това пуска Task Scheduler; всичко живо е в облака)
     python run.py scan       само скенерът за цени, по желание с други спортове
     python run.py site       само построява и качва сайта
     python run.py status     какво има в базата и колко квота е останала
     python run.py snapshot   записва site/snapshot.json за облака (историята + прегледът напред)
-    python run.py cloud      сканиране + сайт БЕЗ история - това пуска GitHub Actions
+    python run.py cloud      ЦЕЛИЯТ цикъл, на всеки час - това пуска GitHub Actions
     python run.py changes    кои прогнози са се променили осезаемо (за известията)
 
 Редът в `daily` не е произволен: първо резултати, после уреждане (има с какво да сверява),
@@ -19,7 +20,7 @@
 import argparse
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 
 from bets import config, db, model, notify, odds_api, predict, publish, results, site, value
@@ -49,25 +50,20 @@ def step(log, name, fn, *args, **kwargs):
 
 
 def daily(log, args):
+    """Лаптопът от 2026-09-25: само пълен архив за бектестовете и местно копие.
+
+    Всичко живо - резултати за модела, прогнози, цени, залози, сайт, известия - се прави
+    в облака на всеки час (`run.py cloud`). Ако лаптопът също записваше прогнози и качваше
+    сайта, щеше да има две книги, които се разминават (така беше до 2026-09-25).
+    """
     conn = db.init()
-    ok = [
-        step(log, "1. Резултати от football-data", results.update_history, conn, args.years_back),
-        step(log, "2. Разписание на предстоящите мачове", results.update_fixtures, conn),
-        step(log, "3. Уреждане на стари прогнози", predict.settle, conn),
-    ]
-    if args.skip_predictions:
-        log.info("4. Прогнози и скенер: пропуснато (--skip-predictions)")
-    else:
-        ok.append(step(log, "4. Прогнози за днешните мачове", predict.run, conn))
-    # Цените, залозите по цена и уреждането им са работа САМО на облака (на всеки час).
-    # Преди и лаптопът ги сканираше и се получаваха две отделни книги, които се разминаваха.
-    ok.append(step(log, "5. Снимка за облака (история, модел, прогнози)", site.write_snapshot, conn))
-    ok.append(step(log, "6. Сайт", site.build, conn))
-    if config.GITHUB_TOKEN and config.GITHUB_REPO:
-        ok.append(step(log, "7. Качване на сайта", publish.run))
-    else:
-        log.info("7. Качване: пропуснато (GITHUB_TOKEN/GITHUB_REPO липсват в .env)")
+    ok = [step(log, "1. Пълната история (архив за бектестовете)",
+               results.update_history, conn, args.years_back)]
     conn.close()
+    if config.GITHUB_TOKEN and config.GITHUB_REPO:
+        ok.append(step(log, "2. Местно копие на сайта и базата от облака", publish.pull_data))
+    else:
+        log.info("2. Местно копие: пропуснато (GITHUB_TOKEN/GITHUB_REPO липсват в .env)")
     return ok
 
 
@@ -150,17 +146,41 @@ def main():
         return 0
 
     if args.command == "cloud":
-        # Пуска се от GitHub Actions: няма база с история, има snapshot.json от лаптопа.
+        # ЦЕЛИЯТ цикъл, на сървърите на GitHub, на всеки час - лаптопът не е нужен.
+        # Базата на облака (cloud.db) пази последните три сезона + текущия: достатъчно за
+        # модела (разлика под 0.7 пп спрямо цялата история, виж results.WINDOW_SEASONS).
         conn = db.init()
-        ok = [step(log, "1. Скенер за цени", value.scan, conn),
-              step(log, "2. Уреждане", value.settle, conn)]
+        ok = []
+        now = datetime.now(timezone.utc)
+        last = db.get_meta(conn, "history_refreshed")
+        stale = last is None or now - datetime.fromisoformat(last) > timedelta(hours=11)
+        if stale:
+            # Резултатите и разписанието - два пъти на ден стига, football-data не се
+            # обновява по-често, а е безплатен сървър, който не бива да се товари всеки час.
+            daily_ok = [
+                step(log, "1. Резултати от football-data", results.update_history, conn, 2),
+                step(log, "2. Разписание", results.update_fixtures, conn),
+                step(log, "3. Прозорец на историята", results.prune_history, conn),
+                step(log, "4. Уреждане на прогнози", predict.settle, conn),
+            ]
+            ok += daily_ok
+            if all(daily_ok):
+                db.set_meta(conn, "history_refreshed", now.isoformat(timespec="seconds"))
+        else:
+            log.info("Резултатите са теглени в %s - следващият път след 11 часа", last[:16])
+        ok += [step(log, "5. Скенер за цени", value.scan, conn),
+               step(log, "6. Уреждане на залозите по цена", value.settle, conn),
+               step(log, "7. Прогнози за днешните мачове", predict.run, conn)]
         built = {}
-        ok.append(step(log, "3. Сайт от снимката",
-                       lambda: built.update(site.build(conn, True))))
+        ok.append(step(log, "8. Сайт", lambda: built.update(site.build(conn))))
         if built:
-            ok.append(step(log, "4. Известия час преди мача",
+            ok.append(step(log, "9. Известия час преди мача",
                            notify.prematch, conn, built.get("preview", [])))
+            changed = [m for m in built.get("preview", []) if m["event_id"] in set(built.get("changed", []))]
+            ok.append(step(log, "10. Известия за променени прогнози",
+                           notify.forecast_changes, conn, changed))
         conn.close()
+        log.info("===== Край. Стъпки: %d, паднали: %d =====", len(ok), ok.count(False))
         return 1 if ok.count(False) else 0
 
     if args.command == "site":

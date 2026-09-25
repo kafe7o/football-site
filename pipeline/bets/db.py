@@ -122,6 +122,12 @@ CREATE TABLE IF NOT EXISTS forecast_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_forecast_event ON forecast_log(event_id, recorded_at);
+-- Служебни стойности: кога за последно облакът е теглил резултатите и т.н.
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_fair_time ON fair_prices(commence_time);
 CREATE INDEX IF NOT EXISTS idx_matches_league_date ON matches(league, date);
 CREATE INDEX IF NOT EXISTS idx_predictions_open ON predictions(outcome) WHERE outcome IS NULL;
@@ -203,3 +209,14 @@ def upsert_odds(conn, match_id, bookmaker, home, draw, away):
 def counts(conn):
     tables = ["matches", "odds", "predictions", "value_bets", "fair_prices", "forecast_log"]
     return {t: conn.execute(f"SELECT COUNT(*) c FROM {t}").fetchone()["c"] for t in tables}
+
+
+def get_meta(conn, key, default=None):
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_meta(conn, key, value):
+    conn.execute("INSERT INTO meta (key, value) VALUES (?, ?) "
+                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, str(value)))
+    conn.commit()

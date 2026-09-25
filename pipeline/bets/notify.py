@@ -98,3 +98,34 @@ def prematch(conn, rows, now=None):
     if sent:
         log.info("Пратени известия преди мач: %d", sent)
     return sent
+
+
+def forecast_changes(conn, rows):
+    """Известие, когато прогнозата за мач се премести осезаемо (над 2 пп). Всяка промяна -
+    веднъж: ключът е мачът + часът на последния запис в дневника."""
+    conn.execute(SCHEMA)
+    now = datetime.now(timezone.utc)
+    sent = 0
+    for m in rows:
+        history = m.get("history") or []
+        if len(history) < 2 or not m.get("shift"):
+            continue
+        key = f"change:{m['event_id']}:{history[-1]['recorded_at']}"
+        if conn.execute("SELECT 1 FROM alerts_sent WHERE event_id = ?", (key,)).fetchone():
+            continue
+        first, last = history[0], history[-1]
+        fmt = lambda h, k: " / ".join(pct(h[f"{k}_{x}"]) for x in "hda")
+        lines = [f"модел: {fmt(first, 'p_model')} -> {fmt(last, 'p_model')}",
+                 f"пазар: {fmt(first, 'p_fair')} -> {fmt(last, 'p_fair')}"]
+        pick = m.get("pick")
+        lines.append(f"Избор сега: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
+                     if pick else "Избор сега: няма")
+        if send(f"Промяна: {m['home']} - {m['away']}", "\n".join(lines),
+                tags="chart_with_upwards_trend"):
+            sent += 1
+        conn.execute("INSERT OR REPLACE INTO alerts_sent (event_id, sent_at) VALUES (?, ?)",
+                     (key, now.isoformat(timespec="seconds")))
+    conn.commit()
+    if sent:
+        log.info("Пратени известия за промени: %d", sent)
+    return sent
