@@ -553,7 +553,7 @@ function pickLine(m) {
   const wid = "why-" + (++WHY_SEQ);
   const btn = `<button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Защо?">?</button>`;
   const box = `<div class="why" id="${wid}" hidden>${whyText(m)}</div>`;
-  if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната ${btn}</div>${box}`;
+  if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната</div>`;
   const book = p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.book_name)}</a>` : esc(p.book_name || p.bookmaker);
   const rec = (DATA.value.by_tier || {})[p.tier];
   const recText = rec && rec.clv != null ? ` \u00b7 степен ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
