@@ -342,6 +342,9 @@ footer b { color: var(--ink); font-weight: 600; }
 
 <script>
 const DATA = __DATA__;
+const AHEAD = DATA.preview || [];
+const aheadDays = [...new Set(AHEAD.map(m => m.date))].sort();
+let aheadCurrent = aheadDays.includes(DATA.today) ? DATA.today : aheadDays[0];
 const WD = ["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"];
 const WD3 = ["нед","пон","вто","сря","чет","пет","съб"];
 const MN = ["яну","фев","мар","апр","май","юни","юли","авг","сеп","окт","ное","дек"];
@@ -663,9 +666,6 @@ function renderList() {
     `<section class="lgroup"><h3>${esc(lg)}</h3><div class="list">${groups[lg].map(matchRow).join("")}</div></section>`).join("");
 }
 
-const AHEAD = DATA.preview || [];
-const aheadDays = [...new Set(AHEAD.map(m => m.date))].sort();
-let aheadCurrent = aheadDays.includes(DATA.today) ? DATA.today : aheadDays[0];
 
 function renderAheadDays() {
   const el = document.getElementById("ahead-days");
