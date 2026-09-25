@@ -1,18 +1,22 @@
-# Обновява сайта на всеки час НА СЪРВЪРИТЕ НА GITHUB - лаптопът може да е изключен.
+# Обновява сайта на всеки час НА СЪРВЪРИТЕ НА GITHUB - лаптопът не е нужен.
 #
-# Какво прави в облака: сканира цените, урежда старите залози и построява сайта наново.
-# Какво НЕ прави: не тренира модела и не тегли историята - за това трябва базата с 94 000
-# мача, която е само на лаптопа. Прогнозите идват от snapshot.json, който лаптопът качва
-# при всяко свое пускане. Затова горе на сайта пише откога е историята.
+# Защо не само cron: графикът на GitHub е "по възможност". На 2026-09-25 от 00:30 до 05:15
+# UTC пропусна 5 поредни пускания. Затова всяко пускане САМО си поръчва следващото
+# (задачата "next": чака ~50 минути и пуска workflow_dispatch). Графикът остава като резерва:
+# ако веригата някога се скъса, първото пускане по график я връща.
+#
+# Веригата работи, защото workflow_dispatch с github.token е изключение от правилото,
+# че действията на github.token не пускат нови работни процеси.
 name: update
 
 on:
   schedule:
-    - cron: "7 * * * *"      # на всеки час, 7-ата минута (UTC)
-  workflow_dispatch:          # и с бутон от Actions, за проверка
+    - cron: "7 * * * *"      # резерва: връща веригата, ако се скъса
+  workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: update
@@ -31,7 +35,7 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Сканиране и построяване
+      - name: Целият цикъл
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -42,9 +46,33 @@ jobs:
         run: cd pipeline && python run.py cloud
 
       - name: Записване на промените
+        if: always()
         run: |
           git config user.name "football-bot"
           git config user.email "football-bot@users.noreply.github.com"
           git add index.html cloud.db
           git diff --staged --quiet || git commit -m "Обновено от облака"
+          git pull --rebase -q origin main || true
           git push
+
+  next:
+    # Поръчва следващото пускане - и когато това е паднало, за да не спре веригата.
+    needs: update
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Изчакване и следващо пускане
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAIT_SECONDS: ${{ vars.CHAIN_WAIT_SECONDS || '3000' }}
+        run: |
+          sleep "$WAIT_SECONDS"
+          # не поръчва второ, ако вече чака друго пускане (например по графика)
+          waiting=$(gh run list -R "${{ github.repository }}" -w update.yml -L 20 \
+                    --json status,databaseId -q "[.[] | select(.status==\"queued\" or .status==\"pending\" or .status==\"waiting\") | select(.databaseId != ${{ github.run_id }})] | length")
+          if [ "${waiting:-0}" -eq 0 ]; then
+            gh workflow run update.yml -R "${{ github.repository }}" --ref main
+            echo "следващото пускане е поръчано"
+          else
+            echo "вече чака пускане - не поръчвам второ"
+          fi
