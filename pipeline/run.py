@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 
-from bets import config, db, model, notify, odds_api, predict, publish, results, site, value
+from bets import config, db, history, model, notify, odds_api, predict, publish, results, site, value
 
 
 def setup_logging():
@@ -162,6 +162,7 @@ def main():
                 step(log, "2. Разписание", results.update_fixtures, conn),
                 step(log, "3. Прозорец на историята", results.prune_history, conn),
                 step(log, "4. Уреждане на прогнози", predict.settle, conn),
+                step(log, "4а. Симулация за изиграните мачове (история)", history.extend, conn),
             ]
             ok += daily_ok
             if all(daily_ok):

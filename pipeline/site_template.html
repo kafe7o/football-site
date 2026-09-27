@@ -227,6 +227,68 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .day[aria-selected="true"] .n { color: var(--accent-ink); opacity: .7; }
 .day:focus-visible, .day[aria-selected="true"]:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
 
+/* --- история --- */
+.period { flex: 0 0 auto; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 12px; cursor: pointer; white-space: nowrap;
+  font: 500 13px/1.2 "IBM Plex Sans", sans-serif; display: flex; gap: 7px; align-items: center; }
+.period:hover { border-color: var(--rail); }
+.period .n { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+.period[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.period[aria-pressed="true"] .n { color: var(--accent-ink); opacity: .7; }
+.period:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+.hfilters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.hseg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.hseg button { background: var(--panel); color: var(--ink); border: 0; padding: 7px 12px; cursor: pointer;
+  font: 500 13px/1.2 "IBM Plex Sans", sans-serif; }
+.hseg button + button { border-left: 1px solid var(--line); }
+.hseg button[aria-pressed="true"] { background: var(--chip); font-weight: 700; }
+.hseg button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
+#hist-league { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 10px; font: 500 13px/1.2 "IBM Plex Sans", sans-serif; max-width: 100%; }
+.hsum { padding: 14px 16px; margin-bottom: 14px; }
+.hsum table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hsum th, .hsum td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.hsum th:first-child, .hsum td:first-child { text-align: left; color: var(--muted); font-weight: 500; }
+.hsum thead th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.hsum td { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.hsum td small { display: block; color: var(--muted); font-size: 11px; }
+.hsum td:first-child { font-family: inherit; }
+#hist-periods { flex-wrap: wrap; overflow-x: visible; }
+.hsum .pos { color: var(--ok); } .hsum .neg { color: var(--bad); }
+.hsum p { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.hday { font: 600 13px/1.2 "IBM Plex Sans", sans-serif; color: var(--muted); margin: 16px 0 6px; }
+.hgroup { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden; }
+.hrow { background: var(--panel); padding: 10px 12px; display: grid; gap: 10px; align-items: center;
+  grid-template-columns: 26px 1fr 176px; }
+.hmark { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; font-size: 13px; }
+.hmark.ok { background: var(--ok-bg); color: var(--ok); }
+.hmark.bad { background: var(--bad-bg); color: var(--bad); }
+.hmark.wait { background: var(--chip); color: var(--muted); }
+.hteams { font-size: 14px; min-width: 0; }
+.hteams .sc { font-family: "IBM Plex Mono", monospace; font-weight: 700; margin-left: 6px; }
+.hteams span { display: block; color: var(--muted); font-size: 11.5px; }
+.hsrc { font-size: 10.5px; font-weight: 600; font-style: normal; border-radius: 4px; padding: 1px 6px; margin-left: 4px;
+  background: var(--chip); color: var(--muted); }
+.hsrc.live { background: var(--sig-bg); color: var(--sig); }
+.hpk { margin-top: 5px; font-size: 12px; }
+.hpk.won { color: var(--ok); } .hpk.lost { color: var(--bad); }
+.hprob { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center; }
+.hprob div { background: var(--chip); border-radius: 4px; padding: 3px 0; border: 1px solid transparent;
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.hprob div b { display: block; font-size: 10px; color: var(--muted); font-weight: 500; }
+.hprob div i { display: block; font-style: normal; font-size: 10.5px; color: var(--muted); }
+.hprob .top { border-color: var(--accent); }
+.hprob .res { background: var(--ok-bg); }
+.hempty { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+  color: var(--muted); font-size: 13.5px; }
+.hmore { display: block; margin: 14px auto 0; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 16px; cursor: pointer;
+  font: 600 13px/1.2 "IBM Plex Sans", sans-serif; }
+.hmore:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+@media (max-width: 560px) { .hrow { grid-template-columns: 26px 1fr; } .hprob { grid-column: 1 / -1; } }
+
 /* --- мачове --- */
 .lgroup { margin-top: 18px; }
 .lgroup > h3 { font: 600 12px/1 "IBM Plex Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase;
@@ -281,6 +343,7 @@ footer b { color: var(--ink); font-weight: 600; }
     <button role="tab" data-tab="board" aria-selected="true">Табло</button>
     <button role="tab" data-tab="ahead" aria-selected="false">Прогнози напред</button>
     <button role="tab" data-tab="detail" aria-selected="false">Мач по мач</button>
+    <button role="tab" data-tab="hist" aria-selected="false">История</button>
   </nav>
 
 <div id="tab-board">
@@ -343,6 +406,23 @@ footer b { color: var(--ink); font-weight: 600; }
   <p class="ahead-note" id="ahead-note"></p>
   <nav class="days" id="ahead-days" role="tablist" aria-label="Дни напред"></nav>
   <div class="ahead" id="ahead-list"></div>
+</div>
+
+<div id="tab-hist" hidden>
+  <p class="ahead-note">Изиграните мачове с прогноза и какво излезе. <b>✓</b> значи, че е излязъл изходът,
+    който моделът смяташе за най-вероятен. <b>На живо</b> е прогноза, записана преди мача с дата и час.
+    <b>Симулация</b> е какво би казал същият модел, обучен само на мачовете отпреди седмицата на мача
+    (записите на живо започват от 14 септември 2026). Двете се броят поотделно.
+    В квадратчетата: <b>рамка</b> е най-вероятният изход според модела, <b>зелено</b> е какво излезе.
+    Мачове на отбори с малко история (новаци в лигата) нямат прогноза - точно както и на живо.</p>
+  <nav class="days" id="hist-periods" aria-label="Период"></nav>
+  <div class="hfilters">
+    <div class="hseg" id="hist-filter" role="group" aria-label="Кои мачове"></div>
+    <select id="hist-league" aria-label="Лига"></select>
+  </div>
+  <section class="panel hsum" id="hist-sum"></section>
+  <div id="hist-list"></div>
+  <button class="hmore" id="hist-more" hidden></button>
 </div>
 
   <footer>
@@ -667,9 +747,9 @@ function renderDays() {
     return `<button class="day" role="tab" data-d="${d}" aria-selected="${d === current}">
       ${d === DATA.today ? "днес" : d3(d)}${n ? `<span class="n">${n}</span>` : ""}</button>`;
   }).join("");
-  for (const b of document.querySelectorAll(".day"))
+  for (const b of document.querySelectorAll("#days .day"))
     b.onclick = () => { current = b.dataset.d; renderDays(); renderList(); };
-  const sel = document.querySelector('.day[aria-selected="true"]');
+  const sel = document.querySelector('#days .day[aria-selected="true"]');
   if (sel) sel.scrollIntoView({ block: "nearest", inline: "center" });
 }
 
@@ -778,6 +858,158 @@ function renderAheadList() {
   }).join("") || `<div class="arow"><div class="ateams">За този ден няма мачове.</div></div>`;
 }
 
+// ---------- История ----------
+const HIST = DATA.history || { leagues: [], rows: [] };
+// Ред: [дата, лига, домакин, гост, [голове]|null, изход|null, на_живо, модел ‰, пазар ‰|null,
+//       коефициенти|null, избор по цена [изход, коеф., спечелен, степен]|null]
+const HIST_PERIODS = [[7, "7 дни"], [14, "2 седмици"], [30, "1 месец"], [61, "2 месеца"],
+                      [92, "3 месеца"], [183, "6 месеца"]];
+const HIST_FILTERS = [["all", "Всички"], ["hit", "Познати"], ["miss", "Непознати"]];
+const HIST_STEP = 150;
+let histDays = 7, histFilter = "all", histLeague = "", histLimit = HIST_STEP;
+
+const isoMinus = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+const argmax = a => a.indexOf(Math.max(...a));
+const histInPeriod = n => { const from = isoMinus(DATA.today, n); return HIST.rows.filter(r => r[0] > from && r[0] <= DATA.today); };
+const histSettled = r => r[5] != null;
+const histHit = r => histSettled(r) && argmax(r[7]) === r[5];
+
+function histStats(rows) {
+  const done = rows.filter(histSettled);
+  const withMkt = done.filter(r => r[8]);
+  const brier = (rs, k) => rs.length ? rs.reduce((s, r) => s + r[k].reduce((t, p, j) => t + (p / 1000 - (j === r[5] ? 1 : 0)) ** 2, 0), 0) / rs.length : null;
+  const money = profits => {
+    if (!profits.length) return null;
+    const n = profits.length, mean = profits.reduce((a, b) => a + b, 0) / n;
+    const sd = n > 1 ? Math.sqrt(profits.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)) : 0;
+    return { n, eur: mean * n * 10, roi: mean, se: sd / Math.sqrt(n) };
+  };
+  const fav = [], sig = [], pick = [];
+  for (const r of done) {
+    if (r[9]) {
+      const i = argmax(r[7]);
+      fav.push(i === r[5] ? r[9][i] - 1 : -1);
+      // Правилото за сигнал от signals.py: изходът с най-голяма стойност p*коеф.-1, ако е над 5%.
+      const ev = r[7].map((p, j) => p / 1000 * r[9][j] - 1), j = argmax(ev);
+      if (ev[j] > 0.05) sig.push(j === r[5] ? r[9][j] - 1 : -1);
+    }
+    if (r[10] && r[10][2] != null) pick.push(r[10][2] ? r[10][1] - 1 : -1);
+  }
+  return {
+    n: done.length, waiting: rows.length - done.length,
+    modelHit: done.length ? done.filter(histHit).length / done.length : null,
+    marketHit: withMkt.length ? withMkt.filter(r => argmax(r[8]) === r[5]).length / withMkt.length : null,
+    brierModel: brier(withMkt, 7), brierMarket: brier(withMkt, 8),
+    fav: money(fav), sig: money(sig), pick: money(pick),
+  };
+}
+
+function renderHistPeriods() {
+  const el = document.getElementById("hist-periods");
+  el.innerHTML = HIST_PERIODS.map(([n, label]) => {
+    const cnt = histInPeriod(n).filter(r => !histLeague || HIST.leagues[r[1]] === histLeague).length;
+    return `<button class="period" data-n="${n}" aria-pressed="${n === histDays}">${label}<span class="n">${cnt}</span></button>`;
+  }).join("");
+  for (const b of el.querySelectorAll(".period"))
+    b.onclick = () => { histDays = +b.dataset.n; histLimit = HIST_STEP; renderHistPeriods(); renderHistory(); };
+}
+
+function renderHistControls() {
+  const f = document.getElementById("hist-filter");
+  f.innerHTML = HIST_FILTERS.map(([k, label]) =>
+    `<button data-f="${k}" aria-pressed="${k === histFilter}">${label}</button>`).join("");
+  for (const b of f.querySelectorAll("button"))
+    b.onclick = () => { histFilter = b.dataset.f; histLimit = HIST_STEP; renderHistControls(); renderHistory(); };
+  const sel = document.getElementById("hist-league");
+  if (!sel.options.length) {
+    sel.innerHTML = `<option value="">Всички лиги</option>` +
+      [...HIST.leagues].sort().map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join("");
+    sel.onchange = () => { histLeague = sel.value; histLimit = HIST_STEP; renderHistPeriods(); renderHistory(); };
+  }
+}
+
+function histMoneyCell(m) {
+  if (!m) return "—";
+  const cls = m.eur >= 0 ? "pos" : "neg";
+  const sign = m.eur >= 0 ? "+" : "−";
+  return `<span class="${cls}">${sign}${Math.abs(m.eur).toFixed(0)} €</span>` +
+    `<small>${m.roi < 0 ? "−" : "+"}${Math.abs(m.roi * 100).toFixed(1)}% ± ${(m.se * 100).toFixed(1)}% · ${m.n} залога</small>`;
+}
+
+function renderHistSummary(rows) {
+  const live = histStats(rows.filter(r => r[6])), sim = histStats(rows.filter(r => !r[6]));
+  const p = x => x == null ? "—" : Math.round(x * 100) + "%";
+  const b = x => x == null ? "—" : x.toFixed(3);
+  const line = (label, f) => `<tr><td>${label}</td><td>${f(live)}</td><td>${f(sim)}</td></tr>`;
+  document.getElementById("hist-sum").innerHTML = `
+    <p class="eyebrow">За избрания период</p>
+    <table>
+      <thead><tr><th></th><th>на живо</th><th>симулация</th></tr></thead>
+      <tbody>
+        ${line("Мачове с резултат", s => s.n + (s.waiting ? `<small>+${s.waiting} чакат резултат</small>` : ""))}
+        ${line("Моделът позна", s => p(s.modelHit))}
+        ${line("Пазарът позна", s => p(s.marketHit))}
+        ${line("Точност на модела (Brier)", s => b(s.brierModel))}
+        ${line("Точност на пазара (Brier)", s => b(s.brierMarket))}
+        ${line("10 € на фаворита на модела", s => histMoneyCell(s.fav))}
+        ${line("10 € по сигнала (стойност над 5%)", s => histMoneyCell(s.sig))}
+        ${line("10 € на избора по цена", s => histMoneyCell(s.pick))}
+      </tbody>
+    </table>
+    <p>„Позна“ = излезе изходът с най-голяма вероятност. Brier е грешката на прогнозата: по-ниско е по-добре.
+      Под парите е ROI ± стандартна грешка и броят залози - при малко мачове разликата от нулата
+      обикновено е шум. На живо се плаща най-добрата цена в момента на прогнозата; в симулацията -
+      средната цена на пазара. Изборът по цена се записва само на живо.</p>`;
+}
+
+function histRow(r) {
+  const labels = ["1", "X", "2"];
+  const done = histSettled(r);
+  const top = argmax(r[7]);
+  const mark = !done ? `<div class="hmark wait" title="чака резултат">…</div>`
+    : histHit(r) ? `<div class="hmark ok" title="позна">✓</div>` : `<div class="hmark bad" title="не позна">✗</div>`;
+  const score = r[4] ? `<b class="sc">${r[4][0]}:${r[4][1]}</b>` : "";
+  const src = r[6] ? `<em class="hsrc live">на живо</em>` : `<em class="hsrc">симулация</em>`;
+  const pk = r[10] ? `<div class="hpk ${r[10][2] == null ? "" : r[10][2] ? "won" : "lost"}">Избор по цена: ${esc(r[10][0])} @ ${(+r[10][1]).toFixed(2)} (степен ${esc(r[10][3])}) · ${r[10][2] == null ? "чака" : r[10][2] ? "спечели" : "загуби"}</div>` : "";
+  const cells = r[7].map((p, j) => `<div class="${j === top ? "top" : ""}${done && j === r[5] ? " res" : ""}"><b>${labels[j]}</b>${Math.round(p / 10)}%<i>${r[8] ? "пазар " + Math.round(r[8][j] / 10) + "%" : "&nbsp;"}</i></div>`).join("");
+  return `<div class="hrow">${mark}
+    <div class="hteams">${esc(r[2])} – ${esc(r[3])}${score}<span>${esc(HIST.leagues[r[1]])}${src}${done ? "" : " · чака резултат"}</span>${pk}</div>
+    <div class="hprob">${cells}</div></div>`;
+}
+
+function renderHistory() {
+  const inPeriod = histInPeriod(histDays).filter(r => !histLeague || HIST.leagues[r[1]] === histLeague);
+  renderHistSummary(inPeriod);
+  const shown = inPeriod.filter(r => histFilter === "all" || (histFilter === "hit" ? histHit(r) : histSettled(r) && !histHit(r)));
+  const list = document.getElementById("hist-list");
+  const more = document.getElementById("hist-more");
+  if (!shown.length) {
+    const last = HIST.rows.find(r => !histLeague || HIST.leagues[r[1]] === histLeague);
+    list.innerHTML = `<div class="hempty">${inPeriod.length ? "Няма такива мачове в периода."
+      : "В този период няма изиграни мачове с прогноза" + (last ? ` - последните са от ${dFull(last[0])}. Избери по-дълъг период.` : ".")}</div>`;
+    more.hidden = true;
+    return;
+  }
+  const page = shown.slice(0, histLimit);
+  let html = "", day = null, open = false;
+  for (const r of page) {
+    if (r[0] !== day) {
+      if (open) html += "</div>";
+      day = r[0];
+      const n = shown.filter(x => x[0] === day).length;
+      html += `<h3 class="hday">${dFull(day)} · ${n} ${n === 1 ? "мач" : "мача"}</h3><div class="hgroup">`;
+      open = true;
+    }
+    html += histRow(r);
+  }
+  if (open) html += "</div>";
+  list.innerHTML = html;
+  more.hidden = shown.length <= histLimit;
+  more.textContent = `Покажи още (${shown.length - histLimit} остават)`;
+}
+
+document.getElementById("hist-more").onclick = () => { histLimit += HIST_STEP; renderHistory(); };
+
 for (const b of document.querySelectorAll(".tabs button")) {
   b.onclick = () => {
     for (const other of document.querySelectorAll(".tabs button"))
@@ -785,6 +1017,7 @@ for (const b of document.querySelectorAll(".tabs button")) {
     document.getElementById("tab-board").hidden = b.dataset.tab !== "board";
     document.getElementById("tab-ahead").hidden = b.dataset.tab !== "ahead";
     document.getElementById("tab-detail").hidden = b.dataset.tab !== "detail";
+    document.getElementById("tab-hist").hidden = b.dataset.tab !== "hist";
   };
 }
 
@@ -801,6 +1034,7 @@ document.addEventListener("click", e => {
 });
 
 renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
+renderHistControls(); renderHistPeriods(); renderHistory();
 </script>
 </body>
 </html>

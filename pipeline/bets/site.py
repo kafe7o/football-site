@@ -393,6 +393,79 @@ def fair_sheet(conn, limit=200):
     return list(events.values())
 
 
+def history_section(vconn, days=190):
+    """Всички изиграни мачове с прогноза, за таба "История".
+
+    Два източника, които не се смесват: записите на живо (predictions, направени преди
+    мача) и симулацията (history.sim_predictions) за мачовете без запис на живо. Един мач -
+    един ред: ако има запис на живо, симулацията за него не се показва. Мачове с прогноза
+    на живо, чийто резултат още не е дошъл, стоят с "чака резултат".
+
+    Ред: [дата, лига, домакин, гост, [голове] | None, изход | None, на_живо, модел ‰,
+          пазар ‰ | None, коефициенти | None, избор | None]
+    """
+    now = datetime.now(timezone.utc)
+    since = (now.astimezone(SOFIA).date() - timedelta(days=days)).isoformat()
+    live = {}
+    for r in vconn.execute(
+            """SELECT p.*, m.fthg, m.ftag, m.home_team AS mh, m.away_team AS ma
+                 FROM predictions p LEFT JOIN matches m ON m.id = p.match_id
+                WHERE p.match_date >= ? ORDER BY p.predicted_at""", (since,)):
+        kickoff = datetime.fromisoformat(r["match_date"])
+        if kickoff.tzinfo is None:
+            kickoff = kickoff.replace(tzinfo=timezone.utc)
+        if kickoff > now:
+            continue                      # още не е започнал - той е в "Прогнози напред"
+        day = kickoff.astimezone(SOFIA).date().isoformat()
+        live[(r["league"], r["home_team"], r["away_team"], day)] = (r, day)  # последната версия
+
+    rows, seen = [], set()
+    for r, day in live.values():
+        odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
+        has_odds = all(o is not None for o in odds)
+        # Изборът по цена - същото правило като на предстоящите мачове (value.pick_for_match),
+        # върху залозите, намерени преди мача и вече уредени.
+        bets = [dict(b) for b in vconn.execute(
+            "SELECT * FROM value_bets WHERE match_id = ? AND result IS NOT NULL",
+            (r["match_id"],))] if r["match_id"] else []
+        chosen = value.pick_for_match(bets) if bets else None
+        pick = None
+        if chosen:
+            won = next(b["result"] for b in bets
+                       if b["selection"] == chosen["selection"] and b["bookmaker"] == chosen["bookmaker"])
+            pick = [chosen["selection"], chosen["odds"], won, chosen["tier"]]
+        settled = r["outcome"] is not None
+        rows.append([day, r["league"], r["home_team"], r["away_team"],
+                     [r["fthg"], r["ftag"]] if settled and r["fthg"] is not None else None,
+                     r["outcome"], 1, [r["p_home"], r["p_draw"], r["p_away"]],
+                     implied_row(odds) if has_odds else None, odds if has_odds else None, pick])
+        seen.add((r["league"], day, r["mh"] or r["home_team"], r["ma"] or r["away_team"]))
+
+    if vconn.execute("SELECT 1 FROM sqlite_master WHERE name = 'sim_predictions'").fetchone():
+        for r in vconn.execute("SELECT * FROM sim_predictions WHERE date >= ?", (since,)):
+            if (r["league"], r["date"], r["home_team"], r["away_team"]) in seen:
+                continue
+            outcome = 0 if r["fthg"] > r["ftag"] else (1 if r["fthg"] == r["ftag"] else 2)
+            market = [r["m_home"], r["m_draw"], r["m_away"]]
+            odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
+            rows.append([r["date"], r["league"], r["home_team"], r["away_team"],
+                         [r["fthg"], r["ftag"]], outcome, 0, [r["p_home"], r["p_draw"], r["p_away"]],
+                         market if market[0] is not None else None,
+                         odds if odds[0] is not None else None, None])
+    rows.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
+
+    # Компактно: 6 месеца са ~2000 мача, а сайтът се отваря и от телефон. Лигите отиват
+    # в речник, вероятностите - в промили.
+    codes = sorted({x[1] for x in rows})
+    index = {c: i for i, c in enumerate(codes)}
+    per_mille = lambda probs: [round(v * 1000) for v in probs] if probs else None
+    for x in rows:
+        x[1] = index[x[1]]
+        x[7], x[8] = per_mille(x[7]), per_mille(x[8])
+        x[9] = [round(o, 2) for o in x[9]] if x[9] else None
+    return {"leagues": [results.LEAGUES.get(c, c) for c in codes], "rows": rows}
+
+
 def pipeline_status():
     path = config.LOG_DIR / "pipeline.log"
     if not path.exists():
@@ -505,6 +578,7 @@ def _build(conn, vconn, from_snapshot):
         "record": record,
         "pnl": snap.get("pnl"),
         "research": research,
+        "history": history_section(vconn),
         "source": source,
         "pipeline": pipeline_status(),
     }

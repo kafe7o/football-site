@@ -68,16 +68,69 @@ def download(url):
 def read_csv(raw):
     """CSV-тата на football-data са ту с UTF-8 BOM, ту в latin-1 (имена като Süper Lig).
     Прочетени с грешната кодировка, първата колона става 'ï»¿Div' и всичко се пропуска тихо.
+
+    Декодира се ред по ред: един байт latin-1 някъде във файла иначе обръщаше ЦЕЛИЯ файл
+    в latin-1 и всяко UTF-8 име ставаше боклук ('PreuÃen MÃ¼nster'). В базата такъв
+    отбор се оказваше два отбора, а мачовете му - записани двойно (2026-09-27).
     """
-    for encoding in ("utf-8-sig", "latin-1"):
+    lines = []
+    for line in raw.splitlines():
         try:
-            df = pd.read_csv(io.BytesIO(raw), encoding=encoding, on_bad_lines="skip")
-        except (UnicodeDecodeError, pd.errors.ParserError):
+            lines.append(line.decode("utf-8"))
+        except UnicodeDecodeError:
+            lines.append(line.decode("latin-1"))
+    text = "\n".join(lines).lstrip("\ufeff")
+    df = pd.read_csv(io.StringIO(text), on_bad_lines="skip")
+    df.columns = [str(c).strip().lstrip("\ufeff") for c in df.columns]
+    if "Div" not in df.columns:
+        raise RuntimeError("CSV-то няма колона Div - форматът на football-data се е сменил")
+    return df
+
+
+def unmangle(name):
+    """'PreuÃen MÃ¼nster' -> 'Preußen Münster': UTF-8, прочетен като latin-1."""
+    try:
+        return name.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return name
+
+
+def repair_names(conn):
+    """Слива мачовете, записани под счупено име, с верните им двойници. Коефициентите,
+    прогнозите и залозите се пренасят към верния ред; ако такъв няма, името се поправя.
+    Безопасно е да се пуска всеки път - без счупени имена не прави нищо."""
+    bad = conn.execute(
+        """SELECT * FROM matches WHERE home_team LIKE '%Ã%' OR away_team LIKE '%Ã%'
+                                     OR home_team LIKE '%Â%' OR away_team LIKE '%Â%'""").fetchall()
+    merged = renamed = 0
+    for row in bad:
+        home, away = unmangle(row["home_team"]), unmangle(row["away_team"])
+        if (home, away) == (row["home_team"], row["away_team"]):
             continue
-        df.columns = [str(c).strip().lstrip("﻿") for c in df.columns]
-        if "Div" in df.columns:
-            return df
-    raise RuntimeError("CSV-то не се разчете нито като UTF-8, нито като latin-1")
+        good = conn.execute(
+            "SELECT id, fthg FROM matches WHERE league = ? AND date = ? AND home_team = ? AND away_team = ?",
+            (row["league"], row["date"], home, away)).fetchone()
+        if good is None:
+            conn.execute("UPDATE matches SET home_team = ?, away_team = ? WHERE id = ?",
+                         (home, away, row["id"]))
+            renamed += 1
+            continue
+        if good["fthg"] is None and row["fthg"] is not None:
+            conn.execute("UPDATE matches SET fthg=?, ftag=?, hthg=?, htag=? WHERE id=?",
+                         (row["fthg"], row["ftag"], row["hthg"], row["htag"], good["id"]))
+        conn.execute("UPDATE OR IGNORE odds SET match_id = ? WHERE match_id = ?", (good["id"], row["id"]))
+        conn.execute("DELETE FROM odds WHERE match_id = ?", (row["id"],))
+        for table in ("predictions", "value_bets"):
+            conn.execute(f"UPDATE {table} SET match_id = ? WHERE match_id = ?", (good["id"], row["id"]))
+        conn.execute("DELETE FROM matches WHERE id = ?", (row["id"],))
+        merged += 1
+    if conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'sim_predictions'").fetchone():
+        conn.execute("""DELETE FROM sim_predictions WHERE home_team LIKE '%Ã%' OR away_team LIKE '%Ã%'
+                                                        OR home_team LIKE '%Â%' OR away_team LIKE '%Â%'""")
+    conn.commit()
+    if merged or renamed:
+        log.warning("Счупени имена на отбори: %d мача слети с верните, %d поправени", merged, renamed)
+    return merged + renamed
 
 
 def parse_date(value, dayfirst=True):
@@ -136,6 +189,7 @@ def update_history(conn, years_back=2, leagues=None):
             stored, _ = store_rows(conn, df, season_name(code))
             total += stored
             log.info("%s %s: %d мача", league, season_name(code), stored)
+    repair_names(conn)
     for message in failed:
         log.error("не се изтегли - %s", message)
     if total == 0:
