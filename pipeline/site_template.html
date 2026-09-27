@@ -449,7 +449,8 @@ footer b { color: var(--ink); font-weight: 600; }
     В квадратчетата <b>рамка</b> е най-вероятното според модела, <b>зелено</b> - какво излезе.
     <b>Тип</b> A/B/C е категорията на цените при последното сканиране преди мача (стрелката показва как се е
     менила, например B → A); „без“ - нямаше цена над честната. <b>Правилото</b>: залага се сигналът на модела
-    само в мач от тип A или B, най-много 5 залога на ден; тип C и мач без цена над честната - никога.</p>
+    само в мач от тип A или B - всички от тип A (най-много 8 на ден), тип B само докато общо са под 5;
+    тип C и мач без цена над честната - никога.</p>
   <nav class="days" id="hist-periods" aria-label="Период"></nav>
   <div class="hfilters">
     <div class="hseg" id="hist-filter" role="group" aria-label="Кои мачове"></div>
@@ -496,9 +497,13 @@ const pct = x => (x == null ? "–" : Math.round(x * 100) + "%");
 const selName = s => (s === "Draw" ? "равен" : s);
 const OUTCOME = ["домакин", "равен", "гост"];
 // Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от тип A
-// или B, най-много DAY_MAX на ден - първо тип A, после B, после по-голямата стойност.
-// Тип C и мач без цена над честната - никога.
-const DAY_MAX = 5;
+// или B. Колко на ден зависи от деня: всички от тип A (най-много DAY_MAX), тип B само
+// докато общо са под DAY_B_MAX. Тип C и мач без цена над честната - никога.
+// Същото е в notify.py (DAY_MAX, DAY_B_MAX) - известията и сайтът казват едно и също.
+const DAY_MAX = 8, DAY_B_MAX = 5;
+const DAY_LIMIT_TEXT = `всички от тип A (най-много ${DAY_MAX}), тип B само докато общо са под ${DAY_B_MAX}`;
+// Мястото i в подредения ден (първо A, после B, после стойността) - влиза ли.
+const dayAllowed = (i, isA) => i < DAY_MAX && (isA || i < DAY_B_MAX);
 const d3 = iso => { const d = new Date(iso + "T12:00:00"); return WD3[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1); };
 const dFull = iso => { const d = new Date(iso + "T12:00:00"); return WD[d.getDay()] + ", " + d.getDate() + " " + MN[d.getMonth()]; };
 
@@ -728,7 +733,7 @@ function typeHistory(m) {
 function ruleRanks(rows) {
   const ok = rows.filter(m => m.signal && (m.type === "A" || m.type === "B"))
     .sort((a, b) => (a.type === "A" ? 0 : 1) - (b.type === "A" ? 0 : 1) || b.signal.value - a.signal.value);
-  return new Map(ok.map((m, i) => [m.event_id, i]));
+  return new Map(ok.map((m, i) => [m.event_id, dayAllowed(i, m.type === "A")]));
 }
 
 function ruleLine(m, ranks) {
@@ -739,9 +744,8 @@ function ruleLine(m, ranks) {
     const why = m.type === "C" ? "мачът е тип C" : m.type === "-" ? "няма цена над честната" : "няма данни за цените";
     return `<div class="rule none">${head} · <b>не се залага</b> - ${why}</div>`;
   }
-  const place = ranks ? ranks.get(m.event_id) : 0;
-  if (place != null && place >= DAY_MAX)
-    return `<div class="rule none">${head} · <b>не се залага</b> - над ${DAY_MAX} залога за деня</div>`;
+  if (ranks && ranks.get(m.event_id) === false)
+    return `<div class="rule none">${head} · <b>не се залага</b> - над лимита за деня (${DAY_LIMIT_TEXT})</div>`;
   return `<div class="rule go">${head} · <b>залага се</b> (тип ${m.type})</div>`;
 }
 
@@ -1045,11 +1049,12 @@ function bankRun(rows, rule) {
     if (c.skip) { info.set(r, c); continue; }
     (byDay[r[0]] ||= []).push([r, c]);
   }
-  // Най-много DAY_MAX на ден: първо тип A, после B, после по-голямата стойност.
+  // Лимитът за деня: първо тип A, после B, после по-голямата стойност (dayAllowed).
   const chosen = new Map();
   for (const list of Object.values(byDay)) {
     list.sort((a, b) => a[1].rank[0] - b[1].rank[0] || a[1].rank[1] - b[1].rank[1]);
-    list.forEach(([r, c], i) => i < DAY_MAX ? chosen.set(r, c) : info.set(r, { ...c, skip: `над ${DAY_MAX} залога за деня` }));
+    list.forEach(([r, c], i) => dayAllowed(i, c.rank[0] === 0) ? chosen.set(r, c)
+      : info.set(r, { ...c, skip: "над лимита за деня" }));
   }
   let bank = BANK_START, hi = bank, lo = bank, n = 0, won = 0, waiting = 0, bust = null;
   const path = [bank], flat = [];
@@ -1099,7 +1104,7 @@ function bankCard(key, title, b) {
 
 function renderHistBank(runs) {
   document.getElementById("hist-bank").innerHTML = `
-    <p class="eyebrow">Банка: 100 € начало, 10% от баланса на всеки залог, най-много ${DAY_MAX} на ден</p>
+    <p class="eyebrow">Банка: 100 € начало, 10% от баланса на всеки залог</p>
     <div class="hseg" id="hist-bankmode" role="group" aria-label="Кое правило да се вижда в списъка" style="margin-bottom:12px">
       ${RULES.map(([k, label]) => `<button data-m="${k}" aria-pressed="${k === histRule}">${label}</button>`).join("")}</div>
     <div class="bgrid">${runs.map(([k, title, b]) => bankCard(k, title, b)).join("")}</div>
@@ -1107,8 +1112,7 @@ function renderHistBank(runs) {
       коефициента дава над 5% стойност) се залага само ако мачът е тип A или B. Другите две банки са за
       сравнение: само изборът по цена, и всички сигнали без проверка на типа. Всеки залог е 10% от баланса в
       момента: от 100 € стават 120 € - следващият е 12 €; загуби ли, стават 108 € - следващият е 10.80 €.
-      Ако правилото даде повече от ${DAY_MAX} залога за един ден, влизат първо тип A, после B, после
-      тези с по-голяма стойност. Това е проверка на правилата върху истинските записи, не съвет: при малко
+      Колко залога на ден зависи от деня: ${DAY_LIMIT_TEXT}; при равни - тези с по-голяма стойност. Това е проверка на правилата върху истинските записи, не съвет: при малко
       залози резултатът е предимно случайност - виж грешката в таблицата отдолу.</p>`;
   for (const b of document.querySelectorAll("#hist-bankmode button, #hist-bank .bcard"))
     b.onclick = () => { histRule = b.dataset.m || b.dataset.rule; histLimit = HIST_STEP; renderHistory(); };

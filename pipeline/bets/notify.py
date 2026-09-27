@@ -80,7 +80,25 @@ def pick_text(pick):
             f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
 
 
-def rule_text(m):
+DAY_MAX, DAY_B_MAX = 8, 5   # същото като в site_template.html
+
+
+def day_allowed(rows):
+    """Кои мачове влизат по правилото за деня им: всички от тип A (най-много DAY_MAX), тип B
+    само докато общо са под DAY_B_MAX. Първо A, после B, после по-голямата стойност."""
+    by_day = {}
+    for m in rows:
+        if m.get("signal") and m.get("type") in ("A", "B"):
+            by_day.setdefault(m.get("date"), []).append(m)
+    allowed = {}
+    for day in by_day.values():
+        day.sort(key=lambda m: (m["type"] != "A", -m["signal"]["value"]))
+        for i, m in enumerate(day):
+            allowed[m["event_id"]] = i < DAY_MAX and (m["type"] == "A" or i < DAY_B_MAX)
+    return allowed
+
+
+def rule_text(m, allowed=None):
     """Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от
     тип A или B. Тип C - никога; без цена над честната - също не."""
     sig = m.get("signal")
@@ -88,6 +106,8 @@ def rule_text(m):
         return "сигнал на модела: няма"
     head = f"сигнал на модела: {name(sig['name'])} @ {sig['odds']:.2f}"
     kind = m.get("type")
+    if kind in ("A", "B") and allowed is not None and allowed.get(m["event_id"]) is False:
+        return f"{head} - НЕ се залага (над лимита за деня)"
     if kind in ("A", "B"):
         return f"{head} - залага се (тип {kind})"
     why = {"C": "тип C", "-": "няма цена над честната"}.get(kind, "няма данни за цените")
@@ -111,18 +131,19 @@ def prematch(conn, rows, now=None):
             continue
         groups.setdefault(start, []).append(m)
 
+    allowed = day_allowed(rows)
     sent = 0
     for start, group in sorted(groups.items()):
         minutes = int((start - now).total_seconds() // 60)
         if len(group) == 1:
-            title, message = single_prematch(group[0], minutes)
+            title, message = single_prematch(group[0], minutes, allowed)
         else:
             # Първо мачовете с избор - те са причината известието да е важно.
             group.sort(key=lambda m: (m.get("pick") is None, m["home"]))
             with_pick = sum(1 for m in group if m.get("pick"))
             title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
                      f" - с избор {with_pick}")
-            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}; {rule_text(m)}"
+            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}; {rule_text(m, allowed)}"
                                 for m in group)
         if send(title, message):
             sent += 1
@@ -135,13 +156,14 @@ def prematch(conn, rows, now=None):
     return sent
 
 
-def single_prematch(m, minutes):
+def single_prematch(m, minutes, allowed=None):
     """Известието за един мач - изборът, моделът, пазарът и най-добрите цени."""
     lines = []
     pick = m.get("pick")
     lines.append(f"Избор по цена: {pick_text(pick)}" if pick
                  else "Без избор по цена - никоя цена не е над честната")
-    lines.append(rule_text(m)[0].upper() + rule_text(m)[1:])
+    rule = rule_text(m, allowed)
+    lines.append(rule[0].upper() + rule[1:])
     if m.get("model"):
         lines.append("модел (домакин / равен / гост) " + " / ".join(pct(p) for p in m["model"]))
     if m.get("market"):
