@@ -19,7 +19,7 @@ teams.match(), който при несигурност връща None и це�
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import db, model, odds_api, results, teams
@@ -52,6 +52,24 @@ LEAGUE_TO_SPORT = {
     "T1": "soccer_turkey_super_league", "G1": "soccer_greece_super_league",
     "SC0": "soccer_spl",
 }
+
+
+def active_sports(conn, days=7):
+    """Лигите за скенера на цени: шестте големи винаги, останалите - само когато имат мач
+    в следващите days дни. Без мачове заявката е празна, а пак струва кредит.
+
+    Затова тип A/B/C вече има за мачовете от всичките 18 лиги (2026-09-28): собственикът
+    видя мачове от Segunda без тип и не разбра защо - скенерът гледаше само 6 лиги.
+    """
+    from .value import FOOTBALL
+    today = datetime.now(timezone.utc).date()
+    leagues = [r[0] for r in conn.execute(
+        """SELECT DISTINCT league FROM matches
+            WHERE fthg IS NULL AND date BETWEEN ? AND ? ORDER BY league""",
+        (today.isoformat(), (today + timedelta(days=days)).isoformat()))]
+    extra = [LEAGUE_TO_SPORT[lg] for lg in leagues
+             if lg in LEAGUE_TO_SPORT and LEAGUE_TO_SPORT[lg] not in FOOTBALL]
+    return FOOTBALL + extra
 
 
 def best_prices(league, known_teams):

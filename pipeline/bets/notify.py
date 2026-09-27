@@ -10,6 +10,12 @@ ntfy и се абонира за темата в NTFY_TOPIC. Темата е д�
 изборът (най-добрата цена над честната, степен A или B), модел, пазар, най-добрите цени;
 изборът е по цена (виж value.pick_for_match), без размер на залога.
 
+Мачовете с еднакъв начален час идват в ЕДНО известие: скенерът следи 18 лиги и в събота
+в 15:00 започват десетки мачове - известие за всеки би било шум.
+
+Смяна на типа A/B/C (type_changes): когато мач мине от B в A, от A в C или изгуби цената си
+над честната. Не повече от веднъж на 2 часа за мач, защото цените мигат.
+
 Без NTFY_TOPIC нищо не се праща - само се записва в лога какво би се пратило.
 """
 
@@ -19,11 +25,15 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 log = logging.getLogger(__name__)
 
 NTFY_URL = "https://ntfy.sh"
 WINDOW = (timedelta(minutes=45), timedelta(minutes=75))
+TYPE_QUIET = timedelta(hours=2)     # най-много едно известие за смяна на типа на мач за толкова
+TYPE_NAMES = {"A": "A", "B": "B", "C": "C", "-": "без"}
+SOFIA = ZoneInfo("Europe/Sofia")
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS alerts_sent (
     event_id TEXT PRIMARY KEY,
@@ -58,11 +68,19 @@ def pct(x):
     return "–" if x is None else f"{x:.0%}"
 
 
+def pick_text(pick):
+    if not pick:
+        return "без избор"
+    return (f"{pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
+            f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
+
+
 def prematch(conn, rows, now=None):
-    """Известие за всеки мач, който започва след около час. Всеки мач - веднъж."""
+    """Известие за мачовете, които започват след около час. Всеки мач - веднъж; мачовете
+    с еднакъв начален час - в едно известие."""
     conn.execute(SCHEMA)
     now = now or datetime.now(timezone.utc)
-    sent = 0
+    groups = {}
     for m in rows:
         if not m.get("event_id") or not m.get("commence_iso"):
             continue
@@ -72,32 +90,111 @@ def prematch(conn, rows, now=None):
             continue
         if conn.execute("SELECT 1 FROM alerts_sent WHERE event_id = ?", (m["event_id"],)).fetchone():
             continue
+        groups.setdefault(start, []).append(m)
 
-        lines = []
-        pick = m.get("pick")
-        if pick:
-            lines.append(f"Избор: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
-                         f" - степен {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
+    sent = 0
+    for start, group in sorted(groups.items()):
+        minutes = int((start - now).total_seconds() // 60)
+        if len(group) == 1:
+            title, message = single_prematch(group[0], minutes)
         else:
-            lines.append("Без избор - никоя цена не е над честната")
-        if m.get("model"):
-            lines.append("модел " + " / ".join(pct(p) for p in m["model"]))
-        if m.get("market"):
-            lines.append("пазар " + " / ".join(pct(p) for p in m["market"]))
-        for o in m.get("books", []):
-            if o["prices"]:
-                best = o["prices"][0]
-                lines.append(f"{o['selection']}: {best['odds']:.2f} ({best['name']})")
-
-        title = f"{m['home']} - {m['away']} след {int(left.total_seconds() // 60)} мин"
-        if send(title, "\n".join(lines)):
+            # Първо мачовете с избор - те са причината известието да е важно.
+            group.sort(key=lambda m: (m.get("pick") is None, m["home"]))
+            with_pick = sum(1 for m in group if m.get("pick"))
+            title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
+                     f" - с избор {with_pick}")
+            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}" for m in group)
+        if send(title, message):
             sent += 1
-        conn.execute("INSERT OR REPLACE INTO alerts_sent (event_id, sent_at) VALUES (?, ?)",
-                     (m["event_id"], now.isoformat(timespec="seconds")))
+        for m in group:
+            conn.execute("INSERT OR REPLACE INTO alerts_sent (event_id, sent_at) VALUES (?, ?)",
+                         (m["event_id"], now.isoformat(timespec="seconds")))
     conn.commit()
     if sent:
         log.info("Пратени известия преди мач: %d", sent)
     return sent
+
+
+def single_prematch(m, minutes):
+    """Известието за един мач - изборът, моделът, пазарът и най-добрите цени."""
+    lines = []
+    pick = m.get("pick")
+    if pick:
+        lines.append(f"Избор: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
+                     f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
+    else:
+        lines.append("Без избор - никоя цена не е над честната")
+    if m.get("model"):
+        lines.append("модел " + " / ".join(pct(p) for p in m["model"]))
+    if m.get("market"):
+        lines.append("пазар " + " / ".join(pct(p) for p in m["market"]))
+    for o in m.get("books", []):
+        if o["prices"]:
+            best = o["prices"][0]
+            lines.append(f"{o['selection']}: {best['odds']:.2f} ({best['name']})")
+    return f"{m['home']} - {m['away']} след {minutes} мин", "\n".join(lines)
+
+
+def type_changes(conn, now=None):
+    """Известие, когато типът на мач се смени (B -> A, A -> C, B -> без...).
+
+    Не повече от веднъж на TYPE_QUIET за мач: цените мигат и всяко мигане не е новина.
+    Ако типът се е върнал към последния, който знаеш, известие няма. За започнал мач -
+    също няма, късно е.
+    """
+    now = now or datetime.now(timezone.utc)
+    stamp = now.isoformat(timespec="seconds")
+    pending = {}
+    for r in conn.execute("SELECT * FROM type_log WHERE notified_at IS NULL ORDER BY id"):
+        pending.setdefault(r["event_id"], []).append(r)
+    lines = []
+    for event_id, rows in pending.items():
+        latest = rows[-1]
+        ids = [r["id"] for r in rows]
+        start = datetime.fromisoformat(latest["commence_time"].replace("Z", "+00:00"))
+        known = conn.execute(
+            """SELECT type, notified_at FROM type_log
+                WHERE event_id = ? AND notified_at IS NOT NULL AND notified_at NOT IN ('skip', 'late')
+                ORDER BY id DESC LIMIT 1""", (event_id,)).fetchone()
+        if start <= now:
+            mark(conn, ids, "late")
+            continue
+        if known is None:
+            continue
+        if known["type"] == latest["type"]:
+            mark(conn, ids, "skip")            # мигна и се върна - нищо ново
+            continue
+        if known["notified_at"] != "baseline":
+            last_sent = datetime.fromisoformat(known["notified_at"])
+            if now - last_sent < TYPE_QUIET:
+                continue                       # чака - при следващия цикъл пак се проверява
+        pick = json.loads(latest["pick_json"]) if latest["pick_json"] else None
+        when = start.astimezone(SOFIA).strftime("%d.%m %H:%M")
+        lines.append((f"{latest['home_team']} - {latest['away_team']} ({when}): "
+                      f"{TYPE_NAMES[known['type']]} -> {TYPE_NAMES[latest['type']]}"
+                      + (f", избор {pick_text(pick)}" if pick else ""),
+                      latest, known["type"]))
+        mark(conn, ids, stamp)
+    conn.commit()
+    if not lines:
+        return 0
+    if len(lines) == 1:
+        text, latest, old = lines[0]
+        title = (f"Тип {TYPE_NAMES[old]} -> {TYPE_NAMES[latest['type']]}: "
+                 f"{latest['home_team']} - {latest['away_team']}")
+        message = text
+    else:
+        title = f"Смяна на типа: {len(lines)} мача"
+        message = "\n".join(text for text, _, _ in lines[:20])
+        if len(lines) > 20:
+            message += f"\nи още {len(lines) - 20} - виж сайта"
+    send(title, message, tags="arrows_counterclockwise")
+    log.info("Известие за смяна на типа: %d мача", len(lines))
+    return len(lines)
+
+
+def mark(conn, ids, value):
+    conn.executemany("UPDATE type_log SET notified_at = ? WHERE id = ?", [(value, i) for i in ids])
 
 
 def forecast_changes(conn, rows):

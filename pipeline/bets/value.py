@@ -166,6 +166,44 @@ def store_fair(conn, event, sport, books, order, sharp, sharp_prices, fair):
              name, i, fair[i], sharp, sharp_prices[i], best_book, best_odds, all_prices, now))
 
 
+def current_type(rows):
+    """Типът на мача по цените от ТОВА сканиране: A или B, ако има избор; C, ако има само
+    цени с разлика над 8%; "-", ако цена над честната няма. Връща (тип, избор)."""
+    pick = pick_for_match(rows)
+    if pick:
+        return pick["tier"], pick
+    tiers = {tier(r["sharp_book"], r["edge"], r.get("n_books")) for r in rows
+             if r["bookmaker"] not in EXCHANGES}
+    return ("C" if "C" in tiers else "-"), None
+
+
+def record_type(conn, event, sport, rows, now):
+    """Записва типа сега (type_now) и - ако се е сменил - нов ред в type_log.
+    Връща True при смяна (не и при първия запис на мача)."""
+    kind, pick = current_type(rows)
+    pick_json = json.dumps(pick) if pick else None
+    stamp = now.isoformat(timespec="seconds")
+    conn.execute(
+        """INSERT INTO type_now (event_id, sport, home_team, away_team, commence_time, type,
+                                 pick_json, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(event_id) DO UPDATE SET type = excluded.type, pick_json = excluded.pick_json,
+               commence_time = excluded.commence_time, updated_at = excluded.updated_at""",
+        (event["id"], sport, event["home_team"], event["away_team"], event["commence_time"],
+         kind, pick_json, stamp))
+    last = conn.execute("SELECT type FROM type_log WHERE event_id = ? ORDER BY id DESC LIMIT 1",
+                        (event["id"],)).fetchone()
+    if last is not None and last["type"] == kind:
+        return False
+    conn.execute(
+        """INSERT INTO type_log (event_id, sport, home_team, away_team, commence_time, type,
+                                 pick_json, recorded_at, notified_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (event["id"], sport, event["home_team"], event["away_team"], event["commence_time"],
+         kind, pick_json, stamp, "baseline" if last is None else None))
+    return last is not None
+
+
 def store(conn, rows):
     """Нов залог се записва веднъж. Повторната поява е същият залог, не нов."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -209,7 +247,7 @@ def refresh_closing(conn, events):
 def scan(conn=None, sports=None, regions="eu", min_edge=MIN_EDGE, allowed=None):
     conn = conn or db.init()
     now = datetime.now(timezone.utc)
-    found, seen = [], 0
+    found, seen, changed = [], 0, 0
     for sport in sports or FOOTBALL:
         try:
             events = odds_api.odds(sport, regions)
@@ -221,16 +259,19 @@ def scan(conn=None, sports=None, regions="eu", min_edge=MIN_EDGE, allowed=None):
         seen += len(upcoming)
         refresh_closing(conn, upcoming)
         for event in upcoming:
-            found.extend(scan_event(event, sport, min_edge, allowed))
+            rows = scan_event(event, sport, min_edge, allowed)
+            found.extend(rows)
             books = prices_by_book(event)
             order = outcome_order(event, books)
-            if len(order) in (2, 3):
+            if len(order) in (2, 3) and len(books) >= MIN_BOOKS:
                 sharp, sharp_prices, fair = reference(books, order)
                 if sharp:
                     store_fair(conn, event, sport, books, order, sharp, sharp_prices, fair)
+                    changed += record_type(conn, event, sport, rows, now)
         conn.commit()
     added = store(conn, found)
-    log.info("Прегледани %d мача, намерени %d предложения, нови %d", seen, len(found), added)
+    log.info("Прегледани %d мача, намерени %d предложения, нови %d, сменен тип %d",
+             seen, len(found), added, changed)
     return found
 
 
@@ -317,6 +358,7 @@ def pick_for_match(bets):
             "edge": best["edge"], "p_fair": best["p_fair"],
             "sharp_book": best["sharp_book"], "sharp_odds": best["sharp_odds"],
             "n_books": best.get("n_books"), "found_at": best.get("found_at"),
+            "outcome_idx": best.get("outcome_idx"),
             "tier": tier(best["sharp_book"], best["edge"], best.get("n_books"))}
 
 

@@ -18,6 +18,7 @@ from .market import implied_row
 from zoneinfo import ZoneInfo
 
 SOFIA = ZoneInfo("Europe/Sofia")   # облакът е в UTC - часовете се показват в българско
+UK = ZoneInfo("Europe/London")     # датите на football-data са британски
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def day_matches(conn, since, until):
         market = implied_row(odds) if all(o is not None for o in odds) else None
         played = r["fthg"] is not None
         out.append({
-            "date": r["date"], "time": (r["kickoff"] or "")[:5],
+            "id": r["id"], "date": r["date"], "time": (r["kickoff"] or "")[:5],
             "league": results.LEAGUES.get(r["league"], r["league"]),
             "home": r["home_team"], "away": r["away_team"],
             "model": [r["p_home"], r["p_draw"], r["p_away"]] if r["p_home"] is not None else None,
@@ -250,9 +251,11 @@ def preview(conn, days=PREVIEW_DAYS, exported=None, events_conn=None):
             if fitted is None:
                 reason = "малко история за тази лига"
             else:
-                home = teams.match(e["home_team"], fitted.teams)
-                away = teams.match(e["away_team"], fitted.teams)
-                if not home or not away:
+                home = (teams.match(e["home_team"], fitted.teams)
+                        or teams.loose_match(e["home_team"], fitted.teams))
+                away = (teams.match(e["away_team"], fitted.teams)
+                        or teams.loose_match(e["away_team"], fitted.teams))
+                if not home or not away or home == away:
                     reason = "непознат отбор за модела"
                 else:
                     probs = fitted.probabilities(home, away)
@@ -276,8 +279,93 @@ def preview(conn, days=PREVIEW_DAYS, exported=None, events_conn=None):
     return out
 
 
+def load_types(value_conn):
+    """Типът A/B/C на всеки мач сега (type_now) и пътят му във времето (type_log)."""
+    out = {}
+    for r in value_conn.execute("SELECT * FROM type_now"):
+        pick = json.loads(r["pick_json"]) if r["pick_json"] else None
+        if pick:
+            name, url = BOOK_LINKS.get(pick["bookmaker"], (pick["bookmaker"], None))
+            pick.update({"book_name": name, "url": url})
+        out[r["event_id"]] = {"type": r["type"], "pick": pick, "path": []}
+    for r in value_conn.execute("SELECT event_id, type, recorded_at FROM type_log ORDER BY id"):
+        if r["event_id"] in out:
+            out[r["event_id"]]["path"].append([r["type"], r["recorded_at"]])
+    return out
+
+
+def match_type(bets, scanned):
+    """Типът по всички намерени цени - за мачове отпреди записа на типа (type_now)."""
+    tiers = {value.tier(b["sharp_book"], b["edge"], b.get("n_books"))
+             for b in bets if b["bookmaker"] not in value.EXCHANGES}
+    return next((t for t in "ABC" if t in tiers), "-" if scanned else None)
+
+
+def match_types(match_conn, value_conn, since, until):
+    """Тип A/B/C за мачовете от базата - какъв е СЕГА, а за изиграните: какъв е бил при
+    последното сканиране преди началото. "-" значи, че скенерът е гледал мача, но цена над
+    честната няма. Мач, който скенерът не е гледал, липсва в резултата.
+
+    Мачовете от football-data и събитията от odds API имат различни имена - свързват се
+    с teams.match_fixture (домакин + гост, същата лига и ден). Ключът е id на мача в
+    match_conn: на лаптопа таблото е от football.db, историята - от cloud.db.
+    """
+    lo = (datetime.fromisoformat(since) - timedelta(days=1)).date().isoformat()
+    hi = (datetime.fromisoformat(until) + timedelta(days=1)).date().isoformat()
+    events = {}
+    for table in ("type_now", "fair_prices", "value_bets"):
+        for r in value_conn.execute(
+                f"""SELECT DISTINCT sport, event_id, home_team, away_team, commence_time FROM {table}
+                     WHERE sport LIKE 'soccer_%' AND substr(commence_time, 1, 10) BETWEEN ? AND ?""",
+                (lo, hi)):
+            events.setdefault(r["event_id"], dict(r))
+    bets = {}
+    for b in value_conn.execute(
+            """SELECT * FROM value_bets
+                WHERE sport LIKE 'soccer_%' AND substr(commence_time, 1, 10) BETWEEN ? AND ?""",
+            (lo, hi)):
+        bets.setdefault(b["event_id"], []).append(dict(b))
+    fixtures = {}
+    for m in match_conn.execute(
+            """SELECT id, league, date, home_team, away_team, fthg, ftag FROM matches
+                WHERE date BETWEEN ? AND ?""", (since, until)):
+        fixtures.setdefault((m["league"], m["date"]), []).append(dict(m))
+    types = load_types(value_conn)
+    out = {}
+    for e in events.values():
+        league = SPORT_TO_LEAGUE.get(e["sport"])
+        if league is None:
+            continue
+        day = local(e["commence_time"]).astimezone(UK).date().isoformat()
+        fixture = teams.match_fixture(e["home_team"], e["away_team"], fixtures.get((league, day), []))
+        if fixture is None:
+            continue
+        found = bets.get(e["event_id"], [])
+        now = types.get(e["event_id"])
+        if now:
+            kind, pick, path = now["type"], now["pick"], [t for t, _ in now["path"]]
+        else:
+            kind, pick, path = match_type(found, True), value.pick_for_match(found), []
+            if pick:
+                name, url = BOOK_LINKS.get(pick["bookmaker"], (pick["bookmaker"], None))
+                pick.update({"book_name": name, "url": url})
+        if pick:
+            # Спечелен ли е: от уреждането на залога, иначе от резултата на мача в базата.
+            bet = next((b for b in found if b["selection"] == pick["selection"]
+                        and b["bookmaker"] == pick["bookmaker"]), None)
+            result = bet["result"] if bet else None
+            if result is None and fixture["fthg"] is not None and pick.get("outcome_idx") is not None:
+                outcome = (0 if fixture["fthg"] > fixture["ftag"]
+                           else 1 if fixture["fthg"] == fixture["ftag"] else 2)
+                result = int(outcome == pick["outcome_idx"])
+            pick = {**pick, "result": result}
+        out[fixture["id"]] = {"type": kind, "pick": pick, "path": path}
+    return out
+
+
 def attach_bets(conn, rows):
-    """Закача към всеки мач залозите по цена и всички цени по букмейкър."""
+    """Закача към всеки мач залозите по цена, всички цени по букмейкър и типа A/B/C."""
+    types = load_types(conn)
     for m in rows:
         if not m.get("event_id"):
             continue
@@ -311,6 +399,14 @@ def attach_bets(conn, rows):
             name, url = BOOK_LINKS.get(pick["bookmaker"], (pick["bookmaker"], None))
             pick.update({"book_name": name, "url": url})
         m["pick"] = pick
+        m["type"] = match_type(m["bets"], bool(outcomes))
+        m["type_path"] = []
+        now = types.get(m["event_id"])
+        if now:
+            # Сегашното състояние е от последното сканиране, не от всички намерени някога
+            # цени: цена отпреди два дни може вече да я няма.
+            m["type"], m["pick"] = now["type"], now["pick"]
+            m["type_path"] = now["path"]
 
 
 def log_forecasts(conn, rows):
@@ -404,7 +500,7 @@ def _sofia_clock(day, uk_clock):
     return start.astimezone(SOFIA).strftime("%H:%M")
 
 
-def history_section(vconn, days=190):
+def history_section(vconn, days=190, types=None):
     """Всички изиграни мачове с прогноза, за таба "История".
 
     Два източника, които не се смесват: записите на живо (predictions, направени преди
@@ -413,7 +509,11 @@ def history_section(vconn, days=190):
     на живо, чийто резултат още не е дошъл, стоят с "чака резултат".
 
     Ред: [дата, лига, домакин, гост, [голове] | None, изход | None, на_живо, модел ‰,
-          пазар ‰ | None, коефициенти | None, избор | None, час | None]
+          пазар ‰ | None, коефициенти | None, избор | None, час | None, тип | None,
+          пътят на типа ("BA-") | None]
+
+    Тип: A/B/C от цените (match_types), "-" без цена над честната, None - без данни за
+    цените (симулацията и лигите, които скенерът не е гледал).
 
     Часът (българско време) е за банката в таба: мачове с едно и също начало се залагат от
     един и същ баланс - резултатът на единия не се знае, преди другият да е започнал.
@@ -438,22 +538,18 @@ def history_section(vconn, days=190):
     for r, day, clock in live.values():
         odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
         has_odds = all(o is not None for o in odds)
-        # Изборът по цена - същото правило като на предстоящите мачове (value.pick_for_match),
-        # върху залозите, намерени преди мача и вече уредени.
-        bets = [dict(b) for b in vconn.execute(
-            "SELECT * FROM value_bets WHERE match_id = ? AND result IS NOT NULL",
-            (r["match_id"],))] if r["match_id"] else []
-        chosen = value.pick_for_match(bets) if bets else None
-        pick = None
-        if chosen:
-            won = next(b["result"] for b in bets
-                       if b["selection"] == chosen["selection"] and b["bookmaker"] == chosen["bookmaker"])
-            pick = [chosen["selection"], chosen["odds"], won, chosen["tier"]]
+        # Изборът по цена и типът - същото правило като на предстоящите мачове
+        # (value.pick_for_match), върху цените, намерени преди мача.
+        kind = (types or {}).get(r["match_id"]) if r["match_id"] else None
+        chosen = kind["pick"] if kind else None
+        pick = ([chosen["selection"], chosen["odds"], chosen["result"], chosen["tier"]]
+                if chosen else None)
         settled = r["outcome"] is not None
         rows.append([day, r["league"], r["home_team"], r["away_team"],
                      [r["fthg"], r["ftag"]] if settled and r["fthg"] is not None else None,
                      r["outcome"], 1, [r["p_home"], r["p_draw"], r["p_away"]],
-                     implied_row(odds) if has_odds else None, odds if has_odds else None, pick, clock])
+                     implied_row(odds) if has_odds else None, odds if has_odds else None, pick, clock,
+                     kind["type"] if kind else None, "".join(kind["path"]) if kind else None])
         seen.add((r["league"], day, r["mh"] or r["home_team"], r["ma"] or r["away_team"]))
 
     if vconn.execute("SELECT 1 FROM sqlite_master WHERE name = 'sim_predictions'").fetchone():
@@ -470,7 +566,8 @@ def history_section(vconn, days=190):
             rows.append([r["date"], r["league"], r["home_team"], r["away_team"],
                          [r["fthg"], r["ftag"]], outcome, 0, [r["p_home"], r["p_draw"], r["p_away"]],
                          market if market[0] is not None else None,
-                         odds if odds[0] is not None else None, None, _sofia_clock(r["date"], r["kickoff"])])
+                         odds if odds[0] is not None else None, None, _sofia_clock(r["date"], r["kickoff"]),
+                         None, None])
     rows.sort(key=lambda x: (x[0], x[11] or "", x[1], x[2]), reverse=True)
 
     # Компактно: 6 месеца са ~2000 мача, а сайтът се отваря и от телефон. Лигите отиват
@@ -574,6 +671,11 @@ def _build(conn, vconn, from_snapshot):
         since = (today - timedelta(days=DAYS_BACK)).isoformat()
         until = (today + timedelta(days=DAYS_FORWARD)).isoformat()
         matches = day_matches(conn, since, until)
+        board_types = match_types(conn, vconn, since, until)
+        for m in matches:
+            kind = board_types.get(m["id"])
+            m["type"], m["pick"], m["type_path"] = ((kind["type"], kind["pick"], kind["path"])
+                                                    if kind else (None, None, []))
         preview_rows = preview(conn, events_conn=vconn)
         record = {**predict.record(conn), "backtest": signal_backtest()}
         research, source = research_summary(), None
@@ -597,7 +699,8 @@ def _build(conn, vconn, from_snapshot):
         "record": record,
         "pnl": snap.get("pnl"),
         "research": research,
-        "history": history_section(vconn),
+        "history": history_section(vconn, types=match_types(
+            vconn, vconn, (today - timedelta(days=190)).isoformat(), today.isoformat())),
         "source": source,
         "pipeline": pipeline_status(),
     }

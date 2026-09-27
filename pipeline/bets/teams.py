@@ -27,7 +27,7 @@ ALIASES = {
     "Real Sociedad": "Sociedad", "Rayo Vallecano": "Vallecano", "Espanyol": "Espanol",
     "Deportivo Alaves": "Alaves", "Real Valladolid": "Valladolid",
     "Inter Milan": "Inter", "AC Milan": "Milan", "AS Roma": "Roma",
-    "Hellas Verona": "Verona", "Atalanta BC": "Atalanta", "SSC Napoli": "Napoli",
+    "Hellas Verona": "Verona", "FSV Mainz 05": "Mainz", "1. FSV Mainz 05": "Mainz", "Atalanta BC": "Atalanta", "SSC Napoli": "Napoli",
     "Borussia Dortmund": "Dortmund", "Bayer Leverkusen": "Leverkusen",
     "Borussia Monchengladbach": "M'gladbach", "Bayern Munich": "Bayern Munich",
     "Eintracht Frankfurt": "Ein Frankfurt", "FC Koln": "FC Koln", "1. FC Köln": "FC Koln",
@@ -139,3 +139,16 @@ def match_fixture(home, away, fixtures, key=lambda f: (f["home_team"], f["away_t
     if scored and (len(scored) == 1 or scored[0][0] > scored[1][0]):
         return scored[0][1]
     return None
+
+
+def loose_match(name, candidates):
+    """Последен опит в рамките на ЕДНА лига: името с най-много общи думи (similar), ако е
+    поне наполовина и е единственото най-добро. "Real Valladolid CF" -> "Valladolid",
+    "Sporting Gijón" -> "Sp Gijon"; "Sheffield Wednesday" при двата отбора от Шефилд -
+    нищо, защото са равни. За прегледа напред, където мачът още не е в базата."""
+    scored = sorted(((similar(name, c), c) for c in candidates), reverse=True)
+    if not scored or scored[0][0] < 0.5:
+        return None
+    if len(scored) > 1 and scored[1][0] == scored[0][0]:
+        return None
+    return scored[0][1]

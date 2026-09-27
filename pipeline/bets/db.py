@@ -107,6 +107,35 @@ CREATE TABLE IF NOT EXISTS fair_prices (
     UNIQUE(event_id, selection)
 );
 
+-- Типът A/B/C на мача СЕГА (value.tier на най-добрата текуща цена над честната) - един
+-- ред на мач, обновява се при всяко сканиране. "-" значи, че цена над честната няма.
+CREATE TABLE IF NOT EXISTS type_now (
+    event_id      TEXT PRIMARY KEY,
+    sport         TEXT NOT NULL,
+    home_team     TEXT NOT NULL,
+    away_team     TEXT NOT NULL,
+    commence_time TEXT NOT NULL,
+    type          TEXT NOT NULL,
+    pick_json     TEXT,                 -- изборът в момента (value.pick_for_match) или NULL
+    updated_at    TEXT NOT NULL
+);
+
+-- Как се мени типът през дните: нов ред само при смяна (B -> A, A -> C...). Първият ред на
+-- мача е отправната точка и за него известие няма (notified_at = 'baseline').
+CREATE TABLE IF NOT EXISTS type_log (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id      TEXT NOT NULL,
+    sport         TEXT NOT NULL,
+    home_team     TEXT NOT NULL,
+    away_team     TEXT NOT NULL,
+    commence_time TEXT NOT NULL,
+    type          TEXT NOT NULL,
+    pick_json     TEXT,
+    recorded_at   TEXT NOT NULL,
+    notified_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS type_log_event ON type_log(event_id, id);
+
 -- Как се мени прогнозата за един и същ мач през дните. Записва се нов ред само когато
 -- нещо се е променило осезаемо (над CHANGE_THRESHOLD), за да не расте безсмислено.
 -- Оттук идват известията "този мач се промени" и историята в подробния изглед.

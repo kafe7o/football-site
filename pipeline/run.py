@@ -172,7 +172,7 @@ def main():
         # Резултатите от odds API идват часове след мача - football-data чака 1-3 дни.
         ok += [step(log, "4. Резултати часове след мача (odds API)", results.fill_from_scores, conn),
                step(log, "4а. Уреждане на прогнози", predict.settle, conn)]
-        ok += [step(log, "5. Скенер за цени", value.scan, conn),
+        ok += [step(log, "5. Скенер за цени", value.scan, conn, predict.active_sports(conn)),
                step(log, "6. Уреждане на залозите по цена", value.settle, conn),
                step(log, "7. Прогнози за днешните мачове", predict.run, conn)]
         built = {}
@@ -183,6 +183,7 @@ def main():
             changed = [m for m in built.get("preview", []) if m["event_id"] in set(built.get("changed", []))]
             ok.append(step(log, "10. Известия за променени прогнози",
                            notify.forecast_changes, conn, changed))
+        ok.append(step(log, "11. Известия за смяна на типа A/B/C", notify.type_changes, conn))
         conn.close()
         log.info("===== Край. Стъпки: %d, паднали: %d =====", len(ok), ok.count(False))
         return 1 if ok.count(False) else 0
