@@ -19,7 +19,7 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from . import db, odds_api
 from .market import implied_probs
@@ -177,9 +177,10 @@ def current_type(rows):
     return ("C" if "C" in tiers else "-"), None
 
 
-def record_type(conn, event, sport, rows, now):
+def record_type(conn, event, sport, rows, now, quiet=False):
     """Записва типа сега (type_now) и - ако се е сменил - нов ред в type_log.
-    Връща True при смяна (не и при първия запис на мача)."""
+    Връща True при смяна (не и при първия запис на мача). quiet - за попълване от
+    историческите цени: без известие."""
     kind, pick = current_type(rows)
     pick_json = json.dumps(pick) if pick else None
     stamp = now.isoformat(timespec="seconds")
@@ -200,8 +201,39 @@ def record_type(conn, event, sport, rows, now):
                                  pick_json, recorded_at, notified_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (event["id"], sport, event["home_team"], event["away_team"], event["commence_time"],
-         kind, pick_json, stamp, "baseline" if last is None else None))
+         kind, pick_json, stamp,
+         "baseline" if last is None else ("backfill" if quiet else None)))
     return last is not None
+
+
+def backfill_types(conn, sport, at, hours_ahead=48):
+    """Типът на мачовете от историческа снимка на цените (odds_api.historical_odds, 10
+    кредита): за мачове, изиграни преди типът да се записва на живо (28.09.2026).
+
+    Същата логика като при сканирането (scan_event, record_type), но без запис в value_bets -
+    там стоят само цени, намерени на живо преди мача - и без известия. Снимките се пускат
+    по реда на времето, за да остане последната преди мача."""
+    snapshot = odds_api.historical_odds(sport, at)
+    stamp = datetime.fromisoformat(snapshot["timestamp"].replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    recorded = 0
+    for event in snapshot.get("data", []):
+        start = datetime.fromisoformat(event["commence_time"].replace("Z", "+00:00"))
+        # Само мачове, които вече са започнали: предстоящият има тип от живото сканиране,
+        # а стара снимка би го презаписала и после би дала фалшиво известие за смяна.
+        if not stamp < start <= min(stamp + timedelta(hours=hours_ahead), now):
+            continue
+        books = prices_by_book(event)
+        order = outcome_order(event, books)
+        if len(order) not in (2, 3) or len(books) < MIN_BOOKS:
+            continue
+        sharp, _, _ = reference(books, order)
+        if sharp:
+            record_type(conn, event, sport, scan_event(event, sport), stamp, quiet=True)
+            recorded += 1
+    conn.commit()
+    log.info("%s към %s: тип за %d мача", sport, snapshot["timestamp"], recorded)
+    return recorded
 
 
 def store(conn, rows):

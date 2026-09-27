@@ -81,6 +81,14 @@ def odds(sport, regions="eu", cache_minutes=CACHE_MINUTES):
     return data
 
 
+def historical_odds(sport, at, regions="eu"):
+    """Снимка на коефициентите към момента at (ISO, UTC). 10 кредита на регион. Отговорът е
+    {"timestamp": ..., "data": [събития]}; пази се в кеша завинаги - миналото не се мени."""
+    return _get(f"/historical/sports/{sport}/odds/",
+                {"regions": regions, "markets": "h2h", "oddsFormat": "decimal", "date": at},
+                cache_name=f"hist_{sport}_{regions}_{at.replace(':', '')}", cache_minutes=10 ** 7)
+
+
 def scores(sport, days_from=3, cache_minutes=SCORES_CACHE_MINUTES):
     """Приключилите събития с резултат, по id. 2 кредита, когато се иска история."""
     return {e["id"]: {"home": e["home"], "away": e["away"]}

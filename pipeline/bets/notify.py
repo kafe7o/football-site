@@ -68,11 +68,30 @@ def pct(x):
     return "–" if x is None else f"{x:.0%}"
 
 
+def name(selection):
+    """odds API пише равния като "Draw"."""
+    return "равен" if selection == "Draw" else selection
+
+
 def pick_text(pick):
     if not pick:
         return "без избор"
-    return (f"{pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
-            f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
+    return (f"{name(pick['selection'])} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
+            f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
+
+
+def rule_text(m):
+    """Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от
+    тип A или B. Тип C - никога; без цена над честната - също не."""
+    sig = m.get("signal")
+    if not sig:
+        return "сигнал на модела: няма"
+    head = f"сигнал на модела: {name(sig['name'])} @ {sig['odds']:.2f}"
+    kind = m.get("type")
+    if kind in ("A", "B"):
+        return f"{head} - залага се (тип {kind})"
+    why = {"C": "тип C", "-": "няма цена над честната"}.get(kind, "няма данни за цените")
+    return f"{head} - НЕ се залага ({why})"
 
 
 def prematch(conn, rows, now=None):
@@ -103,7 +122,8 @@ def prematch(conn, rows, now=None):
             with_pick = sum(1 for m in group if m.get("pick"))
             title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
                      f" - с избор {with_pick}")
-            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}" for m in group)
+            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}; {rule_text(m)}"
+                                for m in group)
         if send(title, message):
             sent += 1
         for m in group:
@@ -119,19 +139,17 @@ def single_prematch(m, minutes):
     """Известието за един мач - изборът, моделът, пазарът и най-добрите цени."""
     lines = []
     pick = m.get("pick")
-    if pick:
-        lines.append(f"Избор: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
-                     f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната")
-    else:
-        lines.append("Без избор - никоя цена не е над честната")
+    lines.append(f"Избор по цена: {pick_text(pick)}" if pick
+                 else "Без избор по цена - никоя цена не е над честната")
+    lines.append(rule_text(m)[0].upper() + rule_text(m)[1:])
     if m.get("model"):
-        lines.append("модел " + " / ".join(pct(p) for p in m["model"]))
+        lines.append("модел (домакин / равен / гост) " + " / ".join(pct(p) for p in m["model"]))
     if m.get("market"):
         lines.append("пазар " + " / ".join(pct(p) for p in m["market"]))
     for o in m.get("books", []):
         if o["prices"]:
             best = o["prices"][0]
-            lines.append(f"{o['selection']}: {best['odds']:.2f} ({best['name']})")
+            lines.append(f"{name(o['selection'])}: {best['odds']:.2f} ({best['name']})")
     return f"{m['home']} - {m['away']} след {minutes} мин", "\n".join(lines)
 
 
@@ -164,7 +182,7 @@ def type_changes(conn, now=None):
         if known["type"] == latest["type"]:
             mark(conn, ids, "skip")            # мигна и се върна - нищо ново
             continue
-        if known["notified_at"] != "baseline":
+        if known["notified_at"] not in ("baseline", "backfill"):
             last_sent = datetime.fromisoformat(known["notified_at"])
             if now - last_sent < TYPE_QUIET:
                 continue                       # чака - при следващия цикъл пак се проверява
@@ -172,7 +190,8 @@ def type_changes(conn, now=None):
         when = start.astimezone(SOFIA).strftime("%d.%m %H:%M")
         lines.append((f"{latest['home_team']} - {latest['away_team']} ({when}): "
                       f"{TYPE_NAMES[known['type']]} -> {TYPE_NAMES[latest['type']]}"
-                      + (f", избор {pick_text(pick)}" if pick else ""),
+                      + (f", избор {pick_text(pick)}" if pick else "")
+                      + ("" if latest["type"] in ("A", "B") else " - сигнал на модела тук НЕ се залага"),
                       latest, known["type"]))
         mark(conn, ids, stamp)
     conn.commit()

@@ -274,6 +274,9 @@ def preview(conn, days=PREVIEW_DAYS, exported=None, events_conn=None):
             "min_odds": [(1 + MIN_EDGE_SHEET) / p for p in probs] if probs else None,
             "reason": reason,
         })
+        best = out[-1]["best_odds"]
+        out[-1]["signal"] = (signal(list(probs), best, e["home_team"], e["away_team"])
+                             if probs and all(o is not None for o in best) else None)
     log.info("Преглед напред: %d мача, с прогноза %d",
              len(out), sum(1 for m in out if m["model"]))
     return out
@@ -501,19 +504,17 @@ def _sofia_clock(day, uk_clock):
 
 
 def history_section(vconn, days=190, types=None):
-    """Всички изиграни мачове с прогноза, за таба "История".
-
-    Два източника, които не се смесват: записите на живо (predictions, направени преди
-    мача) и симулацията (history.sim_predictions) за мачовете без запис на живо. Един мач -
-    един ред: ако има запис на живо, симулацията за него не се показва. Мачове с прогноза
-    на живо, чийто резултат още не е дошъл, стоят с "чака резултат".
+    """Изиграните мачове с прогноза, за таба "История" - САМО истинските записи
+    (predictions, направени преди мача). Симулация няма: собственикът поиска историята да
+    показва само реални данни (2026-09-28). Мач, чийто резултат още не е дошъл, стои с
+    "чака резултат".
 
     Ред: [дата, лига, домакин, гост, [голове] | None, изход | None, на_живо, модел ‰,
           пазар ‰ | None, коефициенти | None, избор | None, час | None, тип | None,
           пътят на типа ("BA-") | None]
 
     Тип: A/B/C от цените (match_types), "-" без цена над честната, None - без данни за
-    цените (симулацията и лигите, които скенерът не е гледал).
+    цените (лигата не е сканирана тогава).
 
     Часът (българско време) е за банката в таба: мачове с едно и също начало се залагат от
     един и същ баланс - резултатът на единия не се знае, преди другият да е започнал.
@@ -534,7 +535,7 @@ def history_section(vconn, days=190, types=None):
         day = local.date().isoformat()
         live[(r["league"], r["home_team"], r["away_team"], day)] = (r, day, local.strftime("%H:%M"))
 
-    rows, seen = [], set()
+    rows = []
     for r, day, clock in live.values():
         odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
         has_odds = all(o is not None for o in odds)
@@ -542,7 +543,8 @@ def history_section(vconn, days=190, types=None):
         # (value.pick_for_match), върху цените, намерени преди мача.
         kind = (types or {}).get(r["match_id"]) if r["match_id"] else None
         chosen = kind["pick"] if kind else None
-        pick = ([chosen["selection"], chosen["odds"], chosen["result"], chosen["tier"]]
+        pick = ([chosen["selection"], chosen["odds"], chosen["result"], chosen["tier"],
+                 round(chosen["edge"], 4), round(chosen["p_fair"], 4), chosen.get("outcome_idx")]
                 if chosen else None)
         settled = r["outcome"] is not None
         rows.append([day, r["league"], r["home_team"], r["away_team"],
@@ -550,24 +552,7 @@ def history_section(vconn, days=190, types=None):
                      r["outcome"], 1, [r["p_home"], r["p_draw"], r["p_away"]],
                      implied_row(odds) if has_odds else None, odds if has_odds else None, pick, clock,
                      kind["type"] if kind else None, "".join(kind["path"]) if kind else None])
-        seen.add((r["league"], day, r["mh"] or r["home_team"], r["ma"] or r["away_team"]))
 
-    if vconn.execute("SELECT 1 FROM sqlite_master WHERE name = 'sim_predictions'").fetchone():
-        for r in vconn.execute(
-                """SELECT s.*, m.kickoff FROM sim_predictions s
-                     LEFT JOIN matches m ON m.league = s.league AND m.date = s.date
-                                        AND m.home_team = s.home_team AND m.away_team = s.away_team
-                    WHERE s.date >= ?""", (since,)):
-            if (r["league"], r["date"], r["home_team"], r["away_team"]) in seen:
-                continue
-            outcome = 0 if r["fthg"] > r["ftag"] else (1 if r["fthg"] == r["ftag"] else 2)
-            market = [r["m_home"], r["m_draw"], r["m_away"]]
-            odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
-            rows.append([r["date"], r["league"], r["home_team"], r["away_team"],
-                         [r["fthg"], r["ftag"]], outcome, 0, [r["p_home"], r["p_draw"], r["p_away"]],
-                         market if market[0] is not None else None,
-                         odds if odds[0] is not None else None, None, _sofia_clock(r["date"], r["kickoff"]),
-                         None, None])
     rows.sort(key=lambda x: (x[0], x[11] or "", x[1], x[2]), reverse=True)
 
     # Компактно: 6 месеца са ~2000 мача, а сайтът се отваря и от телефон. Лигите отиват
