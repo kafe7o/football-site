@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 NTFY_URL = "https://ntfy.sh"
 WINDOW = (timedelta(minutes=45), timedelta(minutes=75))
 TYPE_QUIET = timedelta(hours=2)     # най-много едно известие за смяна на типа на мач за толкова
-TYPE_NAMES = {"A": "A", "B": "B", "C": "C", "-": "без"}
+TYPE_NAMES = {"A": "A", "B": "B", "C": "C", "-": "без група"}
 SOFIA = ZoneInfo("Europe/Sofia")
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS alerts_sent (
@@ -77,7 +77,7 @@ def pick_text(pick):
     if not pick:
         return "без избор"
     return (f"{name(pick['selection'])} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
-            f" - тип {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
+            f" - група {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
 
 
 DAY_MAX, DAY_B_MAX = 8, 5   # същото като в site_template.html
@@ -109,9 +109,15 @@ def rule_text(m, allowed=None):
     if kind in ("A", "B") and allowed is not None and allowed.get(m["event_id"]) is False:
         return f"{head} - НЕ се залага (над лимита за деня)"
     if kind in ("A", "B"):
-        return f"{head} - залага се (тип {kind})"
-    why = {"C": "тип C", "-": "няма цена над честната"}.get(kind, "няма данни за цените")
+        return f"{head} - ЗАЛАГА СЕ (група {kind})"
+    why = {"C": "група C", "-": "без група - няма цена над честната"}.get(kind, "няма данни за цените")
     return f"{head} - НЕ се залага ({why})"
+
+
+def rule_bet(m, allowed=None):
+    """Залага ли се сигналът на мача по правилото."""
+    return (bool(m.get("signal")) and m.get("type") in ("A", "B")
+            and not (allowed is not None and allowed.get(m["event_id"]) is False))
 
 
 def prematch(conn, rows, now=None):
@@ -140,9 +146,11 @@ def prematch(conn, rows, now=None):
         else:
             # Първо мачовете с избор - те са причината известието да е важно.
             group.sort(key=lambda m: (m.get("pick") is None, m["home"]))
-            with_pick = sum(1 for m in group if m.get("pick"))
+            group.sort(key=lambda m: not rule_bet(m, allowed))
+            bets = sum(1 for m in group if rule_bet(m, allowed))
             title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
-                     f" - с избор {with_pick}")
+                     f" - ЗАЛОГ по правилото: {bets}" if bets else
+                     f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M}) - без залог")
             message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}; {rule_text(m, allowed)}"
                                 for m in group)
         if send(title, message):
@@ -172,7 +180,12 @@ def single_prematch(m, minutes, allowed=None):
         if o["prices"]:
             best = o["prices"][0]
             lines.append(f"{name(o['selection'])}: {best['odds']:.2f} ({best['name']})")
-    return f"{m['home']} - {m['away']} след {minutes} мин", "\n".join(lines)
+    if rule_bet(m, allowed):
+        sig = m["signal"]
+        title = f"ЗАЛОГ: {name(sig['name'])} @ {sig['odds']:.2f} - {m['home']} - {m['away']} след {minutes} мин"
+    else:
+        title = f"{m['home']} - {m['away']} след {minutes} мин - без залог"
+    return title, "\n".join(lines)
 
 
 def type_changes(conn, now=None):
@@ -213,7 +226,7 @@ def type_changes(conn, now=None):
         lines.append((f"{latest['home_team']} - {latest['away_team']} ({when}): "
                       f"{TYPE_NAMES[known['type']]} -> {TYPE_NAMES[latest['type']]}"
                       + (f", избор {pick_text(pick)}" if pick else "")
-                      + ("" if latest["type"] in ("A", "B") else " - сигнал на модела тук НЕ се залага"),
+                      + ("" if latest["type"] in ("A", "B") else " - тук НЕ се залага"),
                       latest, known["type"]))
         mark(conn, ids, stamp)
     conn.commit()
@@ -221,11 +234,11 @@ def type_changes(conn, now=None):
         return 0
     if len(lines) == 1:
         text, latest, old = lines[0]
-        title = (f"Тип {TYPE_NAMES[old]} -> {TYPE_NAMES[latest['type']]}: "
+        title = (f"Група {TYPE_NAMES[old]} -> {TYPE_NAMES[latest['type']]}: "
                  f"{latest['home_team']} - {latest['away_team']}")
         message = text
     else:
-        title = f"Смяна на типа: {len(lines)} мача"
+        title = f"Смяна на групата: {len(lines)} мача"
         message = "\n".join(text for text, _, _ in lines[:20])
         if len(lines) > 20:
             message += f"\nи още {len(lines) - 20} - виж сайта"

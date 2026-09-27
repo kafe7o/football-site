@@ -42,6 +42,7 @@ jobs:
           FOOTBALL_DB: ${{ github.workspace }}/cloud.db
           FOOTBALL_SITE: ${{ github.workspace }}
           FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
           PYTHONIOENCODING: utf-8
         run: cd pipeline && python run.py cloud
 

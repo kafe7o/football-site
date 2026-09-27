@@ -447,19 +447,19 @@ footer b { color: var(--ink); font-weight: 600; }
   <p class="ahead-note">Само <b>истински прогнози</b>: всяка е записана с дата и час преди мача и после не е
     пипана. Симулации няма. <b>✓ / ✗</b> вляво - дали излезе изходът, който моделът смяташе за най-вероятен.
     В квадратчетата <b>рамка</b> е най-вероятното според модела, <b>зелено</b> - какво излезе.
-    <b>Тип</b> A/B/C е категорията на цените при последното сканиране преди мача (стрелката показва как се е
+    <b>Група</b> A/B/C е категорията на цените при последното сканиране преди мача (стрелката показва как се е
     менила, например B → A); „без“ - нямаше цена над честната. <b>Правилото</b>: залага се сигналът на модела
-    само в мач от тип A или B - всички от тип A (най-много 8 на ден), тип B само докато общо са под 5;
-    тип C и мач без цена над честната - никога.</p>
+    само в мач от група A или B - всички от група A (най-много 8 на ден), група B само докато общо са под 5;
+    група C и мач без цена над честната - никога.</p>
   <nav class="days" id="hist-periods" aria-label="Период"></nav>
   <div class="hfilters">
     <div class="hseg" id="hist-filter" role="group" aria-label="Кои мачове"></div>
-    <select id="hist-type" aria-label="Тип">
-      <option value="">Всички типове</option>
-      <option value="AB">Тип A или B</option>
-      <option value="A">Тип A</option>
-      <option value="B">Тип B</option>
-      <option value="C">Тип C</option>
+    <select id="hist-type" aria-label="Група">
+      <option value="">Всички групи</option>
+      <option value="AB">Група A или B</option>
+      <option value="A">Група A</option>
+      <option value="B">Група B</option>
+      <option value="C">Група C</option>
       <option value="-">Без цена над честната</option>
       <option value="?">Без данни за цените</option>
     </select>
@@ -496,12 +496,12 @@ const pct = x => (x == null ? "–" : Math.round(x * 100) + "%");
 // odds API пише равния като "Draw"; изходите се наричат с имена, не с 1/X/2.
 const selName = s => (s === "Draw" ? "равен" : s);
 const OUTCOME = ["домакин", "равен", "гост"];
-// Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от тип A
-// или B. Колко на ден зависи от деня: всички от тип A (най-много DAY_MAX), тип B само
-// докато общо са под DAY_B_MAX. Тип C и мач без цена над честната - никога.
+// Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от група A
+// или B. Колко на ден зависи от деня: всички от група A (най-много DAY_MAX), група B само
+// докато общо са под DAY_B_MAX. Група C и мач без цена над честната - никога.
 // Същото е в notify.py (DAY_MAX, DAY_B_MAX) - известията и сайтът казват едно и също.
 const DAY_MAX = 8, DAY_B_MAX = 5;
-const DAY_LIMIT_TEXT = `всички от тип A (най-много ${DAY_MAX}), тип B само докато общо са под ${DAY_B_MAX}`;
+const DAY_LIMIT_TEXT = `всички от група A (най-много ${DAY_MAX}), група B само докато общо са под ${DAY_B_MAX}`;
 // Мястото i в подредения ден (първо A, после B, после стойността) - влиза ли.
 const dayAllowed = (i, isA) => i < DAY_MAX && (isA || i < DAY_B_MAX);
 const d3 = iso => { const d = new Date(iso + "T12:00:00"); return WD3[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1); };
@@ -602,13 +602,13 @@ function renderValue() {
     C: "над 8% - почти винаги замръзнала цена",
   };
   const TIER_EXPLAIN = {
-    A: `<p><b>Най-сигурната ЦЕНА, не най-сигурният изход.</b> Тип A казва, че цената е добра - не че залогът ще спечели: равен @ 3.50 от тип A печели около 3 пъти от 10.</p><p> Сравняваме цената на букмейкъра с Pinnacle — букмейкърът с най-точните цени в света. Той приема залози и от професионалисти и не ги ограничава, затова цената му бързо стига до истината.</p>
+    A: `<p><b>Най-сигурната ЦЕНА, не най-сигурният изход.</b> Група A казва, че цената е добра - не че залогът ще спечели: равен @ 3.50 от група A печели около 3 пъти от 10.</p><p> Сравняваме цената на букмейкъра с Pinnacle — букмейкърът с най-точните цени в света. Той приема залози и от професионалисти и не ги ограничава, затова цената му бързо стига до истината.</p>
         <p>Разликата е между 2% и 8% — достатъчно голяма, за да има смисъл, и достатъчно малка, за да не е грешка. И поне 10 букмейкъра са пуснали цена за мача, значи пазарът е жив, а не забравен.</p>
         <p>Изборите на сайта се взимат първо оттук.</p>`,
     B: `<p><b>По-слабо доказателство.</b> Разликата пак е между 2% и 8%, но нещо липсва: или няма Pinnacle за сравнение (тогава се сравнява със средната цена на всички букмейкъри, което е по-неточно), или за мача има по-малко от 10 букмейкъра.</p>
-        <p>Може да е истинска разлика, може и не. Избор от тип B има само когато за мача няма нищо от тип A.</p>`,
+        <p>Може да е истинска разлика, може и не. Избор от група B има само когато за мача няма нищо от група A.</p>`,
     C: `<p><b>Почти сигурно грешка, не възможност.</b> Разлика над 8% спрямо честната цена почти никога не е истинска. Обикновено букмейкърът просто не е обновил цената си или е сбъркал.</p>
-        <p>Такива залози често се анулират след мача. Затова от тип C <b>никога</b> няма избор — показваме ги само за да се вижда, че сме ги забелязали и отхвърлили.</p>`,
+        <p>Такива залози често се анулират след мача. Затова от група C <b>никога</b> няма избор — показваме ги само за да се вижда, че сме ги забелязали и отхвърлили.</p>`,
   };
   const CLV_EXPLAIN = `<p class="muted"><b>Числото отдолу</b> — „движение на цената": колко средно се е свила цената, откакто сме я хванали. Положително значи, че пазарът е дошъл към нас, тоест разликата е била истинска. Отрицателно значи, че сме гонили нещо, което не е било там. Под 30 залога е още рано да се съди.</p>`;
   document.getElementById("tiers").innerHTML = ["A", "B", "C"].map(k => {
@@ -616,17 +616,19 @@ function renderValue() {
     const clv = d && d.clv != null ? `${(d.clv * 100).toFixed(1)}% движение · ${d.clv_n}` : "още няма данни";
     const wid = "tier-why-" + k;
     return `<div><div class="tier-head"><span class="tier tier${k}">${k}</span>
-      <button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Какво значи тип ${k}?">Какво е това</button></div>
+      <button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Какво значи група ${k}?">Какво е това</button></div>
       ${TIER_TEXT[k]}<b>${clv}</b>
       <div class="why" id="${wid}" hidden>${TIER_EXPLAIN[k]}${CLV_EXPLAIN}</div></div>`;
   }).join("");
-  document.getElementById("vlist").innerHTML = v.upcoming.map(b => `
+  const skippedC = v.upcoming.filter(b => b.tier === "C").length;
+  document.getElementById("vlist").innerHTML = v.upcoming.filter(b => b.tier !== "C").map(b => `
     <div class="vrow">
       <div class="vwhen">${esc(d3(b.date))}<br>${esc(b.time)}</div>
       <div class="vmatch"><span class="tier tier${b.tier}">${b.tier}</span><b>${esc(selName(b.selection))}</b> <span>${esc(b.home)} – ${esc(b.away)}</span></div>
       <div class="vedge"><b>${(b.edge * 100).toFixed(1)}%</b>
         <span>${b.odds.toFixed(2)} при ${esc(b.book)} · честна ${pct(b.p_fair)}</span></div>
-    </div>`).join("") || `<div class="vrow"><div class="vmatch">В момента няма цена над прага.</div></div>`;
+    </div>`).join("") + (skippedC ? `<div class="vrow"><div class="vmatch">Още ${skippedC} цени от група C - не се показват, на група C не се залага.</div></div>` : "")
+    || `<div class="vrow"><div class="vmatch">В момента няма цена над прага.</div></div>`;
   document.getElementById("value-note").textContent =
     "Това не е прогноза за мача. Сравнява се цената на бавен букмейкър с честната вероятност от острия (Pinnacle, борсата или медианата на пазара). Дали разликата е истинска, се вижда по движението на цената, не по един спечелен залог.";
 }
@@ -639,7 +641,7 @@ function renderFair() {
     <div class="vrow">
       <div class="vwhen">${esc(d3(e.date))}<br>${esc(e.time)}</div>
       <div class="vmatch"><b>${esc(e.home)} – ${esc(e.away)}</b>
-        <span>${e.outcomes.map(o => `${esc(o.name)}: <b class="num">${o.min_odds ? o.min_odds.toFixed(2) : "–"}</b> (${pct(o.p_fair)})`).join(" · ")}</span></div>
+        <span>${e.outcomes.map(o => `${esc(selName(o.name))}: <b class="num">${o.min_odds ? o.min_odds.toFixed(2) : "–"}</b> (${pct(o.p_fair)})`).join(" · ")}</span></div>
     </div>`).join("");
 }
 
@@ -671,7 +673,7 @@ const SHARP_NAMES = { pinnacle: "Pinnacle", betfair_ex_eu: "борсата Betfa
                       smarkets: "борсата Smarkets", matchbook: "борсата Matchbook" };
 const TIER_WHY = {
   A: "еталонът е най-острият пазар, разликата е в разумните граници (2-8%) и мачът е видян от поне 10 букмейкъра. Най-доброто качество на доказателство, което имаме.",
-  B: "разликата е в разумните граници (2-8%), но еталонът е по-слаб или букмейкърите са по-малко. По-малко сигурно от тип A.",
+  B: "разликата е в разумните граници (2-8%), но еталонът е по-слаб или букмейкърите са по-малко. По-малко сигурно от група A.",
 };
 
 function whyText(m) {
@@ -693,21 +695,21 @@ function whyText(m) {
     : `Моделът дава ${pct(modelP)} — по-малко от пазара. Изборът е по цена, не по модела, защото моделът е измерено по-неточен от пазара.`;
   const rec = (DATA.value.by_tier || {})[p.tier];
   const recText = rec && rec.clv != null && rec.clv_n
-    ? `Досега при тип ${p.tier}: ${rec.clv_n} залога, цената се е движила средно с ${(rec.clv * 100).toFixed(1)}% след намирането им.${rec.clv_n < 30 ? " Под 30 залога — още е рано да се съди." : ""}`
-    : `Тип ${p.tier} още няма достатъчно измерени залози.`;
+    ? `Досега при група ${p.tier}: ${rec.clv_n} залога, цената се е движила средно с ${(rec.clv * 100).toFixed(1)}% след намирането им.${rec.clv_n < 30 ? " Под 30 залога — още е рано да се съди." : ""}`
+    : `Група ${p.tier} още няма достатъчно измерени залози.`;
   return `
     <p><b>Честният шанс.</b> ${esc(sharp)} дава на ${esc(selName(p.selection))} <b>${pct(p.p_fair)}</b> — това е честен коефициент <b>${fairOdds.toFixed(2)}</b>, след като се махне маржът.</p>
     <p><b>Цената.</b> ${esc(p.book_name || p.bookmaker)} плаща <b>${p.odds.toFixed(2)}</b> — повече от честното. Ако честният шанс е верен, всеки такъв залог носи средно <b>+${(p.edge * 100).toFixed(1)}%</b>: при 100 залога по 10 € — около ${(p.edge * 1000).toFixed(0)} € отгоре.</p>
-    <p><b>Тип ${p.tier}:</b> ${TIER_WHY[p.tier]}</p>
+    <p><b>Група ${p.tier}:</b> ${TIER_WHY[p.tier]}</p>
     <p><b>Моделът.</b> ${agree}</p>
     <p><b>Не е сигурно.</b> Шансът да спечелиш <i>точно този</i> залог е ${pct(p.p_fair)}. Предимството се вижда чак след много залози — ${recText}</p>`;
 }
 
-// Типът на мача: A/B/C от цените (value.tier), "-" без цена над честната, null без данни.
+// Групата на мача: A/B/C от цените (value.tier), "-" без цена над честната, null без данни.
 const TYPE_TITLE = {
-  A: "Тип A: цена над честната спрямо Pinnacle или борсата, разлика 2-8%, поне 10 букмейкъра",
-  B: "Тип B: цена над честната с разлика 2-8%, но по-слаб еталон или под 10 букмейкъра",
-  C: "Тип C: разлика над 8% - почти винаги замръзнала или сбъркана цена. Не се залага.",
+  A: "Група A: цена над честната спрямо Pinnacle или борсата, разлика 2-8%, поне 10 букмейкъра",
+  B: "Група B: цена над честната с разлика 2-8%, но по-слаб еталон или под 10 букмейкъра",
+  C: "Група C: разлика над 8% - почти винаги замръзнала или сбъркана цена. Не се залага.",
   "-": "Без: никоя цена не е над честната - пазарът е оценил мача точно",
   "?": "Няма данни за цените на този мач (лигата не се е следяла тогава)",
 };
@@ -718,14 +720,15 @@ function typeChip(t, path) {
   const cls = t === "A" || t === "B" || t === "C" ? "tier" + t : "tierN";
   const trail = path && path.length > 1
     ? `<span class="tpath">${path.map(typeName).join(" → ")}</span>` : "";
-  return `<span class="tchip" title="${esc(TYPE_TITLE[t == null ? "?" : t])}"><span class="tier ${cls}">тип ${typeName(t)}</span>${trail}</span>`;
+  const label = t === "-" ? "без група" : "група " + typeName(t);
+  return `<span class="tchip" title="${esc(TYPE_TITLE[t == null ? "?" : t])}"><span class="tier ${cls}">${label}</span>${trail}</span>`;
 }
 
 function typeHistory(m) {
   const path = (m.type_path || []).filter(x => Array.isArray(x));
   if (!path.length) return "";
   const when = iso => { const d = new Date(iso); return `${d.getDate()}.${d.getMonth() + 1} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
-  return `<div class="msec"><b>как се е менил типът</b>${path.map(([t, at]) =>
+  return `<div class="msec"><b>как се е менила групата</b>${path.map(([t, at]) =>
     `<div class="mline"><span>${esc(when(at))}</span><span>${typeChip(t, null)}</span></div>`).join("")}</div>`;
 }
 
@@ -741,12 +744,12 @@ function ruleLine(m, ranks) {
   if (!s) return `<div class="rule none">Сигнал на модела: няма - не се залага</div>`;
   const head = `Сигнал на модела: <b>${esc(selName(s.name))}</b> @ <b>${s.odds.toFixed(2)}</b> · шанс по модела ${pct(s.p)}`;
   if (m.type !== "A" && m.type !== "B") {
-    const why = m.type === "C" ? "мачът е тип C" : m.type === "-" ? "няма цена над честната" : "няма данни за цените";
+    const why = m.type === "C" ? "мачът е от група C" : m.type === "-" ? "няма цена над честната" : "няма данни за цените";
     return `<div class="rule none">${head} · <b>не се залага</b> - ${why}</div>`;
   }
   if (ranks && ranks.get(m.event_id) === false)
     return `<div class="rule none">${head} · <b>не се залага</b> - над лимита за деня (${DAY_LIMIT_TEXT})</div>`;
-  return `<div class="rule go">${head} · <b>залага се</b> (тип ${m.type})</div>`;
+  return `<div class="rule go">${head} · <b>залага се</b> (група ${m.type})</div>`;
 }
 
 function pickLine(m) {
@@ -756,10 +759,10 @@ function pickLine(m) {
   const btn = `<button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Защо този избор?">Защо</button>`;
   const box = `<div class="why" id="${wid}" hidden>${whyText(m)}</div>`;
   if (!p) return `<div class="pick none">Без избор \u2014 ${m.type === "C"
-    ? "има само цена от тип C (разлика над 8%, почти сигурно замръзнала)" : "никоя цена не е над честната"}</div>`;
+    ? "има само цена от група C (разлика над 8%, почти сигурно замръзнала)" : "никоя цена не е над честната"}</div>`;
   const book = p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.book_name)}</a>` : esc(p.book_name || p.bookmaker);
   const rec = (DATA.value.by_tier || {})[p.tier];
-  const recText = rec && rec.clv != null ? ` \u00b7 тип ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
+  const recText = rec && rec.clv != null ? ` \u00b7 група ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
   return `<div class="pick"><span class="tier tier${p.tier}">${p.tier}</span>${btn}
     <span>Избор по цена: <b>${esc(selName(p.selection))}</b> @ <b>${p.odds.toFixed(2)}</b> при ${book}</span>
     <span class="meta">шанс да спечели ${pct(p.p_fair)} · +${(p.edge * 100).toFixed(1)}% над честната${recText}</span></div>${box}`;
@@ -768,7 +771,7 @@ function pickLine(m) {
 function booksBlock(m) {
   if (!m.books || !m.books.length) return "";
   return `<div class="msec"><b>цени по букмейкър (най-добрата отгоре)</b>` + m.books.map(o =>
-    `<div style="margin-bottom:6px"><div class="prow"><span><b style="display:inline;text-transform:none;letter-spacing:0">${esc(o.selection)}</b></span><span></span></div>` +
+    `<div style="margin-bottom:6px"><div class="prow"><span><b style="display:inline;text-transform:none;letter-spacing:0">${esc(selName(o.selection))}</b></span><span></span></div>` +
     o.prices.map((p, i) => `<div class="prow"><span>${p.url
         ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name)}${i === 0 ? " \u00b7 най-добра" : ""}</span>
         <span>${p.odds.toFixed(2)}</span></div>`).join("") + `</div>`).join("")
@@ -891,7 +894,7 @@ function matchRow(m) {
     const res = played ? (m.signal.pick === m.outcome ? " · позна" : " · сгреши") : "";
     const cls = played ? (m.signal.pick === m.outcome ? "ok" : "bad") : "sig";
     const ok = m.type === "A" || m.type === "B";
-    tags.push(`<span class="tag ${ok ? cls : "no"}">сигнал · ${esc(selName(m.signal.name))} @ ${m.signal.odds.toFixed(2)}${res}${ok ? "" : " · не се залага (" + (m.type === "C" ? "тип C" : m.type === "-" ? "без цена над честната" : "няма данни за цените") + ")"}</span>`);
+    tags.push(`<span class="tag ${ok ? cls : "no"}">сигнал · ${esc(selName(m.signal.name))} @ ${m.signal.odds.toFixed(2)}${res}${ok ? "" : " · не се залага (" + (m.type === "C" ? "група C" : m.type === "-" ? "без цена над честната" : "няма данни за цените") + ")"}</span>`);
   }
 
   const head = `<div class="fixture">
@@ -980,13 +983,13 @@ function renderAheadList() {
 const HIST = DATA.history || { leagues: [], rows: [] };
 // Ред: [0 дата, 1 лига, 2 домакин, 3 гост, 4 [голове]|null, 5 изход|null, 6 (1 - записан),
 //       7 модел ‰, 8 пазар ‰|null, 9 коефициенти при записа|null,
-//       10 избор по цена [изход, коеф., спечелен, тип, разлика, честен шанс, индекс]|null,
-//       11 час|null, 12 тип|null, 13 пътят на типа ("BA-")|null]
+//       10 избор по цена [изход, коеф., спечелен, група, разлика, честен шанс, индекс]|null,
+//       11 час|null, 12 група|null, 13 пътят на групата ("BA-")|null]
 const HIST_PERIODS = [[7, "7 дни"], [14, "2 седмици"], [30, "1 месец"], [61, "2 месеца"],
                       [92, "3 месеца"], [183, "6 месеца"]];
 const HIST_FILTERS = [["all", "Всички"], ["bet", "Със залог"], ["hit", "Моделът позна"], ["miss", "Не позна"]];
 const HIST_STEP = 150;
-let histDays = 7, histFilter = "all", histLeague = "", histType = "", histLimit = HIST_STEP;
+let histDays = 7, histFilter = "bet", histLeague = "", histType = "", histLimit = HIST_STEP;
 
 const isoMinus = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
 const argmax = a => a.indexOf(Math.max(...a));
@@ -997,17 +1000,17 @@ const histTypeOk = r => {
   const t = r[12] == null ? "?" : r[12];
   return !histType || (histType === "AB" ? t === "A" || t === "B" : t === histType);
 };
-// Периодът с избраните лига и тип - важи за банката, обобщението и списъка.
+// Периодът с избраните лига и група - важи за банката, обобщението и списъка.
 const histMatches = n => histInPeriod(n).filter(r => (!histLeague || HIST.leagues[r[1]] === histLeague) && histTypeOk(r));
 const teamOf = (r, j) => [r[2], "равен", r[3]][j];
 
 // Банката: 100 € начало, всеки залог е 10% от баланса в момента (от 100 € стават 120 € -
 // следващият залог е 12 €; загуби ли, стават 108 € и залогът е 10.80 €). Под 1 € - край.
 const BANK_START = 100, BANK_SHARE = 0.10, BANK_MIN = 1, SIGNAL_EDGE = 0.05;
+// Само правила, които никога не залагат на група C (решение на собственика).
 const RULES = [
-  ["rule", "Правилото: сигнал + тип A/B"],
+  ["rule", "Правилото: сигнал + група A/B"],
   ["pick", "Избор по цена A/B"],
-  ["signal", "Всички сигнали на модела"],
 ];
 let histRule = "rule", histBankInfo = new Map();
 
@@ -1026,7 +1029,7 @@ function candidate(r, rule) {
     if (!p) return null;
     const j = p[6];
     const win = p[2] != null ? !!p[2] : (histSettled(r) && j != null ? j === r[5] : null);
-    return { j, label: `Избор по цена (тип ${p[3]}): ${selName(p[0])}`, odds: +p[1], chance: p[5],
+    return { j, label: `Избор по цена (група ${p[3]}): ${selName(p[0])}`, odds: +p[1], chance: p[5],
              chanceText: "честен шанс", win, rank: [p[3] === "A" ? 0 : 1, -(p[4] || 0)] };
   }
   const j = signalOf(r);
@@ -1035,7 +1038,7 @@ function candidate(r, rule) {
               chanceText: "шанс по модела", win: histSettled(r) ? j === r[5] : null,
               rank: [t === "A" ? 0 : t === "B" ? 1 : 2, -(r[7][j] / 1000 * r[9][j] - 1)] };
   if (rule === "rule" && t !== "A" && t !== "B")
-    c.skip = t === "C" ? "мачът е тип C" : t === "-" ? "няма цена над честната" : "няма данни за цените";
+    c.skip = t === "C" ? "мачът е от група C" : t === "-" ? "няма цена над честната" : "няма данни за цените";
   return c;
 }
 
@@ -1049,7 +1052,7 @@ function bankRun(rows, rule) {
     if (c.skip) { info.set(r, c); continue; }
     (byDay[r[0]] ||= []).push([r, c]);
   }
-  // Лимитът за деня: първо тип A, после B, после по-голямата стойност (dayAllowed).
+  // Лимитът за деня: първо група A, после B, после по-голямата стойност (dayAllowed).
   const chosen = new Map();
   for (const list of Object.values(byDay)) {
     list.sort((a, b) => a[1].rank[0] - b[1].rank[0] || a[1].rank[1] - b[1].rank[1]);
@@ -1109,8 +1112,8 @@ function renderHistBank(runs) {
       ${RULES.map(([k, label]) => `<button data-m="${k}" aria-pressed="${k === histRule}">${label}</button>`).join("")}</div>
     <div class="bgrid">${runs.map(([k, title, b]) => bankCard(k, title, b)).join("")}</div>
     <p class="bnote"><b>Правилото</b> е твоето: сигналът на модела (изходът, при който шансът по модела по
-      коефициента дава над 5% стойност) се залага само ако мачът е тип A или B. Другите две банки са за
-      сравнение: само изборът по цена, и всички сигнали без проверка на типа. Всеки залог е 10% от баланса в
+      коефициента дава над 5% стойност) се залага само ако мачът е от група A или B. Втората банка е за
+      сравнение: само изборът по цена от група A или B. На група C не залага нито една. Всеки залог е 10% от баланса в
       момента: от 100 € стават 120 € - следващият е 12 €; загуби ли, стават 108 € - следващият е 10.80 €.
       Колко залога на ден зависи от деня: ${DAY_LIMIT_TEXT}; при равни - тези с по-голяма стойност. Това е проверка на правилата върху истинските записи, не съвет: при малко
       залози резултатът е предимно случайност - виж грешката в таблицата отдолу.</p>`;
@@ -1227,7 +1230,9 @@ function renderHistory() {
   const more = document.getElementById("hist-more");
   if (!shown.length) {
     const last = HIST.rows.find(r => !histLeague || HIST.leagues[r[1]] === histLeague);
-    list.innerHTML = `<div class="hempty">${inPeriod.length ? "Няма такива мачове в периода."
+    list.innerHTML = `<div class="hempty">${inPeriod.length ? (histFilter === "bet"
+        ? "В този период правилото не е дало залог. Натисни „Всички“, за да видиш всички мачове с прогноза."
+        : "Няма такива мачове в периода.")
       : "В този период няма изиграни мачове с прогноза" + (last ? ` - последните са от ${dFull(last[0])}. Избери по-дълъг период.` : ".")}</div>`;
     more.hidden = true;
     return;

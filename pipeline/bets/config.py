@@ -24,7 +24,10 @@ GITHUB_REPO = os.environ.get("GITHUB_REPO")
 DB_PATH = Path(os.environ.get("FOOTBALL_DB", ROOT / "football.db"))
 SITE_DIR = Path(os.environ.get("FOOTBALL_SITE", ROOT / "site"))
 RESULTS_DIR = Path(os.environ.get("FOOTBALL_RESULTS", ROOT / "results"))
-CACHE_DIR = ROOT / ".cache"
+# В облака кешът е във временната папка на пускането (FOOTBALL_CACHE). На 25.09.2026 файлове
+# от кеша влязоха в git; при всяко пускане изглеждаха пресни и цените на шестте големи лиги
+# не се обновиха три дни.
+CACHE_DIR = Path(os.environ.get("FOOTBALL_CACHE", ROOT / ".cache"))
 LOG_DIR = Path(os.environ.get("FOOTBALL_LOGS", ROOT / "logs"))
 
 HINTS = {
