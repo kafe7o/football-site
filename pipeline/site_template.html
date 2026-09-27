@@ -747,18 +747,7 @@ function renderAheadDays() {
       ${d === DATA.today ? "днес" : d3(d)}<span class="n">${n}</span></button>`;
   }).join("") || "";
   for (const b of el.querySelectorAll(".day"))
-    b.onclick = () => { aheadCurrent = b.dataset.d; document.addEventListener("click", e => {
-  const b = e.target.closest(".why-btn");
-  if (!b) return;
-  e.stopPropagation();
-  e.preventDefault();
-  const box = document.getElementById(b.dataset.why);
-  if (!box) return;
-  box.hidden = !box.hidden;
-  b.setAttribute("aria-expanded", String(!box.hidden));
-});
-
-renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon(); };
+    b.onclick = () => { aheadCurrent = b.dataset.d; renderAheadDays(); renderAheadList(); };
 }
 
 function renderAheadList() {
