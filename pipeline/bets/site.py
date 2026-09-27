@@ -393,6 +393,17 @@ def fair_sheet(conn, limit=200):
     return list(events.values())
 
 
+def _sofia_clock(day, uk_clock):
+    """Часът от football-data (британско време) в българско, "HH:MM", или None."""
+    if not uk_clock or ":" not in uk_clock:
+        return None
+    try:
+        start = datetime.fromisoformat(f"{day}T{uk_clock}").replace(tzinfo=ZoneInfo("Europe/London"))
+    except ValueError:
+        return None
+    return start.astimezone(SOFIA).strftime("%H:%M")
+
+
 def history_section(vconn, days=190):
     """Всички изиграни мачове с прогноза, за таба "История".
 
@@ -402,7 +413,10 @@ def history_section(vconn, days=190):
     на живо, чийто резултат още не е дошъл, стоят с "чака резултат".
 
     Ред: [дата, лига, домакин, гост, [голове] | None, изход | None, на_живо, модел ‰,
-          пазар ‰ | None, коефициенти | None, избор | None]
+          пазар ‰ | None, коефициенти | None, избор | None, час | None]
+
+    Часът (българско време) е за банката в таба: мачове с едно и също начало се залагат от
+    един и същ баланс - резултатът на единия не се знае, преди другият да е започнал.
     """
     now = datetime.now(timezone.utc)
     since = (now.astimezone(SOFIA).date() - timedelta(days=days)).isoformat()
@@ -416,11 +430,12 @@ def history_section(vconn, days=190):
             kickoff = kickoff.replace(tzinfo=timezone.utc)
         if kickoff > now:
             continue                      # още не е започнал - той е в "Прогнози напред"
-        day = kickoff.astimezone(SOFIA).date().isoformat()
-        live[(r["league"], r["home_team"], r["away_team"], day)] = (r, day)  # последната версия
+        local = kickoff.astimezone(SOFIA)
+        day = local.date().isoformat()
+        live[(r["league"], r["home_team"], r["away_team"], day)] = (r, day, local.strftime("%H:%M"))
 
     rows, seen = [], set()
-    for r, day in live.values():
+    for r, day, clock in live.values():
         odds = [r["odds_home"], r["odds_draw"], r["odds_away"]]
         has_odds = all(o is not None for o in odds)
         # Изборът по цена - същото правило като на предстоящите мачове (value.pick_for_match),
@@ -438,11 +453,15 @@ def history_section(vconn, days=190):
         rows.append([day, r["league"], r["home_team"], r["away_team"],
                      [r["fthg"], r["ftag"]] if settled and r["fthg"] is not None else None,
                      r["outcome"], 1, [r["p_home"], r["p_draw"], r["p_away"]],
-                     implied_row(odds) if has_odds else None, odds if has_odds else None, pick])
+                     implied_row(odds) if has_odds else None, odds if has_odds else None, pick, clock])
         seen.add((r["league"], day, r["mh"] or r["home_team"], r["ma"] or r["away_team"]))
 
     if vconn.execute("SELECT 1 FROM sqlite_master WHERE name = 'sim_predictions'").fetchone():
-        for r in vconn.execute("SELECT * FROM sim_predictions WHERE date >= ?", (since,)):
+        for r in vconn.execute(
+                """SELECT s.*, m.kickoff FROM sim_predictions s
+                     LEFT JOIN matches m ON m.league = s.league AND m.date = s.date
+                                        AND m.home_team = s.home_team AND m.away_team = s.away_team
+                    WHERE s.date >= ?""", (since,)):
             if (r["league"], r["date"], r["home_team"], r["away_team"]) in seen:
                 continue
             outcome = 0 if r["fthg"] > r["ftag"] else (1 if r["fthg"] == r["ftag"] else 2)
@@ -451,8 +470,8 @@ def history_section(vconn, days=190):
             rows.append([r["date"], r["league"], r["home_team"], r["away_team"],
                          [r["fthg"], r["ftag"]], outcome, 0, [r["p_home"], r["p_draw"], r["p_away"]],
                          market if market[0] is not None else None,
-                         odds if odds[0] is not None else None, None])
-    rows.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)
+                         odds if odds[0] is not None else None, None, _sofia_clock(r["date"], r["kickoff"])])
+    rows.sort(key=lambda x: (x[0], x[11] or "", x[1], x[2]), reverse=True)
 
     # Компактно: 6 месеца са ~2000 мача, а сайтът се отваря и от телефон. Лигите отиват
     # в речник, вероятностите - в промили.

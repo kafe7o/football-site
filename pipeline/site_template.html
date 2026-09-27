@@ -256,6 +256,21 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 #hist-periods { flex-wrap: wrap; overflow-x: visible; }
 .hsum .pos { color: var(--ok); } .hsum .neg { color: var(--bad); }
 .hsum p { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.hbank { padding: 14px 16px; margin-bottom: 14px; }
+.hbank .bgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.bcard { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.bcard h3 { font: 600 12px/1.3 "IBM Plex Sans", sans-serif; color: var(--muted); margin: 0 0 6px;
+  letter-spacing: .04em; text-transform: uppercase; }
+.bnow { font: 600 26px/1.1 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.bnow.pos { color: var(--ok); } .bnow.neg { color: var(--bad); }
+.bsub { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+.bcard svg { display: block; width: 100%; height: 84px; }
+.bcard dl { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; margin: 8px 0 0; font-size: 12.5px; }
+.bcard dt { color: var(--muted); } .bcard dd { margin: 0; font-family: "IBM Plex Mono", monospace; text-align: right; }
+.bcard dd.next { font-weight: 700; }
+.hbank .bnote { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.hsig { margin-top: 5px; font-size: 12px; }
+.hsig.won { color: var(--ok); } .hsig.lost { color: var(--bad); }
 .hday { font: 600 13px/1.2 "IBM Plex Sans", sans-serif; color: var(--muted); margin: 16px 0 6px; }
 .hgroup { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line);
   border-radius: 10px; overflow: hidden; }
@@ -422,6 +437,7 @@ footer b { color: var(--ink); font-weight: 600; }
     <select id="hist-league" aria-label="Лига"></select>
   </div>
   <section class="panel hsum" id="hist-sum"></section>
+  <section class="panel hbank" id="hist-bank"></section>
   <div id="hist-list"></div>
   <button class="hmore" id="hist-more" hidden></button>
 </div>
@@ -865,7 +881,7 @@ const HIST = DATA.history || { leagues: [], rows: [] };
 //       коефициенти|null, избор по цена [изход, коеф., спечелен, степен]|null]
 const HIST_PERIODS = [[7, "7 дни"], [14, "2 седмици"], [30, "1 месец"], [61, "2 месеца"],
                       [92, "3 месеца"], [183, "6 месеца"]];
-const HIST_FILTERS = [["all", "Всички"], ["hit", "Познати"], ["miss", "Непознати"]];
+const HIST_FILTERS = [["all", "Всички"], ["hit", "Познати"], ["miss", "Непознати"], ["sig", "Със сигнал"]];
 const HIST_STEP = 150;
 let histDays = 7, histFilter = "all", histLeague = "", histLimit = HIST_STEP;
 
@@ -874,6 +890,80 @@ const argmax = a => a.indexOf(Math.max(...a));
 const histInPeriod = n => { const from = isoMinus(DATA.today, n); return HIST.rows.filter(r => r[0] > from && r[0] <= DATA.today); };
 const histSettled = r => r[5] != null;
 const histHit = r => histSettled(r) && argmax(r[7]) === r[5];
+
+// Правилото на собственика (2026-09-28): 100 € начало, на всеки сигнал на модела 10% от
+// текущия баланс. Сигнал = правилото от signals.py: изходът с най-голяма стойност
+// p*коеф.-1, ако е над 5%.
+const BANK_START = 100, BANK_SHARE = 0.10, SIGNAL_EDGE = 0.05;
+let histBankInfo = new Map();
+
+function signalOf(r) {
+  if (!r[9]) return null;
+  const ev = r[7].map((p, j) => p / 1000 * r[9][j] - 1), j = argmax(ev);
+  return ev[j] > SIGNAL_EDGE ? j : null;
+}
+
+function bankRun(rows) {
+  // По реда на мачовете. Мачове с едно и също начало се залагат от един и същ баланс -
+  // резултатът на единия не се знае, преди другият да е започнал. Ако в едно начало има
+  // повече от 10 сигнала, общо не се залага повече от целия баланс.
+  const key = r => r[0] + " " + (r[11] || "");
+  const asc = rows.filter(r => signalOf(r) != null).sort((a, b) => key(a).localeCompare(key(b)));
+  let bank = BANK_START, hi = bank, lo = bank, n = 0, won = 0, i = 0;
+  const info = new Map(), path = [bank];
+  while (i < asc.length) {
+    const slot = [], k = key(asc[i]);
+    while (i < asc.length && key(asc[i]) === k) slot.push(asc[i++]);
+    const start = bank, stake = Math.min(start * BANK_SHARE, start / slot.length);
+    for (const r of slot) {
+      const j = signalOf(r);
+      if (!histSettled(r)) { info.set(r, { j, stake, after: null, win: null }); continue; }
+      const win = j === r[5];
+      bank += win ? stake * (r[9][j] - 1) : -stake;
+      n++; if (win) won++;
+      info.set(r, { j, stake, after: bank, win });
+      path.push(bank); hi = Math.max(hi, bank); lo = Math.min(lo, bank);
+    }
+  }
+  return { bank, hi, lo, n, won, info, path, signals: asc.length };
+}
+
+function bankChart(path) {
+  if (path.length < 2) return "";
+  const W = 300, H = 84, top = Math.max(...path, BANK_START), bottom = Math.min(...path, BANK_START);
+  const span = top - bottom || 1;
+  const x = i => (i / (path.length - 1)) * W, y = v => H - 4 - ((v - bottom) / span) * (H - 8);
+  const pts = path.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const up = path[path.length - 1] >= BANK_START;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Балансът след всеки залог">
+    <line x1="0" x2="${W}" y1="${y(BANK_START).toFixed(1)}" y2="${y(BANK_START).toFixed(1)}" stroke="var(--rail)" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+    <polyline points="${pts}" fill="none" stroke="${up ? "var(--ok)" : "var(--bad)"}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function bankCard(title, b, showNext) {
+  if (!b.signals) return `<div class="bcard"><h3>${title}</h3><p class="bsub">В този период няма сигнали.</p></div>`;
+  const chg = (b.bank / BANK_START - 1) * 100;
+  return `<div class="bcard"><h3>${title}</h3>
+    <div class="bnow ${b.bank >= BANK_START ? "pos" : "neg"}">${b.bank.toFixed(2)} €</div>
+    <div class="bsub">от ${BANK_START} € · ${chg >= 0 ? "+" : "−"}${Math.abs(chg).toFixed(1)}% · ${b.n} залога, познати ${b.won}${b.signals > b.n ? ` · ${b.signals - b.n} чакат` : ""}</div>
+    ${bankChart(b.path)}
+    <dl><dt>най-високо</dt><dd>${b.hi.toFixed(2)} €</dd>
+        <dt>най-ниско</dt><dd>${b.lo.toFixed(2)} €</dd>
+        ${showNext ? `<dt>следващ залог (10% от ${b.bank.toFixed(2)} €)</dt><dd class="next">${(b.bank * BANK_SHARE).toFixed(2)} €</dd>` : ""}</dl></div>`;
+}
+
+function renderHistBank(rows) {
+  const live = bankRun(rows.filter(r => r[6])), sim = bankRun(rows.filter(r => !r[6]));
+  histBankInfo = new Map([...live.info, ...sim.info]);
+  document.getElementById("hist-bank").innerHTML = `
+    <p class="eyebrow">Банка: 100 € начало, 10% от баланса на всеки сигнал</p>
+    <div class="bgrid">${bankCard("записани преди мача", live, true)}${bankCard("симулация", sim, false)}</div>
+    <p class="bnote">Сигнал е изходът, при който вероятността на модела по коефициента дава най-голяма
+      стойност, ако тя е над 5%. Банката започва от 100 € в началото на избрания период; след всеки
+      мач залогът е 10% от новия баланс (от 100 € стават 120 € - следващият залог е 12 €). Мачове с
+      еднакъв начален час се залагат от един и същ баланс. Това е проверка на правилото, не съвет:
+      при малко залози резултатът е предимно случайност - виж грешката в таблицата горе.</p>`;
+}
 
 function histStats(rows) {
   const done = rows.filter(histSettled);
@@ -974,15 +1064,19 @@ function histRow(r) {
   const src = r[6] ? `<em class="hsrc live">записана преди мача</em>` : `<em class="hsrc">симулация</em>`;
   const pk = r[10] ? `<div class="hpk ${r[10][2] == null ? "" : r[10][2] ? "won" : "lost"}">Избор по цена: ${esc(r[10][0])} @ ${(+r[10][1]).toFixed(2)} (степен ${esc(r[10][3])}) · ${r[10][2] == null ? "чака" : r[10][2] ? "спечели" : "загуби"}</div>` : "";
   const cells = r[7].map((p, j) => `<div class="${j === top ? "top" : ""}${done && j === r[5] ? " res" : ""}"><b>${labels[j]}</b>${Math.round(p / 10)}%<i>${r[8] ? "пазар " + Math.round(r[8][j] / 10) + "%" : "&nbsp;"}</i></div>`).join("");
+  const bi = histBankInfo.get(r);
+  const sig = bi ? `<div class="hsig ${bi.win == null ? "" : bi.win ? "won" : "lost"}">Сигнал по модела: ${labels[bi.j]} @ ${r[9][bi.j].toFixed(2)} · залог ${bi.stake.toFixed(2)} € · ${bi.after == null ? "чака резултат" : (bi.win ? "спечели" : "загуби") + " · баланс след мача " + bi.after.toFixed(2) + " €"}</div>` : "";
   return `<div class="hrow">${mark}
-    <div class="hteams">${esc(r[2])} – ${esc(r[3])}${score}<span>${esc(HIST.leagues[r[1]])}${src}${done ? "" : " · чака резултат"}</span>${pk}</div>
+    <div class="hteams">${esc(r[2])} – ${esc(r[3])}${score}<span>${esc(HIST.leagues[r[1]])}${src}${done ? "" : " · чака резултат"}</span>${sig}${pk}</div>
     <div class="hprob">${cells}</div></div>`;
 }
 
 function renderHistory() {
   const inPeriod = histInPeriod(histDays).filter(r => !histLeague || HIST.leagues[r[1]] === histLeague);
   renderHistSummary(inPeriod);
-  const shown = inPeriod.filter(r => histFilter === "all" || (histFilter === "hit" ? histHit(r) : histSettled(r) && !histHit(r)));
+  renderHistBank(inPeriod);
+  const shown = inPeriod.filter(r => histFilter === "all" || (histFilter === "sig" ? histBankInfo.has(r)
+    : histFilter === "hit" ? histHit(r) : histSettled(r) && !histHit(r)));
   const list = document.getElementById("hist-list");
   const more = document.getElementById("hist-more");
   if (!shown.length) {
