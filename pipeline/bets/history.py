@@ -89,6 +89,10 @@ def simulate(conn, out_conn, since, until=None, leagues=None):
                         continue
                     day = r.date.date().isoformat()
                     odds, market = _market(conn, league, day, r.home_team, r.away_team)
+                    if odds is None and (end - r.date).days < 7:
+                        # Резултатът е дошъл от odds API преди football-data с коефициентите.
+                        # Симулира се при следващото пускане, иначе щеше да остане без пазар.
+                        continue
                     out_conn.execute(
                         """INSERT OR IGNORE INTO sim_predictions
                            (league, date, home_team, away_team, fthg, ftag, p_home, p_draw, p_away,

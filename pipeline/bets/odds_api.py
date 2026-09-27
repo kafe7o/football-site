@@ -82,10 +82,16 @@ def odds(sport, regions="eu", cache_minutes=CACHE_MINUTES):
 
 
 def scores(sport, days_from=3, cache_minutes=SCORES_CACHE_MINUTES):
-    """Приключилите събития с резултат. 2 кредита, когато се иска история."""
+    """Приключилите събития с резултат, по id. 2 кредита, когато се иска история."""
+    return {e["id"]: {"home": e["home"], "away": e["away"]}
+            for e in finished(sport, days_from, cache_minutes)}
+
+
+def finished(sport, days_from=3, cache_minutes=SCORES_CACHE_MINUTES):
+    """Приключилите събития с имената, началото и резултата. 2 кредита, когато се иска история."""
     data = _get(f"/sports/{sport}/scores/", {"daysFrom": days_from},
                 cache_name=f"scores_{sport}_{days_from}", cache_minutes=cache_minutes)
-    out = {}
+    out = []
     for event in data:
         if not event.get("completed") or not event.get("scores"):
             continue
@@ -95,7 +101,9 @@ def scores(sport, days_from=3, cache_minutes=SCORES_CACHE_MINUTES):
             log.warning("%s: резултат без имена на отборите (%s)", sport, event.get("id"))
             continue
         try:
-            out[event["id"]] = {"home": float(by_name[home]), "away": float(by_name[away])}
+            out.append({"id": event["id"], "home_team": home, "away_team": away,
+                        "commence_time": event.get("commence_time"),
+                        "home": float(by_name[home]), "away": float(by_name[away])})
         except (TypeError, ValueError):
             log.warning("%s: нечислов резултат за %s", sport, event.get("id"))
     log.info("%s: %d приключили събития с резултат", sport, len(out))

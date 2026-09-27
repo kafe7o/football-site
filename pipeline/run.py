@@ -161,14 +161,17 @@ def main():
                 step(log, "1. Резултати от football-data", results.update_history, conn, 2),
                 step(log, "2. Разписание", results.update_fixtures, conn),
                 step(log, "3. Прозорец на историята", results.prune_history, conn),
-                step(log, "4. Уреждане на прогнози", predict.settle, conn),
-                step(log, "4а. Симулация за изиграните мачове (история)", history.extend, conn),
+                # Симулацията иска коефициентите на football-data - затова е тук, след тях.
+                step(log, "3а. Симулация за изиграните мачове (история)", history.extend, conn),
             ]
             ok += daily_ok
             if all(daily_ok):
                 db.set_meta(conn, "history_refreshed", now.isoformat(timespec="seconds"))
         else:
             log.info("Резултатите са теглени в %s - следващият път след 11 часа", last[:16])
+        # Резултатите от odds API идват часове след мача - football-data чака 1-3 дни.
+        ok += [step(log, "4. Резултати часове след мача (odds API)", results.fill_from_scores, conn),
+               step(log, "4а. Уреждане на прогнози", predict.settle, conn)]
         ok += [step(log, "5. Скенер за цени", value.scan, conn),
                step(log, "6. Уреждане на залозите по цена", value.settle, conn),
                step(log, "7. Прогнози за днешните мачове", predict.run, conn)]

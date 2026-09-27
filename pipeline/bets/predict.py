@@ -162,20 +162,30 @@ def run(conn=None, day=None):
 def settle(conn=None):
     """Сверява старите прогнози с резултата. Прогнозата не се пипа, само изходът."""
     conn = conn or db.init()
+    # Всички с резултат, не само неуредените: първият резултат може да е от odds API, а
+    # официалният от football-data идва после. Ако се различават, важи официалният.
     rows = conn.execute(
-        """SELECT p.id, p.match_id, m.fthg, m.ftag FROM predictions p
+        """SELECT p.id, p.outcome, m.fthg, m.ftag FROM predictions p
              JOIN matches m ON m.id = p.match_id
-            WHERE p.outcome IS NULL AND m.fthg IS NOT NULL""").fetchall()
+            WHERE m.fthg IS NOT NULL""").fetchall()
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    settled = corrected = 0
     for row in rows:
         outcome = 0 if row["fthg"] > row["ftag"] else (1 if row["fthg"] == row["ftag"] else 2)
+        if row["outcome"] == outcome:
+            continue
+        if row["outcome"] is None:
+            settled += 1
+        else:
+            corrected += 1
+            log.warning("Прогноза %d: резултатът е поправен (%s -> %s)", row["id"], row["outcome"], outcome)
         conn.execute("UPDATE predictions SET outcome = ?, settled_at = ? WHERE id = ?",
                      (outcome, now, row["id"]))
     conn.commit()
     waiting = conn.execute(
         "SELECT COUNT(*) c FROM predictions WHERE outcome IS NULL").fetchone()["c"]
-    log.info("Уредени %d прогнози, чакат резултат %d", len(rows), waiting)
-    return len(rows)
+    log.info("Уредени %d прогнози, поправени %d, чакат резултат %d", settled, corrected, waiting)
+    return settled
 
 
 def record(conn):

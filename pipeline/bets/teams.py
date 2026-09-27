@@ -80,3 +80,62 @@ def match(name, candidates):
         return close[0]
     log.info("непознат отбор: %r", name)
     return None
+
+
+# --- Съвпадение на цял мач, не на един отбор ---
+# Когато кандидатите са само мачовете на една лига в един ден (до ~12), а всеки отбор играе
+# най-много веднъж на ден, стига и свободно сравнение по думи: "AD Ceuta FC" ~ "Ceuta",
+# "Stockport County FC" ~ "Stockport". Общите думи ("Real", "United", "City") не се броят -
+# иначе "Real Betis" ставаше "Real Sociedad".
+FILLER = {"fc", "cf", "ad", "sd", "cd", "ud", "afc", "sc", "ac", "ce", "club", "de", "the"}
+GENERIC = {"real", "united", "city", "town", "county", "athletic", "atletico", "sporting",
+           "deportivo", "racing", "rovers", "wanderers", "albion", "stanley", "alexandra"}
+
+
+def _tokens(name):
+    import unicodedata
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    words = [w for w in "".join(ch if ch.isalnum() else " " for ch in plain.lower()).split()
+             if w not in FILLER]
+    return [w for w in words if w not in GENERIC] or words
+
+
+def similar(a, b):
+    """Дял на общите думи (или начала на думи с 3+ букви: "peterboro" ~ "peterborough")
+    от ПО-ДЪЛГОТО име. От по-краткото не става: "Sheffield United" без общата дума е само
+    "sheffield" и пасваше на всеки отбор от Шефилд."""
+    ta, tb = _tokens(a), _tokens(b)
+    if not ta or not tb:
+        return 0.0
+    short, long_ = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    hits = sum(1 for w in short
+               if any(w == v or (min(len(w), len(v)) >= 3 and (v.startswith(w) or w.startswith(v)))
+                      for v in long_))
+    return hits / len(long_)
+
+
+def _same(name, candidate):
+    """Точното сравнение на match(), без да пише в лога за всеки неуспешен кандидат."""
+    return (name == candidate or ALIASES.get(name) == candidate
+            or difflib.SequenceMatcher(None, name, candidate).ratio() >= CUTOFF)
+
+
+def match_fixture(home, away, fixtures, key=lambda f: (f["home_team"], f["away_team"])):
+    """Мачът от fixtures, на който съответстват home и away, или None.
+
+    Първо точно име или псевдоним (match). Иначе и двата отбора трябва да съвпаднат поне
+    наполовина, мачът да е единственият най-добър и да НЕ пасва също толкова добре
+    обърнат (дерби с разменени имена се пропуска).
+    """
+    scored = []
+    for f in fixtures:
+        fh, fa = key(f)
+        if _same(home, fh) and _same(away, fa):
+            return f
+        sh, sa = similar(home, fh), similar(away, fa)
+        if sh >= 0.5 and sa >= 0.5 and sh + sa > similar(home, fa) + similar(away, fh):
+            scored.append((sh + sa, f))
+    scored.sort(key=lambda x: -x[0])
+    if scored and (len(scored) == 1 or scored[0][0] > scored[1][0]):
+        return scored[0][1]
+    return None

@@ -14,7 +14,8 @@ import io
 import logging
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -204,6 +205,67 @@ def update_fixtures(conn):
     stored, _ = store_rows(conn, df, season_name(season_code(this_year)), is_fixture=True)
     log.info("Разписание: %d предстоящи мача", stored)
     return stored
+
+
+SCORES_EVERY_HOURS = 2      # облакът няма кеш между пусканията - времето се пази в meta
+FINISHED_AFTER_HOURS = 2.5  # след толкова часа от началото мачът със сигурност е свършил
+UK = ZoneInfo("Europe/London")   # часовете на football-data са британски
+
+
+def fill_from_scores(conn):
+    """Резултатите от the-odds-api часове след мача, вместо да се чака football-data.
+
+    football-data качва уикенда с 1-3 дни закъснение, а дотогава прогнозите стоят с "чака
+    резултат" (2026-09-27: мачовете от 26-ти още чакаха на следващата вечер). Резултатът се
+    записва само където още няма такъв; когато football-data го донесе, официалният го
+    презаписва (upsert_match). Мачът се приема само ако и домакинът, и гостът съвпаднат с
+    един и същ мач от същия ден.
+
+    Цена: 2 кредита на лига, само за лиги с приключил мач без резултат и най-много
+    веднъж на SCORES_EVERY_HOURS за лига.
+    """
+    from . import odds_api, predict, teams     # тук, за да няма кръгов импорт
+    now = datetime.now(timezone.utc)
+    pending = {}
+    for row in conn.execute(
+            """SELECT id, league, date, kickoff, home_team, away_team FROM matches
+                WHERE fthg IS NULL AND date BETWEEN ? AND ?""",
+            ((now - timedelta(days=3)).date().isoformat(), now.date().isoformat())):
+        clock = row["kickoff"] if row["kickoff"] and ":" in row["kickoff"] else "21:00"
+        start = datetime.fromisoformat(f"{row['date']}T{clock}").replace(tzinfo=UK)
+        if now - start >= timedelta(hours=FINISHED_AFTER_HOURS):
+            pending.setdefault(row["league"], []).append(row)
+    filled, asked = 0, 0
+    for league, rows in pending.items():
+        sport = predict.LEAGUE_TO_SPORT.get(league)
+        if not sport:
+            continue
+        key = f"scores_checked:{sport}"
+        last = db.get_meta(conn, key)
+        if last and now - datetime.fromisoformat(last) < timedelta(hours=SCORES_EVERY_HOURS):
+            continue
+        try:
+            events = odds_api.finished(sport, days_from=3)
+        except RuntimeError as e:
+            log.error("%s: резултатите не се изтеглиха - %s", sport, e)
+            continue
+        asked += 1
+        db.set_meta(conn, key, now.isoformat(timespec="seconds"))
+        for event in events:
+            day = (datetime.fromisoformat(event["commence_time"].replace("Z", "+00:00"))
+                   .astimezone(UK).date().isoformat()) if event.get("commence_time") else None
+            hit = teams.match_fixture(event["home_team"], event["away_team"],
+                                      [r for r in rows if r["date"] == day])
+            if hit is None:
+                continue
+            done = conn.execute(
+                "UPDATE matches SET fthg = ?, ftag = ? WHERE id = ? AND fthg IS NULL",
+                (int(event["home"]), int(event["away"]), hit["id"])).rowcount
+            filled += done
+    conn.commit()
+    left = sum(len(r) for r in pending.values()) - filled
+    log.info("Резултати от odds API: %d записани, %d лиги попитани, чакат още %d", filled, asked, left)
+    return filled
 
 
 def history(conn, league):
