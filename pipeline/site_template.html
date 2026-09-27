@@ -77,10 +77,12 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .pick .meta { color: var(--muted); font-size: 12px; }
 .pick.none { background: var(--chip); color: var(--muted); }
 
-.why-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid currentColor;
-           background: none; color: inherit; font: 700 12px/1 "IBM Plex Sans", sans-serif;
-           cursor: pointer; padding: 0; flex: 0 0 auto; margin-left: auto; opacity: .75; }
-.why-btn:hover, .why-btn[aria-expanded="true"] { opacity: 1; }
+.why-btn { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px 0 4px;
+           border-radius: 13px; border: 0; background: var(--accent); color: var(--accent-ink);
+           font: 600 12.5px/1 "IBM Plex Sans", sans-serif; cursor: pointer; flex: 0 0 auto; }
+.why-btn::before { content: "?"; display: inline-grid; place-items: center; width: 18px; height: 18px;
+                   border-radius: 50%; background: var(--accent-ink); color: var(--accent); font-weight: 700; }
+.why-btn[aria-expanded="true"] { filter: brightness(1.15); }
 .why-btn:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
 .why { margin-top: 6px; padding: 10px 12px; border-radius: 8px; background: var(--chip);
        font-size: 13px; line-height: 1.55; color: var(--ink); }
@@ -551,15 +553,15 @@ function pickLine(m) {
   const p = m.pick;
   // уникален за всяко място: един мач стои и във втория, и в третия таб
   const wid = "why-" + (++WHY_SEQ);
-  const btn = `<button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Защо?">?</button>`;
+  const btn = `<button class="why-btn" aria-expanded="false" aria-controls="${wid}" data-why="${wid}" title="Защо този избор?">Защо</button>`;
   const box = `<div class="why" id="${wid}" hidden>${whyText(m)}</div>`;
   if (!p) return `<div class="pick none">Без избор \u2014 никоя цена не е над честната</div>`;
   const book = p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.book_name)}</a>` : esc(p.book_name || p.bookmaker);
   const rec = (DATA.value.by_tier || {})[p.tier];
   const recText = rec && rec.clv != null ? ` \u00b7 степен ${p.tier} досега: ${(rec.clv * 100).toFixed(1)}% движение на ${rec.clv_n}` : "";
-  return `<div class="pick"><span class="tier tier${p.tier}">${p.tier}</span>
+  return `<div class="pick"><span class="tier tier${p.tier}">${p.tier}</span>${btn}
     <span>Избор: <b>${esc(p.selection)}</b> @ <b>${p.odds.toFixed(2)}</b> при ${book}</span>
-    <span class="meta">+${(p.edge * 100).toFixed(1)}% над честната (${pct(p.p_fair)})${recText}</span>${btn}</div>${box}`;
+    <span class="meta">+${(p.edge * 100).toFixed(1)}% над честната (${pct(p.p_fair)})${recText}</span></div>${box}`;
 }
 
 function booksBlock(m) {
