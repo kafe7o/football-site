@@ -256,6 +256,7 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
   font: 500 13px/1.2 "IBM Plex Sans", sans-serif; }
 .hseg button + button { border-left: 1px solid var(--line); }
 .hseg button[aria-pressed="true"] { background: var(--chip); font-weight: 700; }
+.hseg button .n { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); margin-left: 3px; }
 .hseg button:focus-visible { outline: 2px solid var(--home); outline-offset: -2px; }
 #hist-league { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
   padding: 7px 10px; font: 500 13px/1.2 "IBM Plex Sans", sans-serif; max-width: 100%; }
@@ -989,7 +990,7 @@ const HIST_PERIODS = [[7, "7 дни"], [14, "2 седмици"], [30, "1 мес�
                       [92, "3 месеца"], [183, "6 месеца"]];
 const HIST_FILTERS = [["all", "Всички"], ["bet", "Със залог"], ["hit", "Моделът позна"], ["miss", "Не позна"]];
 const HIST_STEP = 150;
-let histDays = 7, histFilter = "bet", histLeague = "", histType = "", histLimit = HIST_STEP;
+let histDays = 7, histFilter = "all", histLeague = "", histType = "", histLimit = HIST_STEP;
 
 const isoMinus = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
 const argmax = a => a.indexOf(Math.max(...a));
@@ -1222,6 +1223,11 @@ function renderHistory() {
   renderHistBank(runs);
   renderHistSummary(inPeriod, runs);
   const isBet = r => { const bi = histBankInfo.get(r); return bi && !bi.skip; };
+  // Броят на всеки бутон - да се вижда какво е скрито, преди да се натисне.
+  const counts = { all: inPeriod.length, bet: inPeriod.filter(isBet).length, hit: inPeriod.filter(histHit).length,
+                   miss: inPeriod.filter(r => histSettled(r) && !histHit(r)).length };
+  for (const b of document.querySelectorAll("#hist-filter button"))
+    b.innerHTML = `${esc(HIST_FILTERS.find(f => f[0] === b.dataset.f)[1])} <span class="n">${counts[b.dataset.f]}</span>`;
   const shown = inPeriod.filter(r => histFilter === "all" || (histFilter === "bet" ? isBet(r)
     : histFilter === "hit" ? histHit(r) : histSettled(r) && !histHit(r)))
     // Дните - най-новият отгоре; в деня - по часа, за да се чете балансът отгоре надолу.
