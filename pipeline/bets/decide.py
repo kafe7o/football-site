@@ -27,6 +27,10 @@ log = logging.getLogger(__name__)
 SOFIA = ZoneInfo("Europe/Sofia")
 WINDOW = timedelta(minutes=80)
 DAY_MAX = 8            # същото като в site_template.html
+# Съвет на професионалния залагач, проверен (legacy/pro_checks.py): в Холандия фаворитът на
+# 1.30-1.55 печели 63.9% при обещани 68.4% - и през 2012-2019, и през 2019-2026. Там такъв залог
+# не се прави. Същото е в site_template.html (SHORT_FAV_SKIP).
+SHORT_FAV_SKIP = {"soccer_netherlands_eredivisie": (1.30, 1.55)}
 MIN_OWN_EDGE = 0.02    # колко над честната трябва да плаща твоят букмейкър
 
 SCHEMA = """
@@ -62,6 +66,9 @@ def verdict(m, taken_today, excluded=()):
                        "-": "без група - никоя цена не е над честната"}.get(m.get("type"), "няма данни за цените")
     if pick.get("tier") != "A":
         return False, f"група {pick.get('tier')} - залага се само група A"
+    band = SHORT_FAV_SKIP.get(m.get("sport", ""))
+    if band and band[0] <= pick["odds"] <= band[1]:
+        return False, "Холандия: фаворитите на 1.30-1.55 печелят по-рядко от обещаното"
     hit = [s for s in review.segments(m) if s in excluded]
     if hit:
         return False, f"самопроверката изключи: {', '.join(review.label(s) for s in hit)}"

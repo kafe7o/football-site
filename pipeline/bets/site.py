@@ -123,7 +123,8 @@ def daily_pnl(conn, stake=10, types=None):
         decision = kind.get("decision") if kind else None
         bet = (bool(decision[0]) if decision else
                bool(choice) and choice.get("tier") == "A"
-               and not derbies.is_derby(r["league"], r["home_team"], r["away_team"]))
+               and not derbies.is_derby(r["league"], r["home_team"], r["away_team"])
+               and not (r["league"] == "N1" and 1.30 <= choice["odds"] <= 1.55))
         if bet and choice and choice.get("result") is not None:
             day["rule_n"] += 1
             day["rule"] += stake * (choice["odds"] - 1) if choice["result"] else -stake
