@@ -199,6 +199,8 @@ def connect(path=None):
 def init(path=None):
     conn = connect(path)
     conn.executescript(SCHEMA)
+    from .xg import SCHEMA as XG_SCHEMA      # таблицата с xG (bets/xg.py)
+    conn.executescript(XG_SCHEMA)
     migrate(conn)
     conn.commit()
     return conn

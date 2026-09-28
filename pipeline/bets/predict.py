@@ -22,7 +22,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import db, model, odds_api, results, teams
+from . import db, model, odds_api, results, teams, xg
 from .value import EXCHANGES, prices_by_book, outcome_order
 
 log = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ def run(conn=None, day=None):
         fixtures = results.upcoming(conn, league, day)
         if not fixtures:
             continue
-        history = results.history(conn, league)
+        history = results.history(conn, league, blend_xg=True)
         if len(history) < model.MIN_TRAIN_MATCHES:
             log.warning("%s: само %d мача в базата - пропуска се", league, len(history))
             continue
@@ -164,7 +164,8 @@ def run(conn=None, day=None):
                     p_home, p_draw, p_away, odds_home, odds_draw, odds_away, bookmaker, match_id)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (league, fixture["home_team"], fixture["away_team"], start.isoformat(),
-                 datetime.now(timezone.utc).isoformat(timespec="seconds"), model.VERSION,
+                 datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                 model.VERSION + ("_xg" if league in xg.LEAGUES else ""),
                  *probs, home_odds, draw_odds, away_odds, book, fixture["id"]))
             if cursor.rowcount:
                 logged += 1

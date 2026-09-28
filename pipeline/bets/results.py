@@ -268,11 +268,24 @@ def fill_from_scores(conn):
     return filled
 
 
-def history(conn, league):
-    """Изиграните мачове на лигата, подредени по дата - входът за модела."""
-    rows = conn.execute(
-        """SELECT date, home_team, away_team, fthg, ftag FROM matches
-            WHERE league = ? AND fthg IS NOT NULL ORDER BY date""", (league,)).fetchall()
+def history(conn, league, blend_xg=False):
+    """Изиграните мачове на лигата, подредени по дата - входът за модела.
+
+    blend_xg=True: за мачовете с xG (bets/xg.py) целта на модела е половин голове, половин xG -
+    приета по legacy/xg_check.py (по-точен модел в избора и в чистата проверка). Само за
+    обучението на модела; резултатите си остават истинските голове навсякъде другаде."""
+    has_xg = blend_xg and conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'xg'").fetchone()
+    if has_xg:
+        rows = conn.execute(
+            """SELECT m.date, m.home_team, m.away_team,
+                      CASE WHEN x.xg_h IS NULL THEN m.fthg ELSE (m.fthg + x.xg_h) / 2.0 END,
+                      CASE WHEN x.xg_a IS NULL THEN m.ftag ELSE (m.ftag + x.xg_a) / 2.0 END
+                 FROM matches m LEFT JOIN xg x ON x.match_id = m.id
+                WHERE m.league = ? AND m.fthg IS NOT NULL ORDER BY m.date""", (league,)).fetchall()
+    else:
+        rows = conn.execute(
+            """SELECT date, home_team, away_team, fthg, ftag FROM matches
+                WHERE league = ? AND fthg IS NOT NULL ORDER BY date""", (league,)).fetchall()
     df = pd.DataFrame(rows, columns=["date", "home_team", "away_team", "fthg", "ftag"])
     if not df.empty:
         df["date"] = pd.to_datetime(df["date"])

@@ -207,7 +207,7 @@ def fitted_models(conn, exported=None):
         return {league: model.Poisson.from_export(data) for league, data in exported.items()}
     models = {}
     for league in results.LEAGUES:
-        history = results.history(conn, league)
+        history = results.history(conn, league, blend_xg=True)
         if len(history) >= model.MIN_TRAIN_MATCHES:
             models[league] = model.Poisson().fit(history)
     return models

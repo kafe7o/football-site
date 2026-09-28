@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 
-from bets import config, db, model, notify, review, odds_api, predict, publish, results, site, value
+from bets import config, db, model, notify, review, xg, odds_api, predict, publish, results, site, value
 
 
 def setup_logging():
@@ -58,7 +58,8 @@ def daily(log, args):
     """
     conn = db.init()
     ok = [step(log, "1. Пълната история (архив за бектестовете)",
-               results.update_history, conn, args.years_back)]
+               results.update_history, conn, args.years_back),
+          step(log, "1а. xG от Understat (архив)", xg.update, conn)]
     conn.close()
     if config.GITHUB_TOKEN and config.GITHUB_REPO:
         ok.append(step(log, "2. Местно копие на сайта и базата от облака", publish.pull_data))
@@ -171,6 +172,7 @@ def main():
         ok += [step(log, "4. Резултати часове след мача (odds API)", results.fill_from_scores, conn),
                step(log, "4а. Уреждане на прогнози", predict.settle, conn)]
         ok.append(step(log, "4б. Самопроверка на правилото (веднъж седмично)", review.run_if_due, conn))
+        ok.append(step(log, "4в. xG от Understat за модела (на 11 часа)", xg.update_if_due, conn))
         ok += [step(log, "5. Скенер за цени", value.scan, conn, predict.active_sports(conn)),
                step(log, "6. Уреждане на залозите по цена", value.settle, conn),
                step(log, "7. Прогнози за днешните мачове", predict.run, conn)]
