@@ -1,0 +1,46 @@
+# Проверки назад с исторически цени, пуснати ръчно в облака (2026-09-28): от лаптопа
+# the-odds-api понякога не отговаря, а от GitHub отговаря. Не пипа сайта и базата -
+# резултатът се връща като файл (artifact).
+name: research
+
+on:
+  workflow_dispatch:
+    inputs:
+      leagues:
+        description: "лиги, напр. E2,E3,SP2,I2,D2,F2,N1"
+        required: true
+      out:
+        description: "име на файла с резултата"
+        default: "rule_backtest_more.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: research
+  cancel-in-progress: false
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Проверка назад
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FOOTBALL_DB: ${{ github.workspace }}/cloud.db
+          FOOTBALL_SITE: ${{ github.workspace }}
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          PYTHONIOENCODING: utf-8
+        run: cd pipeline && python legacy/rule_backtest.py "${{ inputs.leagues }}" "${{ inputs.out }}" | grep -v "WARNING\|сбъркана"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research-result
+          path: pipeline/results/${{ inputs.out }}
