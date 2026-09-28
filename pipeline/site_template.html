@@ -202,6 +202,7 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .rule.go { background: var(--sig-bg); border: 1px solid var(--sig); }
 .rule.none { background: var(--chip); color: var(--muted); }
 .rule b { font-weight: 700; }
+.rule .op { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
 .ateams .tchip, .ateams .tchip span, .hteams .tchip, .hteams .tchip span { display: inline-flex; font-size: 11px; }
 .ateams .tchip .tier, .hteams .tchip .tier { color: inherit; }
 .ateams .tierA, .hteams .tierA { color: var(--ok); } .ateams .tierC, .hteams .tierC { color: var(--bad); }
@@ -277,6 +278,14 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .hbank .bcard:hover { border-color: var(--rail); }
 .hbank .bcard.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .hsig.skip, .hsig.plain { color: var(--muted); }
+.hbank .bcard.static { cursor: default; }
+.rtab { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 12px 0 4px; }
+.rtab th, .rtab td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.rtab th:first-child, .rtab td:first-child { text-align: left; }
+.rtab th { font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.rtab td { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.rtab td:first-child { font-family: inherit; }
+.rnote { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; max-width: 70ch; }
 .hsig b { font-weight: 700; }
 .bcard { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
 .bcard h3 { font: 600 12px/1.3 "IBM Plex Sans", sans-serif; color: var(--muted); margin: 0 0 6px;
@@ -449,9 +458,8 @@ footer b { color: var(--ink); font-weight: 600; }
     пипана. Симулации няма. <b>✓ / ✗</b> вляво - дали излезе изходът, който моделът смяташе за най-вероятен.
     В квадратчетата <b>рамка</b> е най-вероятното според модела, <b>зелено</b> - какво излезе.
     <b>Група</b> A/B/C е категорията на цените при последното сканиране преди мача (стрелката показва как се е
-    менила, например B → A); „без“ - нямаше цена над честната. <b>Правилото</b>: залага се сигналът на модела
-    само в мач от група A или B - всички от група A (най-много 8 на ден), група B само докато общо са под 5;
-    група C и мач без цена над честната - никога.</p>
+    менила, например B → A); „без“ - нямаше цена над честната. <b>Залогът</b> е изборът по цена от група A (най-много 8 на ден); сигналът на
+    модела е само мнение. Група B, C и мачове без група - без залог.</p>
   <nav class="days" id="hist-periods" aria-label="Период"></nav>
   <div class="hfilters">
     <div class="hseg" id="hist-filter" role="group" aria-label="Кои мачове"></div>
@@ -468,6 +476,7 @@ footer b { color: var(--ink); font-weight: 600; }
   </div>
   <section class="panel hbank" id="hist-bank"></section>
   <section class="panel hsum" id="hist-sum"></section>
+  <section class="panel hbank" id="hist-rewind"></section>
   <div id="hist-list"></div>
   <button class="hmore" id="hist-more" hidden></button>
 </div>
@@ -497,14 +506,14 @@ const pct = x => (x == null ? "–" : Math.round(x * 100) + "%");
 // odds API пише равния като "Draw"; изходите се наричат с имена, не с 1/X/2.
 const selName = s => (s === "Draw" ? "равен" : s);
 const OUTCOME = ["домакин", "равен", "гост"];
-// Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от група A
-// или B. Колко на ден зависи от деня: всички от група A (най-много DAY_MAX), група B само
-// докато общо са под DAY_B_MAX. Група C и мач без цена над честната - никога.
-// Същото е в notify.py (DAY_MAX, DAY_B_MAX) - известията и сайтът казват едно и също.
-const DAY_MAX = 8, DAY_B_MAX = 5;
-const DAY_LIMIT_TEXT = `всички от група A (най-много ${DAY_MAX}), група B само докато общо са под ${DAY_B_MAX}`;
-// Мястото i в подредения ден (първо A, после B, после стойността) - влиза ли.
-const dayAllowed = (i, isA) => i < DAY_MAX && (isA || i < DAY_B_MAX);
+// Правилото (2026-09-28, по legacy/rule_backtest.py - 735 изиграни мача с истинските цени):
+// залага се изборът по цена от група A - цената над честната спрямо Pinnacle. Най-много DAY_MAX
+// на ден, първо тези с по-голяма разлика. Сигналът на модела е мнение - на 735 мача не добави
+// нищо стабилно. Група B, C и без група - без залог. Същото е в notify.py (DAY_MAX, day_allowed).
+const DAY_MAX = 8;
+// 2 € на залог при банка 100 € (2% от началото). При 10% от банката и коефициенти около 4
+// обикновено остават ~22 € от 100 € дори при истинско предимство (виж CLAUDE.md).
+const FLAT_STAKE = 2;
 const d3 = iso => { const d = new Date(iso + "T12:00:00"); return WD3[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1); };
 const dFull = iso => { const d = new Date(iso + "T12:00:00"); return WD[d.getDay()] + ", " + d.getDate() + " " + MN[d.getMonth()]; };
 
@@ -733,24 +742,23 @@ function typeHistory(m) {
     `<div class="mline"><span>${esc(when(at))}</span><span>${typeChip(t, null)}</span></div>`).join("")}</div>`;
 }
 
-// Мачовете на деня, които влизат по правилото (най-много DAY_MAX): id на събитието -> място.
+// Мачовете на деня, които влизат по правилото: id на събитието -> влиза ли (лимитът за деня).
 function ruleRanks(rows) {
-  const ok = rows.filter(m => m.signal && (m.type === "A" || m.type === "B"))
-    .sort((a, b) => (a.type === "A" ? 0 : 1) - (b.type === "A" ? 0 : 1) || b.signal.value - a.signal.value);
-  return new Map(ok.map((m, i) => [m.event_id, dayAllowed(i, m.type === "A")]));
+  const ok = rows.filter(m => m.pick && m.pick.tier === "A").sort((a, b) => b.pick.edge - a.pick.edge);
+  return new Map(ok.map((m, i) => [m.event_id, i < DAY_MAX]));
 }
 
 function ruleLine(m, ranks) {
-  const s = m.signal;
-  if (!s) return `<div class="rule none">Сигнал на модела: няма - не се залага</div>`;
-  const head = `Сигнал на модела: <b>${esc(selName(s.name))}</b> @ <b>${s.odds.toFixed(2)}</b> · шанс по модела ${pct(s.p)}`;
-  if (m.type !== "A" && m.type !== "B") {
-    const why = m.type === "C" ? "мачът е от група C" : m.type === "-" ? "няма цена над честната" : "няма данни за цените";
-    return `<div class="rule none">${head} · <b>не се залага</b> - ${why}</div>`;
-  }
-  if (ranks && ranks.get(m.event_id) === false)
-    return `<div class="rule none">${head} · <b>не се залага</b> - над лимита за деня (${DAY_LIMIT_TEXT})</div>`;
-  return `<div class="rule go">${head} · <b>залага се</b> (група ${m.type})</div>`;
+  const p = m.pick, s = m.signal;
+  const opinion = !s ? "Моделът: няма сигнал."
+    : p && p.outcome_idx === s.pick ? `Моделът е съгласен (шанс по модела ${pct(s.p)}).`
+    : `Моделът сочи друго: ${esc(selName(s.name))} @ ${s.odds.toFixed(2)} (шанс по модела ${pct(s.p)}) - това е само мнение.`;
+  if (p && p.tier === "A" && !(ranks && ranks.get(m.event_id) === false))
+    return `<div class="rule go"><b>ЗАЛОГ:</b> ${esc(selName(p.selection))} @ <b>${p.odds.toFixed(2)}</b> · група A · шанс ${pct(p.p_fair)} · ${FLAT_STAKE}% от банката (${FLAT_STAKE} € на 100 €)<span class="op">${opinion}</span></div>`;
+  const why = p && p.tier === "A" ? `над лимита от ${DAY_MAX} залога за деня`
+    : p ? `група ${p.tier} - залага се само група A`
+    : m.type === "C" ? "група C" : m.type === "-" ? "без група - никоя цена не е над честната" : "няма данни за цените";
+  return `<div class="rule none"><b>Без залог</b> - ${why}<span class="op">${opinion}</span></div>`;
 }
 
 function pickLine(m) {
@@ -886,16 +894,14 @@ function matchRow(m) {
   }
   tags.push(typeChip(m.type, pathOf(m)));
   if (m.pick) {
-    const r = m.pick.result;
+    const r = m.pick.result, bet = m.pick.tier === "A";
     const res = played && r != null ? (r ? " · позна" : " · сгреши") : "";
-    const cls = played && r != null ? (r ? "ok" : "bad") : "sig";
-    tags.push(`<span class="tag ${cls}">избор ${esc(selName(m.pick.selection))} @ ${m.pick.odds.toFixed(2)} · ${esc(m.pick.book_name || m.pick.bookmaker)}${res}</span>`);
+    const cls = played && r != null ? (r ? "ok" : "bad") : (bet ? "sig" : "no");
+    tags.push(`<span class="tag ${cls}">${bet ? "ЗАЛОГ" : "избор, група " + m.pick.tier + " - без залог"} · ${esc(selName(m.pick.selection))} @ ${m.pick.odds.toFixed(2)} · ${esc(m.pick.book_name || m.pick.bookmaker)}${res}</span>`);
   }
   if (m.signal) {
     const res = played ? (m.signal.pick === m.outcome ? " · позна" : " · сгреши") : "";
-    const cls = played ? (m.signal.pick === m.outcome ? "ok" : "bad") : "sig";
-    const ok = m.type === "A" || m.type === "B";
-    tags.push(`<span class="tag ${ok ? cls : "no"}">сигнал · ${esc(selName(m.signal.name))} @ ${m.signal.odds.toFixed(2)}${res}${ok ? "" : " · не се залага (" + (m.type === "C" ? "група C" : m.type === "-" ? "без цена над честната" : "няма данни за цените") + ")"}</span>`);
+    tags.push(`<span class="tag no">моделът: ${esc(selName(m.signal.name))} @ ${m.signal.odds.toFixed(2)}${res}</span>`);
   }
 
   const head = `<div class="fixture">
@@ -1005,15 +1011,14 @@ const histTypeOk = r => {
 const histMatches = n => histInPeriod(n).filter(r => (!histLeague || HIST.leagues[r[1]] === histLeague) && histTypeOk(r));
 const teamOf = (r, j) => [r[2], "равен", r[3]][j];
 
-// Банката: 100 € начало, всеки залог е 10% от баланса в момента (от 100 € стават 120 € -
-// следващият залог е 12 €; загуби ли, стават 108 € и залогът е 10.80 €). Под 1 € - край.
+// Банките: 100 € начало. Препоръката - по 2 € на залог; за сравнение същите залози с 10% от
+// баланса в момента (от 100 € стават 120 € - следващият е 12 €). Под залога - край.
 const BANK_START = 100, BANK_SHARE = 0.10, BANK_MIN = 1, SIGNAL_EDGE = 0.05;
-// Само правила, които никога не залагат на група C (решение на собственика).
 const RULES = [
-  ["rule", "Правилото: сигнал + група A/B"],
-  ["pick", "Избор по цена A/B"],
+  ["flat", `Препоръка: избор по цена A · ${FLAT_STAKE} € на залог`],
+  ["share", "Същите залози · 10% от баланса"],
 ];
-let histRule = "rule", histBankInfo = new Map();
+let histRule = "flat", histBankInfo = new Map();
 
 function signalOf(r) {
   if (!r[9]) return null;
@@ -1021,60 +1026,53 @@ function signalOf(r) {
   return ev[j] > SIGNAL_EDGE ? j : null;
 }
 
-// Кандидатът на мача по правило: {j, label, odds, chance, win, rank} или със skip - защо не
-// се залага; null - няма какво.
-function candidate(r, rule) {
-  const t = r[12];
-  if (rule === "pick") {
-    const p = r[10];
-    if (!p) return null;
-    const j = p[6];
-    const win = p[2] != null ? !!p[2] : (histSettled(r) && j != null ? j === r[5] : null);
-    return { j, label: `Избор по цена (група ${p[3]}): ${selName(p[0])}`, odds: +p[1], chance: p[5],
-             chanceText: "честен шанс", win, rank: [p[3] === "A" ? 0 : 1, -(p[4] || 0)] };
-  }
-  const j = signalOf(r);
-  if (j == null) return null;
-  const c = { j, label: `Сигнал на модела: ${teamOf(r, j)}`, odds: r[9][j], chance: r[7][j] / 1000,
-              chanceText: "шанс по модела", win: histSettled(r) ? j === r[5] : null,
-              rank: [t === "A" ? 0 : t === "B" ? 1 : 2, -(r[7][j] / 1000 * r[9][j] - 1)] };
-  if (rule === "rule" && t !== "A" && t !== "B")
-    c.skip = t === "C" ? "мачът е от група C" : t === "-" ? "няма цена над честната" : "няма данни за цените";
+// Залогът на мача: изборът по цена. Не от група A - със skip (защо не се залага).
+function candidate(r) {
+  const p = r[10];
+  if (!p) return null;
+  const j = p[6];
+  const win = p[2] != null ? !!p[2] : (histSettled(r) && j != null ? j === r[5] : null);
+  const c = { j, label: `Избор по цена (група ${p[3]}): ${selName(p[0])}`, odds: +p[1], chance: p[5],
+              chanceText: "честен шанс", win, rank: -(p[4] || 0) };
+  if (p[3] !== "A") c.skip = `група ${p[3]} - залага се само група A`;
   return c;
 }
 
-function bankRun(rows, rule) {
-  const key = r => [r[0], r[11] || "", String(r[1]).padStart(3, "0"), r[2]].join(" ");
-  const asc = [...rows].sort((a, b) => key(a).localeCompare(key(b)));
-  const info = new Map(), byDay = {};
-  for (const r of asc) {
-    const c = candidate(r, rule);
-    if (!c) continue;
-    if (c.skip) { info.set(r, c); continue; }
-    (byDay[r[0]] ||= []).push([r, c]);
-  }
-  // Лимитът за деня: първо група A, после B, после по-голямата стойност (dayAllowed).
-  const chosen = new Map();
-  for (const list of Object.values(byDay)) {
-    list.sort((a, b) => a[1].rank[0] - b[1].rank[0] || a[1].rank[1] - b[1].rank[1]);
-    list.forEach(([r, c], i) => dayAllowed(i, c.rank[0] === 0) ? chosen.set(r, c)
-      : info.set(r, { ...c, skip: "над лимита за деня" }));
-  }
+// Банка по залози [{key, day, odds, win, rank}] - общото между историята и лентата назад.
+function runBank(items, mode) {
+  items = [...items].sort((a, b) => a.key.localeCompare(b.key));
+  const byDay = {}, chosen = new Set(), over = new Set();
+  for (const it of items) (byDay[it.day] ||= []).push(it);
+  for (const list of Object.values(byDay))
+    [...list].sort((a, b) => a.rank - b.rank).forEach((it, i) => (i < DAY_MAX ? chosen : over).add(it));
   let bank = BANK_START, hi = bank, lo = bank, n = 0, won = 0, waiting = 0, bust = null;
-  const path = [bank], flat = [];
-  for (const r of asc) {
-    const c = chosen.get(r);
-    if (!c) continue;
-    if (bank < BANK_MIN) { bust = bust || r[0]; info.set(r, { ...c, skip: "банката е под 1 €" }); continue; }
-    const stake = bank * BANK_SHARE;
-    if (c.win == null) { waiting++; info.set(r, { ...c, stake, after: null }); continue; }
-    bank += c.win ? stake * (c.odds - 1) : -stake;
-    n++; if (c.win) won++;
-    flat.push(c.win ? c.odds - 1 : -1);
-    info.set(r, { ...c, stake, after: bank });
+  const path = [bank], flat = [], out = new Map();
+  for (const it of items) {
+    if (over.has(it)) { out.set(it, { skip: `над лимита от ${DAY_MAX} залога за деня` }); continue; }
+    const stake = mode === "flat" ? FLAT_STAKE : bank * BANK_SHARE;
+    if (bank < Math.max(stake, BANK_MIN)) { bust = bust || it.day; out.set(it, { skip: "банката свърши" }); continue; }
+    if (it.win == null) { waiting++; out.set(it, { stake, after: null }); continue; }
+    bank += it.win ? stake * (it.odds - 1) : -stake;
+    n++; if (it.win) won++;
+    flat.push(it.win ? it.odds - 1 : -1);
+    out.set(it, { stake, after: bank, win: it.win });
     path.push(bank); hi = Math.max(hi, bank); lo = Math.min(lo, bank);
   }
-  return { bank, hi, lo, n, won, waiting, bust, path, flat, info, bets: chosen.size };
+  return { bank, hi, lo, n, won, waiting, bust, path, flat, out, bets: chosen.size, mode };
+}
+
+function bankRun(rows, mode) {
+  const key = r => [r[0], r[11] || "", String(r[1]).padStart(3, "0"), r[2]].join(" ");
+  const info = new Map(), items = [];
+  for (const r of rows) {
+    const c = candidate(r);
+    if (!c) continue;
+    if (c.skip) { info.set(r, c); continue; }
+    items.push({ r, c, key: key(r), day: r[0], odds: c.odds, win: c.win, rank: c.rank });
+  }
+  const run = runBank(items, mode);
+  for (const it of items) info.set(it.r, { ...it.c, ...run.out.get(it) });
+  return { ...run, info };
 }
 
 function bankChart(path) {
@@ -1089,15 +1087,17 @@ function bankChart(path) {
     <polyline points="${pts}" fill="none" stroke="${up ? "var(--ok)" : "var(--bad)"}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
-function bankCard(key, title, b) {
-  const sel = key === histRule;
+function bankCard(key, title, b, clickable = true) {
+  const sel = clickable && key === histRule;
+  const attrs = clickable ? ` data-rule="${key}"` : "";
   const head = `<h3>${title}${sel ? " · в списъка" : ""}</h3>`;
-  if (!b.bets) return `<div class="bcard${sel ? " sel" : ""}" data-rule="${key}">${head}<p class="bsub">В този период няма залози по това правило.</p></div>`;
+  if (!b.bets) return `<div class="bcard${sel ? " sel" : ""}${clickable ? "" : " static"}"${attrs}>${head}<p class="bsub">В този период няма залог по правилото.</p></div>`;
   const chg = (b.bank / BANK_START - 1) * 100;
-  const end = b.bust
-    ? `<dt>банката падна под 1 €</dt><dd class="next">${esc(dFull(b.bust))}</dd>`
-    : `<dt>следващ залог (10% от ${b.bank.toFixed(2)} €)</dt><dd class="next">${(b.bank * BANK_SHARE).toFixed(2)} €</dd>`;
-  return `<div class="bcard${sel ? " sel" : ""}" data-rule="${key}">${head}
+  const next = b.mode === "flat" ? `${FLAT_STAKE.toFixed(2)} € (${FLAT_STAKE}% от началните ${BANK_START} €)`
+    : `${(b.bank * BANK_SHARE).toFixed(2)} € (10% от ${b.bank.toFixed(2)} €)`;
+  const end = b.bust ? `<dt>банката свърши</dt><dd class="next">${esc(dFull(b.bust))}</dd>`
+    : `<dt>следващ залог</dt><dd class="next">${next}</dd>`;
+  return `<div class="bcard${sel ? " sel" : ""}${clickable ? "" : " static"}"${attrs}>${head}
     <div class="bnow ${b.bank >= BANK_START ? "pos" : "neg"}">${b.bank.toFixed(2)} €</div>
     <div class="bsub">от ${BANK_START} € · ${chg >= 0 ? "+" : "−"}${Math.abs(chg).toFixed(1)}% · ${b.n} залога, познати ${b.won}${b.waiting ? ` · ${b.waiting} чакат` : ""}</div>
     ${bankChart(b.path)}
@@ -1108,18 +1108,61 @@ function bankCard(key, title, b) {
 
 function renderHistBank(runs) {
   document.getElementById("hist-bank").innerHTML = `
-    <p class="eyebrow">Банка: 100 € начало, 10% от баланса на всеки залог</p>
-    <div class="hseg" id="hist-bankmode" role="group" aria-label="Кое правило да се вижда в списъка" style="margin-bottom:12px">
+    <p class="eyebrow">Банка: 100 € начало · истинските записи</p>
+    <div class="hseg" id="hist-bankmode" role="group" aria-label="Коя банка да се вижда в списъка" style="margin-bottom:12px">
       ${RULES.map(([k, label]) => `<button data-m="${k}" aria-pressed="${k === histRule}">${label}</button>`).join("")}</div>
     <div class="bgrid">${runs.map(([k, title, b]) => bankCard(k, title, b)).join("")}</div>
-    <p class="bnote"><b>Правилото</b> е твоето: сигналът на модела (изходът, при който шансът по модела по
-      коефициента дава над 5% стойност) се залага само ако мачът е от група A или B. Втората банка е за
-      сравнение: само изборът по цена от група A или B. На група C не залага нито една. Всеки залог е 10% от баланса в
-      момента: от 100 € стават 120 € - следващият е 12 €; загуби ли, стават 108 € - следващият е 10.80 €.
-      Колко залога на ден зависи от деня: ${DAY_LIMIT_TEXT}; при равни - тези с по-голяма стойност. Това е проверка на правилата върху истинските записи, не съвет: при малко
-      залози резултатът е предимно случайност - виж грешката в таблицата отдолу.</p>`;
-  for (const b of document.querySelectorAll("#hist-bankmode button, #hist-bank .bcard"))
+    <p class="bnote"><b>Залогът</b> е изборът по цена от група A - изходът, за който букмейкърът плаща
+      повече от честната цена по Pinnacle. Сигналът на модела стои до него само като мнение. Група B, C и
+      мачове без група - без залог. Най-много ${DAY_MAX} на ден - първо тези с по-голяма разлика над честната.
+      Препоръката е ${FLAT_STAKE} € на залог при банка 100 €; втората банка показва същите залози с 10% от
+      баланса. Защо ${FLAT_STAKE} € - виж „Лентата назад“ отдолу. При малко залози резултатът е предимно
+      случайност - виж грешката в таблицата.</p>`;
+  for (const b of document.querySelectorAll("#hist-bankmode button, #hist-bank .bcard[data-rule]"))
     b.onclick = () => { histRule = b.dataset.m || b.dataset.rule; histLimit = HIST_STEP; renderHistory(); };
+}
+
+// Един път на банката е късмет или нещастие - затова и какво става обикновено (10 000 повторения).
+function spreadNote(sp) {
+  if (!sp) return "";
+  const r = (label, v) => `<tr><td>${label}</td><td>${v.median.toFixed(0)} €</td><td>${v.p10.toFixed(0)} €</td><td>${v.p90.toFixed(0)} €</td><td>${Math.round(v.below_20 * 100)}%</td></tr>`;
+  return `<p class="rnote"><b>Внимание: банките горе са един-единствен път.</b> При 10% от баланса този път е
+      бил късметлийски. Същите залози, повторени 10 000 пъти с честния шанс:</p>
+    <table class="rtab"><thead><tr><th>залог</th><th>обикновено</th><th>лош (1 от 10)</th><th>добър (1 от 10)</th><th>под 20 €</th></tr></thead><tbody>
+      ${r(`${FLAT_STAKE} € на залог`, sp.flat)}${r("10% от баланса", sp.share)}</tbody></table>`;
+}
+
+// Лентата назад: изиграни мачове с истинските цени отпреди мача (legacy/rule_backtest.py).
+function renderRewind() {
+  const R = DATA.rewind, el = document.getElementById("hist-rewind");
+  if (!R || !R.bets) { el.hidden = true; return; }
+  const items = R.bets.R2.map(b => ({ key: b[1] + " " + b[2], day: b[0], odds: b[5], win: !!b[6], rank: -b[8] }));
+  const flat = runBank(items, "flat"), share = runBank(items, "share");
+  const f = d => { const x = new Date(d + "T12:00:00"); return x.getDate() + "." + (x.getMonth() + 1) + "." + x.getFullYear(); };
+  const roi = m => m && m.n ? `${m.roi < 0 ? "−" : "+"}${Math.abs(m.roi * 100).toFixed(1)}% ± ${(m.se * 100).toFixed(1)}%` : "—";
+  const row = (k, label) => { const m = R.rules[k]; return m && m.n ? `<tr><td>${label}</td><td>${m.n}</td><td>${m.wins} (${Math.round(m.wins / m.n * 100)}%)</td><td>${m.avg_odds.toFixed(2)}</td><td>${roi(m)}</td></tr>` : ""; };
+  const months = Object.entries(R.monthly || {}).map(([k, v]) =>
+    `<tr><td>${k.slice(5)}.${k.slice(0, 4)}</td><td>${v.n}</td><td>${Math.round(v.hit_model * 100)}% / ${Math.round(v.hit_market * 100)}%</td><td>${v.brier_model.toFixed(3)} / ${v.brier_market.toFixed(3)}</td></tr>`).join("");
+  el.innerHTML = `
+    <p class="eyebrow">Лентата назад · ${R.matches} изиграни мача, ${f(R.period[0])} - ${f(R.period[1])}, 6-те големи лиги</p>
+    <p class="rnote">Все едно сме били там: цените са истинските, които букмейкърите са давали 30 минути
+      преди мачовете; резултатите са истинските; моделът за всеки мач знае само мачовете отпреди седмицата
+      му. Нищо не е нагласено след мача.</p>
+    <div class="bgrid">${bankCard("r-flat", `Избор по цена A · ${FLAT_STAKE} € на залог`, flat, false)}${bankCard("r-share", "Същите залози · 10% от баланса", share, false)}</div>
+    ${spreadNote(R.spread)}
+    <table class="rtab"><thead><tr><th>правило</th><th>залози</th><th>познати</th><th>ср. коеф.</th><th>доход на залог</th></tr></thead><tbody>
+      ${row("R2", "избор по цена, група A")}
+      ${row("R1", "старото: сигнал на модела + група A/B")}
+      ${row("R5", "всички сигнали на модела")}
+    </tbody></table>
+    <p class="rnote">„Доход на залог“ е средната печалба на всяко вложено евро ± грешката. Изборът по цена е
+      познал колкото обещава честната цена плюс малко отгоре - около +3% на залог по теория; остатъкът е
+      късмет от няколко спечелени аутсайдера. Старото правило е +61% през март-май и −20% през август-
+      септември - скача, значи е случайност. Затова залогът е изборът по цена, а моделът е само мнение.</p>
+    <table class="rtab"><thead><tr><th>месец</th><th>мачове</th><th>позна: модел / пазар</th><th>грешка (Brier): модел / пазар</th></tr></thead><tbody>${months}</tbody></table>
+    <p class="rnote"><b>Учи ли се моделът?</b> Всяка седмица се обучава наново с новите резултати - но месец
+      по месец остава около пазара и малко по-неточен от него (по-ниската грешка е по-добре). Не се вижда
+      да става по-добър с времето: цените на букмейкърите вече съдържат всичко, което моделът знае.</p>`;
 }
 
 function money(profits) {
@@ -1151,7 +1194,8 @@ function renderHistSummary(rows, runs) {
       ${line("Пазарът позна най-вероятното", p(withMkt.length ? withMkt.filter(r => argmax(r[8]) === r[5]).length / withMkt.length : null))}
       ${line("Точност на модела (Brier)", b(brier(7)))}
       ${line("Точност на пазара (Brier)", b(brier(8)))}
-      ${runs.map(([k, title, run]) => line(`10 € на залог · ${title}`, histMoneyCell(money(run.flat)))).join("")}
+      ${line(`10 € на залог · избор по цена A`, histMoneyCell(money(runs[0][2].flat)))}
+      ${line(`10 € на залог · старото: сигнал + група A/B`, histMoneyCell(money(rows.filter(r => histSettled(r) && signalOf(r) != null && (r[12] === "A" || r[12] === "B")).map(r => { const j = signalOf(r); return j === r[5] ? r[9][j] - 1 : -1; }))))}
     </tbody></table>
     <p>Brier е грешката на прогнозата: по-ниско е по-добре. „10 € на залог“ са същите залози като в банките
       горе, но с еднакъв залог - под парите е ROI ± стандартна грешка и броят залози. Докато грешката е
@@ -1183,18 +1227,17 @@ function renderHistControls() {
   }
 }
 
-// Един ред за залог: сигналът на модела и изборът по цена - с парите, ако е залогът на
-// избраното в списъка правило.
+// Редът за залога (изборът по цена) - с парите по избраната банка.
 function betLine(r, c, bi) {
   const chance = c.chance != null ? ` · ${c.chanceText} ${pct(c.chance)}` : "";
   const head = `${esc(c.label)} @ ${c.odds.toFixed(2)}${chance}`;
-  if (!bi) {
+  if (!bi || bi.skip) {
+    const why = bi && bi.skip ? ` · <b>без залог</b> - ${esc(bi.skip)}` : "";
     const res = c.win == null ? "" : c.win ? " · позна" : " · сгреши";
-    return `<div class="hsig plain">${head}${res}</div>`;
+    return `<div class="hsig skip">${head}${why}${res}</div>`;
   }
-  if (bi.skip) return `<div class="hsig skip">${head} · <b>не се залага</b> - ${esc(bi.skip)}${c.win == null ? "" : c.win ? " (щеше да спечели)" : " (щеше да загуби)"}</div>`;
-  if (bi.after == null) return `<div class="hsig">${head} · залог ${bi.stake.toFixed(2)} € · чака резултат</div>`;
-  return `<div class="hsig ${bi.win ? "won" : "lost"}">${head} · залог ${bi.stake.toFixed(2)} € · ${bi.win ? "спечели" : "загуби"} · баланс след мача ${bi.after.toFixed(2)} €</div>`;
+  if (bi.after == null) return `<div class="hsig"><b>ЗАЛОГ:</b> ${head} · ${bi.stake.toFixed(2)} € · чака резултат</div>`;
+  return `<div class="hsig ${bi.win ? "won" : "lost"}"><b>ЗАЛОГ:</b> ${head} · ${bi.stake.toFixed(2)} € · ${bi.win ? "спечели" : "загуби"} · баланс след мача ${bi.after.toFixed(2)} €</div>`;
 }
 
 function histRow(r) {
@@ -1203,13 +1246,9 @@ function histRow(r) {
   const mark = !done ? `<div class="hmark wait" title="чака резултат">…</div>`
     : histHit(r) ? `<div class="hmark ok" title="моделът позна най-вероятното">✓</div>` : `<div class="hmark bad" title="моделът не позна най-вероятното">✗</div>`;
   const score = r[4] ? `<b class="sc">${r[4][0]}:${r[4][1]}</b>` : "";
-  const bySignal = histRule !== "pick";
-  const sigC = candidate(r, bySignal ? histRule : "signal");
-  const pickC = candidate(r, "pick");
-  const lines = [
-    sigC ? betLine(r, sigC, bySignal ? histBankInfo.get(r) : null) : "",
-    pickC ? betLine(r, pickC, bySignal ? null : histBankInfo.get(r)) : "",
-  ].join("");
+  const c = candidate(r), sj = signalOf(r);
+  const model = sj == null ? "" : `<div class="hsig plain">Моделът: ${esc(teamOf(r, sj))} @ ${r[9][sj].toFixed(2)} · шанс по модела ${pct(r[7][sj] / 1000)}${c && c.j === sj ? " · съгласен с избора" : ""}${done ? (sj === r[5] ? " · позна" : " · сгреши") : ""}</div>`;
+  const lines = (c ? betLine(r, c, histBankInfo.get(r)) : "") + model;
   const cells = r[7].map((p, j) => `<div class="${j === top ? "top" : ""}${done && j === r[5] ? " res" : ""}"><b>${OUTCOME[j]}</b>${Math.round(p / 10)}%<i>${r[8] ? "пазар " + Math.round(r[8][j] / 10) + "%" : "&nbsp;"}</i></div>`).join("");
   return `<div class="hrow">${mark}
     <div class="hteams">${esc(r[2])} – ${esc(r[3])}${score}${typeChip(r[12], r[13] ? r[13].split("") : null)}<span>${esc(HIST.leagues[r[1]])}${r[11] ? " · " + esc(r[11]) : ""}${done ? "" : " · чака резултат"}</span>${lines}</div>
@@ -1287,7 +1326,7 @@ document.addEventListener("click", e => {
 });
 
 renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
-renderHistControls(); renderHistPeriods(); renderHistory();
+renderHistControls(); renderHistPeriods(); renderHistory(); renderRewind();
 </script>
 </body>
 </html>

@@ -82,11 +82,23 @@ def median(values):
     return values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
 
 
+# Сборът на обратните стойности на еталона (1/коеф.) трябва да е реален. На 28.09.2026 борсата
+# Betfair за Cádiz - Leganés даваше 1.56 / 1.12 / 1.12 (сбор 243%) - празен пазар без пари. От
+# него "честният шанс" излезе 5% / 47% / 47% и "изборът от група A" беше фалшив.
+REFERENCE_OVERROUND = (0.95, 1.10)
+
+
+def sane_overround(prices):
+    total = sum(1 / p for p in prices if p and p > 1)
+    return REFERENCE_OVERROUND[0] <= total <= REFERENCE_OVERROUND[1]
+
+
 def reference(books, order):
     """(име на еталона, цените му, честните вероятности) или (None, None, None)."""
     for name in SHARP_ORDER:
         prices = books.get(name)
-        if prices and all(n in prices for n in order):
+        if (prices and all(n in prices for n in order)
+                and sane_overround([prices[n] for n in order])):
             probs = implied_probs([[prices[n] for n in order]])[0]
             if all(p == p for p in probs):
                 return name, [prices[n] for n in order], list(probs)

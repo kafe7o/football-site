@@ -595,6 +595,20 @@ def research_summary():
     return out or None
 
 
+def rewind_summary():
+    """Лентата назад (legacy/rule_backtest.py): изиграни мачове с истинските цени отпреди мача
+    и модел, обучен само на по-ранните мачове. Не се преизчислява всеки ден."""
+    path = config.RESULTS_DIR / "rule_backtest.json"
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {"matches": data["matches"], "period": data.get("period"), "monthly": data.get("monthly"),
+            "spread": data.get("spread"),
+            "rules": {k: {kk: v.get(kk) for kk in ("name", "n", "wins", "roi", "se", "avg_odds")}
+                      for k, v in data["rules"].items()},
+            "bets": data.get("bets")}
+
+
 SNAPSHOT = config.SITE_DIR / "snapshot.json"
 
 
@@ -684,6 +698,7 @@ def _build(conn, vconn, from_snapshot):
         "record": record,
         "pnl": snap.get("pnl"),
         "research": research,
+        "rewind": rewind_summary(),
         "history": history_section(vconn, types=match_types(
             vconn, vconn, (today - timedelta(days=190)).isoformat(), today.isoformat())),
         "source": source,

@@ -80,44 +80,50 @@ def pick_text(pick):
             f" - група {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
 
 
-DAY_MAX, DAY_B_MAX = 8, 5   # същото като в site_template.html
+DAY_MAX = 8   # същото като в site_template.html
 
 
 def day_allowed(rows):
-    """Кои мачове влизат по правилото за деня им: всички от тип A (най-много DAY_MAX), тип B
-    само докато общо са под DAY_B_MAX. Първо A, после B, после по-голямата стойност."""
+    """Правилото (2026-09-28, по legacy/rule_backtest.py): залага се изборът по цена от група A,
+    най-много DAY_MAX на ден - тези с по-голяма разлика над честната."""
     by_day = {}
     for m in rows:
-        if m.get("signal") and m.get("type") in ("A", "B"):
+        if m.get("pick") and m["pick"].get("tier") == "A":
             by_day.setdefault(m.get("date"), []).append(m)
     allowed = {}
     for day in by_day.values():
-        day.sort(key=lambda m: (m["type"] != "A", -m["signal"]["value"]))
+        day.sort(key=lambda m: -m["pick"]["edge"])
         for i, m in enumerate(day):
-            allowed[m["event_id"]] = i < DAY_MAX and (m["type"] == "A" or i < DAY_B_MAX)
+            allowed[m["event_id"]] = i < DAY_MAX
     return allowed
 
 
-def rule_text(m, allowed=None):
-    """Правилото на собственика (2026-09-28): сигналът на модела се залага само в мач от
-    тип A или B. Тип C - никога; без цена над честната - също не."""
-    sig = m.get("signal")
-    if not sig:
-        return "сигнал на модела: няма"
-    head = f"сигнал на модела: {name(sig['name'])} @ {sig['odds']:.2f}"
-    kind = m.get("type")
-    if kind in ("A", "B") and allowed is not None and allowed.get(m["event_id"]) is False:
-        return f"{head} - НЕ се залага (над лимита за деня)"
-    if kind in ("A", "B"):
-        return f"{head} - ЗАЛАГА СЕ (група {kind})"
-    why = {"C": "група C", "-": "без група - няма цена над честната"}.get(kind, "няма данни за цените")
-    return f"{head} - НЕ се залага ({why})"
-
-
 def rule_bet(m, allowed=None):
-    """Залага ли се сигналът на мача по правилото."""
-    return (bool(m.get("signal")) and m.get("type") in ("A", "B")
+    """Залага ли се мачът: изборът по цена е от група A и е в лимита за деня."""
+    pick = m.get("pick")
+    return (bool(pick) and pick.get("tier") == "A"
             and not (allowed is not None and allowed.get(m["event_id"]) is False))
+
+
+def rule_text(m, allowed=None):
+    """Присъдата по правилото и мнението на модела."""
+    pick, sig = m.get("pick"), m.get("signal")
+    if rule_bet(m, allowed):
+        verdict = f"ЗАЛОГ: {pick_text(pick)}"
+    elif pick and pick.get("tier") == "A":
+        verdict = "без залог (над лимита за деня)"
+    elif pick:
+        verdict = f"без залог (група {pick['tier']} - залага се само група A)"
+    else:
+        verdict = {"C": "без залог (група C)", "-": "без залог (без група - няма цена над честната)"}.get(
+            m.get("type"), "без залог (няма данни за цените)")
+    if not sig:
+        opinion = "моделът: няма сигнал"
+    elif pick and pick.get("outcome_idx") == sig.get("pick"):
+        opinion = f"моделът е съгласен ({name(sig['name'])})"
+    else:
+        opinion = f"моделът сочи друго: {name(sig['name'])} @ {sig['odds']:.2f}"
+    return f"{verdict}; {opinion}"
 
 
 def prematch(conn, rows, now=None):
@@ -151,8 +157,7 @@ def prematch(conn, rows, now=None):
             title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
                      f" - ЗАЛОГ по правилото: {bets}" if bets else
                      f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M}) - без залог")
-            message = "\n".join(f"{m['home']} - {m['away']}: {pick_text(m.get('pick'))}; {rule_text(m, allowed)}"
-                                for m in group)
+            message = "\n".join(f"{m['home']} - {m['away']}: {rule_text(m, allowed)}" for m in group)
         if send(title, message):
             sent += 1
         for m in group:
@@ -168,10 +173,7 @@ def single_prematch(m, minutes, allowed=None):
     """Известието за един мач - изборът, моделът, пазарът и най-добрите цени."""
     lines = []
     pick = m.get("pick")
-    lines.append(f"Избор по цена: {pick_text(pick)}" if pick
-                 else "Без избор по цена - никоя цена не е над честната")
-    rule = rule_text(m, allowed)
-    lines.append(rule[0].upper() + rule[1:])
+    lines.append(rule_text(m, allowed))
     if m.get("model"):
         lines.append("модел (домакин / равен / гост) " + " / ".join(pct(p) for p in m["model"]))
     if m.get("market"):
@@ -181,8 +183,8 @@ def single_prematch(m, minutes, allowed=None):
             best = o["prices"][0]
             lines.append(f"{name(o['selection'])}: {best['odds']:.2f} ({best['name']})")
     if rule_bet(m, allowed):
-        sig = m["signal"]
-        title = f"ЗАЛОГ: {name(sig['name'])} @ {sig['odds']:.2f} - {m['home']} - {m['away']} след {minutes} мин"
+        title = (f"ЗАЛОГ: {name(pick['selection'])} @ {pick['odds']:.2f} - "
+                 f"{m['home']} - {m['away']} след {minutes} мин")
     else:
         title = f"{m['home']} - {m['away']} след {minutes} мин - без залог"
     return title, "\n".join(lines)
@@ -221,12 +223,18 @@ def type_changes(conn, now=None):
             last_sent = datetime.fromisoformat(known["notified_at"])
             if now - last_sent < TYPE_QUIET:
                 continue                       # чака - при следващия цикъл пак се проверява
+        # Смяната трябва да издържи едно сканиране (час), иначе е мигане на цените - освен ако
+        # мачът започва до 90 минути и няма време за чакане (2026-09-28: Man City - Ipswich
+        # мина A -> без -> A за час и прати две известия).
+        recorded = datetime.fromisoformat(latest["recorded_at"])
+        if now - recorded < timedelta(minutes=40) and start - now > timedelta(minutes=90):
+            continue
         pick = json.loads(latest["pick_json"]) if latest["pick_json"] else None
         when = start.astimezone(SOFIA).strftime("%d.%m %H:%M")
         lines.append((f"{latest['home_team']} - {latest['away_team']} ({when}): "
                       f"{TYPE_NAMES[known['type']]} -> {TYPE_NAMES[latest['type']]}"
                       + (f", избор {pick_text(pick)}" if pick else "")
-                      + ("" if latest["type"] in ("A", "B") else " - тук НЕ се залага"),
+                      + (" - вече се залага" if latest["type"] == "A" else " - тук НЕ се залага"),
                       latest, known["type"]))
         mark(conn, ids, stamp)
     conn.commit()
