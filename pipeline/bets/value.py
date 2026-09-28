@@ -346,6 +346,12 @@ def settle(conn=None):
         start = datetime.fromisoformat(bet["commence_time"].replace("Z", "+00:00"))
         from_db = _from_db(conn, bet, start)
         outcome, match_id = from_db if from_db else (None, None)
+        if outcome is None and bet["sport"].startswith("soccer_"):
+            # Футболът се урежда само от базата: резултатите идват там от
+            # results.fill_from_scores (~2.5 ч след мача, с пестене на кредитите). Тук да се
+            # пита API-то значи 2 кредита на всеки час, докато мачът още се играе.
+            unknown += 1
+            continue
         if outcome is None:
             sport = bet["sport"]
             if sport not in scores:
