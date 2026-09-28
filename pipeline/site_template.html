@@ -281,6 +281,13 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .hbank .bcard:hover { border-color: var(--rail); }
 .hbank .bcard.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .hsig.skip, .hsig.plain { color: var(--muted); }
+.pro { padding: 18px; }
+.pro-title { font: 600 20px/1.25 Bitter, Georgia, serif; margin: 0 0 8px; }
+.pro-tip { border-top: 1px solid var(--line); padding: 12px 0; }
+.pro-tip p { margin: 4px 0; }
+.pro-date { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+.pro-status { font-size: 12px; color: var(--sig); }
+.pro-empty { border: 1px dashed var(--rail); border-radius: 10px; padding: 28px 16px; text-align: center; color: var(--muted); }
 .hbank .bcard.static { cursor: default; }
 .rtab { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 12px 0 4px; }
 .rtab th, .rtab td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; }
@@ -393,6 +400,7 @@ footer b { color: var(--ink); font-weight: 600; }
     <button role="tab" data-tab="ahead" aria-selected="false">Прогнози напред</button>
     <button role="tab" data-tab="detail" aria-selected="false">Мач по мач</button>
     <button role="tab" data-tab="hist" aria-selected="false">История</button>
+    <button role="tab" data-tab="pro" aria-selected="false">Профе&shy;сионалист</button>
   </nav>
 
 <div id="tab-board">
@@ -421,10 +429,11 @@ footer b { color: var(--ink); font-weight: 600; }
   <section class="panel proof" id="pnl" hidden>
     <p class="eyebrow">Ден по ден, при 10 евро на залог</p>
     <table class="ptab">
-      <thead><tr><th>ден</th><th>мача</th><th>познати</th><th>по модела</th><th>по сигналите</th></tr></thead>
+      <thead><tr><th>ден</th><th>мача</th><th>познати</th><th>по модела</th><th>по сигналите</th><th>по правилото</th></tr></thead>
       <tbody id="pnltab"></tbody>
     </table>
-    <p class="proof-note">Броят се всички прогнози за деня, не само познатите. Кой мач влиза е решено преди мача - записано е с час и минута. Затова числото тук е по-малко от сбора на спечелените.</p>
+    <p class="proof-note">Броят се всички прогнози за деня, не само познатите. Кой мач влиза е решено преди мача - записано е с час и минута. „По модела“ е най-вероятното според модела, „по сигналите“ - сигналът на модела, „по правилото“ - залогът, който сайтът препоръчва (изборът по цена от група A, без дерби).</p>
+    <p class="proof-note"><b>Защо няма колона, в която минусите изчезват.</b> Ако всеки ден се взима по-добрата колона, излиза плюс - но това става само СЛЕД мачовете. Преди мача не може да се знае коя ще спечели. Такава колона би показала измислена печалба - точно грешката на стария бот.</p>
   </section>
 
   <section class="panel value" id="value" hidden>
@@ -455,6 +464,17 @@ footer b { color: var(--ink); font-weight: 600; }
   <p class="ahead-note" id="ahead-note"></p>
   <nav class="days" id="ahead-days" role="tablist" aria-label="Дни напред"></nav>
   <div class="ahead" id="ahead-list"></div>
+</div>
+
+<div id="tab-pro" hidden>
+  <section class="panel pro">
+    <p class="eyebrow">Съветите на професионалния залагач</p>
+    <h2 class="pro-title">Тук са само неговите правила</h2>
+    <p class="ahead-note">Всичко на тази страница идва от професионален залагач, с когото говори собственикът -
+      не от модела и не от цените. Всеки съвет се записва с датата, на която е даден, и после се проверява
+      на данни, преди да влезе в правилото за залог.</p>
+    <div id="pro-list"></div>
+  </section>
 </div>
 
 <div id="tab-hist" hidden>
@@ -589,9 +609,9 @@ function renderPnl() {
   const money = v => `<span class="${v >= 0 ? "pos" : "neg"}">${v >= 0 ? "+" : ""}${v.toFixed(2)}</span>`;
   document.getElementById("pnltab").innerHTML = p.days.map(d => `
     <tr><td>${esc(d3(d.date))}</td><td>${d.n}</td><td>${d.wins}</td>
-        <td>${money(d.model)}</td><td>${d.sig_n ? money(d.signal) : "–"}</td></tr>`).join("")
+        <td>${money(d.model)}</td><td>${d.sig_n ? money(d.signal) : "–"}</td><td>${d.rule_n ? money(d.rule) + ` <small>(${d.rule_n})</small>` : "–"}</td></tr>`).join("")
     + `<tr><td><b>общо</b></td><td></td><td></td><td><b>${money(p.total_model)}</b></td>
-        <td><b>${money(p.total_signal)}</b></td></tr>`;
+        <td><b>${money(p.total_signal)}</b></td><td><b>${p.total_rule != null ? money(p.total_rule) : "–"}</b></td></tr>`;
 }
 
 function renderValue() {
@@ -1008,6 +1028,15 @@ function renderAheadList() {
   }).join("") || `<div class="arow"><div class="ateams">За този ден няма мачове.</div></div>`;
 }
 
+// ---------- Професионалист ----------
+// DATA.pro: [{date, text, status}] от results/pro_tips.json. Засега празно - собственикът ще даде съветите.
+function renderPro() {
+  const tips = DATA.pro || [];
+  document.getElementById("pro-list").innerHTML = tips.length
+    ? tips.map(t => `<div class="pro-tip"><span class="pro-date">${esc(t.date || "")}</span><p>${esc(t.text)}</p>${t.status ? `<span class="pro-status">${esc(t.status)}</span>` : ""}</div>`).join("")
+    : `<div class="pro-empty">Засега е празно - чакаме неговите съвети.</div>`;
+}
+
 // ---------- История ----------
 const HIST = DATA.history || { leagues: [], rows: [] };
 // Ред: [0 дата, 1 лига, 2 домакин, 3 гост, 4 [голове]|null, 5 изход|null, 6 (1 - записан),
@@ -1181,6 +1210,21 @@ function reviewPanel() {
     <table class="rtab"><thead><tr><th>сегмент</th><th>залози</th><th>доход на залог</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
+// Може ли моделът да балансира избора по цена - три начина, решени преди мача.
+function balanceNote(B) {
+  if (!B) return "";
+  const periods = Object.keys(Object.values(B)[0]);
+  const cell = v => v && v.roi != null ? `${v.roi < 0 ? "−" : "+"}${Math.abs(v.roi * 100).toFixed(1)}% <small>(${v.n})</small>` : "—";
+  return `<p class="rnote"><b>Преценка: може ли моделът и цената да се балансират?</b> Три начина, решени преди мача -
+      приема се само ако е по-добър от сегашния и в двата периода:</p>
+    <table class="rtab"><thead><tr><th>начин</th>${periods.map(p => `<th>${esc(p)}</th>`).join("")}</tr></thead><tbody>
+      ${Object.entries(B).map(([k, v]) => `<tr><td>${esc(k)}</td>${periods.map(p => `<td>${cell(v[p])}</td>`).join("")}</tr>`).join("")}
+    </tbody></table>
+    <p class="rnote">Нито един начин не е по-добър и в двата периода - моделът помага ту в единия, ту в другия,
+      значи е случайност. Затова решава цената, а моделът е второ мнение. (Колона, в която минусите
+      „изчезват“, може да се направи само след мачовете - преди мача не се знае коя ще спечели.)</p>`;
+}
+
 // Лентата назад: изиграни мачове с истинските цени отпреди мача (legacy/rule_backtest.py).
 function renderRewind() {
   const R = DATA.rewind, el = document.getElementById("hist-rewind");
@@ -1209,6 +1253,7 @@ function renderRewind() {
       познал колкото обещава честната цена плюс малко отгоре - около +3% на залог по теория; остатъкът е
       късмет от няколко спечелени аутсайдера. Старото правило е +61% през март-май и −20% през август-
       септември - скача, значи е случайност. Затова залогът е изборът по цена, а моделът е само мнение.</p>
+    ${balanceNote(R.balance)}
     <table class="rtab"><thead><tr><th>месец</th><th>мачове</th><th>позна: модел / пазар</th><th>грешка (Brier): модел / пазар</th></tr></thead><tbody>${months}</tbody></table>
     <p class="rnote"><b>Учи ли се моделът?</b> Всяка седмица се обучава наново с новите резултати - но месец
       по месец остава около пазара и малко по-неточен от него (по-ниската грешка е по-добре). Не се вижда
@@ -1364,6 +1409,7 @@ for (const b of document.querySelectorAll(".tabs button")) {
     document.getElementById("tab-ahead").hidden = b.dataset.tab !== "ahead";
     document.getElementById("tab-detail").hidden = b.dataset.tab !== "detail";
     document.getElementById("tab-hist").hidden = b.dataset.tab !== "hist";
+    document.getElementById("tab-pro").hidden = b.dataset.tab !== "pro";
   };
 }
 
@@ -1380,7 +1426,7 @@ document.addEventListener("click", e => {
 });
 
 renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
-renderHistControls(); renderHistPeriods(); renderHistory(); renderRewind(); reviewPanel();
+renderHistControls(); renderHistPeriods(); renderHistory(); renderRewind(); reviewPanel(); renderPro();
 </script>
 </body>
 </html>

@@ -83,15 +83,21 @@ def signal_backtest():
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def daily_pnl(conn, stake=10):
+def daily_pnl(conn, stake=10, types=None):
     """Резултатът ден по ден, за да не се смята на ръка - и за да няма спор кой мач влиза.
 
     Броят се ВСИЧКИ прогнози за деня, не само познатите. Изборът кой мач влиза е направен
     преди мача (записан е с час), а не след като резултатите са известни.
+
+    Колоната "по правилото" (types от match_types): залогът, който сайтът наистина препоръчва -
+    изборът по цена от група A без дерби, или решението час преди мача. Собственикът поиска
+    колона, в която минусите на модела и сигналите "изчезват" - това става само ако се избира
+    след мача коя колона е спечелила (на 37-те мача: +28.80 € "след мача" срещу -113.70 и
+    -50.15). Преди мача не може да се знае - затова такава колона няма.
     """
     rows = conn.execute(
-        """SELECT match_date, home_team, away_team, p_home, p_draw, p_away,
-                  odds_home, odds_draw, odds_away, outcome
+        """SELECT match_date, league, home_team, away_team, p_home, p_draw, p_away,
+                  odds_home, odds_draw, odds_away, outcome, match_id
              FROM predictions WHERE outcome IS NOT NULL ORDER BY match_date""").fetchall()
     days = {}
     for r in rows:
@@ -101,7 +107,7 @@ def daily_pnl(conn, stake=10):
             continue
         day = days.setdefault(r["match_date"][:10],
                               {"date": r["match_date"][:10], "n": 0, "wins": 0,
-                               "model": 0.0, "signal": 0.0, "sig_n": 0})
+                               "model": 0.0, "signal": 0.0, "sig_n": 0, "rule": 0.0, "rule_n": 0})
         pick = max(range(3), key=lambda i: probs[i])
         won = pick == r["outcome"]
         day["n"] += 1
@@ -112,9 +118,26 @@ def daily_pnl(conn, stake=10):
             day["sig_n"] += 1
             day["signal"] += (stake * (sig["odds"] - 1)
                               if sig["pick"] == r["outcome"] else -stake)
+        kind = (types or {}).get(r["match_id"]) if r["match_id"] else None
+        choice = kind["pick"] if kind else None
+        decision = kind.get("decision") if kind else None
+        bet = (bool(decision[0]) if decision else
+               bool(choice) and choice.get("tier") == "A"
+               and not derbies.is_derby(r["league"], r["home_team"], r["away_team"]))
+        if bet and choice and choice.get("result") is not None:
+            day["rule_n"] += 1
+            day["rule"] += stake * (choice["odds"] - 1) if choice["result"] else -stake
     return {"stake": stake, "days": sorted(days.values(), key=lambda d: d["date"]),
             "total_model": sum(d["model"] for d in days.values()),
-            "total_signal": sum(d["signal"] for d in days.values())}
+            "total_signal": sum(d["signal"] for d in days.values()),
+            "total_rule": sum(d["rule"] for d in days.values())}
+
+
+def pro_tips():
+    """Съветите на професионалния залагач (results/pro_tips.json) - само неговите, записани от
+    собственика. Засега празно: собственикът ще ги даде."""
+    path = config.RESULTS_DIR / "pro_tips.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
 
 
 def open_value_db(conn):
@@ -617,7 +640,7 @@ def rewind_summary():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
     return {"matches": data["matches"], "period": data.get("period"), "monthly": data.get("monthly"),
-            "spread": data.get("spread"),
+            "spread": data.get("spread"), "balance": data.get("balance"),
             "rules": {k: {kk: v.get(kk) for kk in ("name", "n", "wins", "roi", "se", "avg_odds")}
                       for k, v in data["rules"].items()},
             "bets": data.get("bets")}
@@ -692,7 +715,8 @@ def _build(conn, vconn, from_snapshot):
         preview_rows = preview(conn, events_conn=vconn)
         record = {**predict.record(conn), "backtest": signal_backtest()}
         research, source = research_summary(), None
-        snap = {"pnl": daily_pnl(conn)}
+        snap = {"pnl": daily_pnl(conn, types=match_types(
+            conn, vconn, (today - timedelta(days=190)).isoformat(), today.isoformat()))}
 
     attach_bets(vconn, preview_rows)
     if vconn is conn:
@@ -722,6 +746,7 @@ def _build(conn, vconn, from_snapshot):
         "research": research,
         "rewind": rewind_summary(),
         "review": review.summary(vconn),
+        "pro": pro_tips(),
         "history": history_section(vconn, types=match_types(
             vconn, vconn, (today - timedelta(days=190)).isoformat(), today.isoformat())),
         "source": source,
