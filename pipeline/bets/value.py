@@ -178,10 +178,21 @@ def store_fair(conn, event, sport, books, order, sharp, sharp_prices, fair):
              name, i, fair[i], sharp, sharp_prices[i], best_book, best_odds, all_prices, now))
 
 
-def current_type(rows):
-    """Типът на мача по цените от ТОВА сканиране: A или B, ако има избор; C, ако има само
-    цени с разлика над 8%; "-", ако цена над честната няма. Връща (тип, избор)."""
-    pick = pick_for_match(rows)
+# Без мигане (2026-09-28): мач ВЛИЗА в група A/B при разлика поне ENTER_EDGE над честната и
+# ИЗЛИЗА от нея едва под STAY_EDGE. Преди границата беше една (2%) и цена, която се мърда около
+# нея, сменяше групата A -> без -> A за час. Входът остава 2%: с 2.5% лентата назад губеше 53
+# от 166 залога, които също бяха на плюс (legacy/rule_backtest.py).
+ENTER_EDGE = 0.02
+STAY_EDGE = 0.012
+
+
+def current_type(rows, previous=None):
+    """Групата на мача по цените от ТОВА сканиране: A или B, ако има избор; C, ако има само
+    цени с разлика над 8%; "-", ако цена над честната няма. previous - групата досега (за
+    двете граници). rows трябва да са сканирани с min_edge не повече от STAY_EDGE.
+    Връща (група, избор)."""
+    threshold = STAY_EDGE if previous in ("A", "B") else ENTER_EDGE
+    pick = pick_for_match([r for r in rows if r["edge"] >= threshold])
     if pick:
         return pick["tier"], pick
     tiers = {tier(r["sharp_book"], r["edge"], r.get("n_books")) for r in rows
@@ -193,7 +204,8 @@ def record_type(conn, event, sport, rows, now, quiet=False):
     """Записва типа сега (type_now) и - ако се е сменил - нов ред в type_log.
     Връща True при смяна (не и при първия запис на мача). quiet - за попълване от
     историческите цени: без известие."""
-    kind, pick = current_type(rows)
+    before = conn.execute("SELECT type FROM type_now WHERE event_id = ?", (event["id"],)).fetchone()
+    kind, pick = current_type(rows, before["type"] if before else None)
     pick_json = json.dumps(pick) if pick else None
     stamp = now.isoformat(timespec="seconds")
     conn.execute(
@@ -241,7 +253,7 @@ def backfill_types(conn, sport, at, hours_ahead=48):
             continue
         sharp, _, _ = reference(books, order)
         if sharp:
-            record_type(conn, event, sport, scan_event(event, sport), stamp, quiet=True)
+            record_type(conn, event, sport, scan_event(event, sport, STAY_EDGE), stamp, quiet=True)
             recorded += 1
     conn.commit()
     log.info("%s към %s: тип за %d мача", sport, snapshot["timestamp"], recorded)
@@ -303,8 +315,10 @@ def scan(conn=None, sports=None, regions="eu", min_edge=MIN_EDGE, allowed=None):
         seen += len(upcoming)
         refresh_closing(conn, upcoming)
         for event in upcoming:
-            rows = scan_event(event, sport, min_edge, allowed)
-            found.extend(rows)
+            # За групата - и цени между STAY_EDGE и min_edge (да не мига); в книгата със
+            # залозите - само от min_edge нагоре, както досега.
+            rows = scan_event(event, sport, min(min_edge, STAY_EDGE), allowed)
+            found.extend(r for r in rows if r["edge"] >= min_edge)
             books = prices_by_book(event)
             order = outcome_order(event, books)
             if len(order) in (2, 3) and len(books) >= MIN_BOOKS:

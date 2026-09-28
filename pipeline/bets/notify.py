@@ -31,7 +31,8 @@ log = logging.getLogger(__name__)
 
 NTFY_URL = "https://ntfy.sh"
 WINDOW = (timedelta(minutes=45), timedelta(minutes=75))
-TYPE_QUIET = timedelta(hours=2)     # най-много едно известие за смяна на типа на мач за толкова
+TYPE_QUIET = timedelta(hours=2)     # най-много едно известие за смяна на групата на мач за толкова
+NOTICE_AHEAD = timedelta(hours=48)  # за смяна на групата - само в последните 48 часа
 TYPE_NAMES = {"A": "A", "B": "B", "C": "C", "-": "без група"}
 SOFIA = ZoneInfo("Europe/Sofia")
 
@@ -80,84 +81,64 @@ def pick_text(pick):
             f" - група {pick['tier']}, +{pick['edge'] * 100:.1f}% над честната, шанс {pick['p_fair']:.0%}")
 
 
-DAY_MAX = 8   # същото като в site_template.html
-
-
-def day_allowed(rows):
-    """Правилото (2026-09-28, по legacy/rule_backtest.py): залага се изборът по цена от група A,
-    най-много DAY_MAX на ден - тези с по-голяма разлика над честната."""
-    by_day = {}
-    for m in rows:
-        if m.get("pick") and m["pick"].get("tier") == "A":
-            by_day.setdefault(m.get("date"), []).append(m)
-    allowed = {}
-    for day in by_day.values():
-        day.sort(key=lambda m: -m["pick"]["edge"])
-        for i, m in enumerate(day):
-            allowed[m["event_id"]] = i < DAY_MAX
-    return allowed
-
-
-def rule_bet(m, allowed=None):
-    """Залага ли се мачът: изборът по цена е от група A и е в лимита за деня."""
-    pick = m.get("pick")
-    return (bool(pick) and pick.get("tier") == "A"
-            and not (allowed is not None and allowed.get(m["event_id"]) is False))
-
-
-def rule_text(m, allowed=None):
-    """Присъдата по правилото и мнението на модела."""
-    pick, sig = m.get("pick"), m.get("signal")
-    if rule_bet(m, allowed):
-        verdict = f"ЗАЛОГ: {pick_text(pick)}"
-    elif pick and pick.get("tier") == "A":
-        verdict = "без залог (над лимита за деня)"
-    elif pick:
-        verdict = f"без залог (група {pick['tier']} - залага се само група A)"
+def decision_text(m):
+    """Решението час преди мача - окончателно."""
+    d = m["decision"]
+    pick = d.get("pick")
+    if d["bet"]:
+        head = f"ЗАЛОГ: {pick_text(pick)}"
+        if d.get("min_odds"):
+            head += f"; при твоя букмейкър - само ако дава поне {d['min_odds']:.2f}"
     else:
-        verdict = {"C": "без залог (група C)", "-": "без залог (без група - няма цена над честната)"}.get(
-            m.get("type"), "без залог (няма данни за цените)")
+        head = f"без залог - {d['reason']}"
+    sig = m.get("signal")
     if not sig:
         opinion = "моделът: няма сигнал"
     elif pick and pick.get("outcome_idx") == sig.get("pick"):
         opinion = f"моделът е съгласен ({name(sig['name'])})"
     else:
         opinion = f"моделът сочи друго: {name(sig['name'])} @ {sig['odds']:.2f}"
-    return f"{verdict}; {opinion}"
+    return f"{head}; {opinion}"
 
 
 def prematch(conn, rows, now=None):
-    """Известие за мачовете, които започват след около час. Всеки мач - веднъж; мачовете
-    с еднакъв начален час - в едно известие."""
+    """Известие с РЕШЕНИЕТО за мачовете, за които току-що е взето (bets/decide.py - веднъж,
+    в последните 80 минути преди мача). Всеки мач - веднъж; мачовете с еднакъв начален час -
+    в едно известие."""
     conn.execute(SCHEMA)
     now = now or datetime.now(timezone.utc)
     groups = {}
     for m in rows:
-        if not m.get("event_id") or not m.get("commence_iso"):
+        if not m.get("decision") or not m.get("commence_iso"):
             continue
         start = datetime.fromisoformat(m["commence_iso"].replace("Z", "+00:00"))
-        left = start - now
-        if not (WINDOW[0] <= left <= WINDOW[1]):
+        if start <= now:
             continue
         if conn.execute("SELECT 1 FROM alerts_sent WHERE event_id = ?", (m["event_id"],)).fetchone():
             continue
         groups.setdefault(start, []).append(m)
 
-    allowed = day_allowed(rows)
     sent = 0
     for start, group in sorted(groups.items()):
         minutes = int((start - now).total_seconds() // 60)
+        group.sort(key=lambda m: (not m["decision"]["bet"], m["home"]))
+        bets = [m for m in group if m["decision"]["bet"]]
         if len(group) == 1:
-            title, message = single_prematch(group[0], minutes, allowed)
+            m = group[0]
+            pick = m["decision"].get("pick")
+            title = (f"ЗАЛОГ: {name(pick['selection'])} @ {pick['odds']:.2f} - {m['home']} - {m['away']} след {minutes} мин"
+                     if bets else f"{m['home']} - {m['away']} след {minutes} мин - без залог")
+            lines = [decision_text(m)]
+            if m.get("model"):
+                lines.append("модел (домакин / равен / гост) " + " / ".join(pct(p) for p in m["model"]))
+            if m.get("market"):
+                lines.append("пазар " + " / ".join(pct(p) for p in m["market"]))
+            message = "\n".join(lines)
         else:
-            # Първо мачовете с избор - те са причината известието да е важно.
-            group.sort(key=lambda m: (m.get("pick") is None, m["home"]))
-            group.sort(key=lambda m: not rule_bet(m, allowed))
-            bets = sum(1 for m in group if rule_bet(m, allowed))
-            title = (f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M})"
-                     f" - ЗАЛОГ по правилото: {bets}" if bets else
-                     f"{len(group)} мача след {minutes} мин ({start.astimezone(SOFIA):%H:%M}) - без залог")
-            message = "\n".join(f"{m['home']} - {m['away']}: {rule_text(m, allowed)}" for m in group)
+            clock = start.astimezone(SOFIA).strftime("%H:%M")
+            title = (f"{len(group)} мача след {minutes} мин ({clock}) - ЗАЛОГ: {len(bets)}" if bets
+                     else f"{len(group)} мача след {minutes} мин ({clock}) - без залог")
+            message = "\n".join(f"{m['home']} - {m['away']}: {decision_text(m)}" for m in group)
         if send(title, message):
             sent += 1
         for m in group:
@@ -167,27 +148,6 @@ def prematch(conn, rows, now=None):
     if sent:
         log.info("Пратени известия преди мач: %d", sent)
     return sent
-
-
-def single_prematch(m, minutes, allowed=None):
-    """Известието за един мач - изборът, моделът, пазарът и най-добрите цени."""
-    lines = []
-    pick = m.get("pick")
-    lines.append(rule_text(m, allowed))
-    if m.get("model"):
-        lines.append("модел (домакин / равен / гост) " + " / ".join(pct(p) for p in m["model"]))
-    if m.get("market"):
-        lines.append("пазар " + " / ".join(pct(p) for p in m["market"]))
-    for o in m.get("books", []):
-        if o["prices"]:
-            best = o["prices"][0]
-            lines.append(f"{name(o['selection'])}: {best['odds']:.2f} ({best['name']})")
-    if rule_bet(m, allowed):
-        title = (f"ЗАЛОГ: {name(pick['selection'])} @ {pick['odds']:.2f} - "
-                 f"{m['home']} - {m['away']} след {minutes} мин")
-    else:
-        title = f"{m['home']} - {m['away']} след {minutes} мин - без залог"
-    return title, "\n".join(lines)
 
 
 def type_changes(conn, now=None):
@@ -209,13 +169,24 @@ def type_changes(conn, now=None):
         start = datetime.fromisoformat(latest["commence_time"].replace("Z", "+00:00"))
         known = conn.execute(
             """SELECT type, notified_at FROM type_log
-                WHERE event_id = ? AND notified_at IS NOT NULL AND notified_at NOT IN ('skip', 'late')
+                WHERE event_id = ? AND notified_at IS NOT NULL
+                  AND notified_at NOT IN ('skip', 'late', 'minor', 'decided')
                 ORDER BY id DESC LIMIT 1""", (event_id,)).fetchone()
         if start <= now:
             mark(conn, ids, "late")
             continue
+        decided = conn.execute("SELECT 1 FROM sqlite_master WHERE name = 'decisions'").fetchone() and \
+            conn.execute("SELECT 1 FROM decisions WHERE event_id = ?", (event_id,)).fetchone()
+        if decided:
+            mark(conn, ids, "decided")         # решението е взето - то е окончателното
+            continue
         if known is None:
             continue
+        if (known["type"] == "A") == (latest["type"] == "A"):
+            mark(conn, ids, "minor")           # не влиза и не излиза от група A - без значение
+            continue
+        if start - now > NOTICE_AHEAD:
+            continue                           # по-рано от 48 часа - чака
         if known["type"] == latest["type"]:
             mark(conn, ids, "skip")            # мигна и се върна - нищо ново
             continue
@@ -234,7 +205,8 @@ def type_changes(conn, now=None):
         lines.append((f"{latest['home_team']} - {latest['away_team']} ({when}): "
                       f"{TYPE_NAMES[known['type']]} -> {TYPE_NAMES[latest['type']]}"
                       + (f", избор {pick_text(pick)}" if pick else "")
-                      + (" - вече се залага" if latest["type"] == "A" else " - тук НЕ се залага"),
+                      + (" - предварително: ЗАЛОГ (решението е час преди мача)" if latest["type"] == "A"
+                         else " - предварително: без залог"),
                       latest, known["type"]))
         mark(conn, ids, stamp)
     conn.commit()

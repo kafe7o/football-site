@@ -45,6 +45,18 @@ ALIASES = {
     "Birmingham City": "Birmingham", "Bristol City": "Bristol City",
     "Charlton Athletic": "Charlton", "Oxford United": "Oxford", "Luton Town": "Luton",
     "Plymouth Argyle": "Plymouth", "Portsmouth FC": "Portsmouth",
+    # имената от odds API на отборите от дербитата (bets/derbies.py) - там сравнението е строго
+    "Sporting Gijón": "Sp Gijon", "Bristol Rovers": "Bristol Rvs", "Heart of Midlothian": "Hearts",
+    "Hamburger SV": "Hamburg", "FC St. Pauli": "St Pauli", "Hertha Berlin": "Hertha",
+    "Olympiacos": "Olympiakos", "Olympiacos Piraeus": "Olympiakos", "AEK Athens": "AEK",
+    "Sporting Lisbon": "Sp Lisbon", "Sporting CP": "Sp Lisbon", "Standard Liège": "Standard",
+    "Royal Antwerp": "Antwerp", "Saint-Etienne": "St Etienne", "AS Saint-Étienne": "St Etienne",
+    "Aris Thessaloniki": "Aris", "PAOK Thessaloniki": "PAOK", "Panathinaikos FC": "Panathinaikos",
+    "Racing Santander": "Santander", "Real Racing Club de Santander": "Santander",
+    "Olympique Marseille": "Marseille", "Dundee FC": "Dundee", "Cercle Brugge KSV": "Cercle Brugge",
+    "Real Oviedo": "Oviedo", "Real Zaragoza": "Zaragoza", "Deportivo La Coruña": "La Coruna",
+    "Deportivo La Coruna": "La Coruna", "SS Lazio": "Lazio", "Genoa CFC": "Genoa",
+    "Newcastle United": "Newcastle", "Sunderland AFC": "Sunderland", "Norwich City FC": "Norwich",
 }
 
 # Наставки, които едната страна пише, а другата - не.

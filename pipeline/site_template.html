@@ -203,6 +203,9 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
 .rule.none { background: var(--chip); color: var(--muted); }
 .rule b { font-weight: 700; }
 .rule .op { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.rule .pre { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); font-style: italic; }
+.rule .own { display: block; margin-top: 4px; font-size: 12.5px; }
+.tag.derby { background: var(--sig-bg); color: var(--sig); }
 .ateams .tchip, .ateams .tchip span, .hteams .tchip, .hteams .tchip span { display: inline-flex; font-size: 11px; }
 .ateams .tchip .tier, .hteams .tchip .tier { color: inherit; }
 .ateams .tierA, .hteams .tierA { color: var(--ok); } .ateams .tierC, .hteams .tierC { color: var(--bad); }
@@ -331,6 +334,7 @@ h1 { font: 600 27px/1.2 Bitter, Georgia, serif; margin: 0; letter-spacing: -.01e
   border: 1px solid var(--line); border-radius: 8px; padding: 9px 16px; cursor: pointer;
   font: 600 13px/1.2 "IBM Plex Sans", sans-serif; }
 .hmore:focus-visible { outline: 2px solid var(--home); outline-offset: 2px; }
+.hmore[hidden] { display: none; }   /* display: block горе иначе надделява над hidden */
 @media (max-width: 560px) { .hrow { grid-template-columns: 26px 1fr; } .hprob { grid-column: 1 / -1; } }
 
 /* --- мачове --- */
@@ -458,8 +462,9 @@ footer b { color: var(--ink); font-weight: 600; }
     пипана. Симулации няма. <b>✓ / ✗</b> вляво - дали излезе изходът, който моделът смяташе за най-вероятен.
     В квадратчетата <b>рамка</b> е най-вероятното според модела, <b>зелено</b> - какво излезе.
     <b>Група</b> A/B/C е категорията на цените при последното сканиране преди мача (стрелката показва как се е
-    менила, например B → A); „без“ - нямаше цена над честната. <b>Залогът</b> е изборът по цена от група A (най-много 8 на ден); сигналът на
-    модела е само мнение. Група B, C и мачове без група - без залог.</p>
+    менила, например B → A); „без“ - нямаше цена над честната. <b>Залогът</b> е изборът по цена от група A - без дербита, най-много 8 на ден. Решава се
+    веднъж, около час преди мача (тогава идва и известието); до тогава всичко е предварително.
+    Сигналът на модела е само мнение.</p>
   <nav class="days" id="hist-periods" aria-label="Период"></nav>
   <div class="hfilters">
     <div class="hseg" id="hist-filter" role="group" aria-label="Кои мачове"></div>
@@ -477,6 +482,7 @@ footer b { color: var(--ink); font-weight: 600; }
   <section class="panel hbank" id="hist-bank"></section>
   <section class="panel hsum" id="hist-sum"></section>
   <section class="panel hbank" id="hist-rewind"></section>
+  <section class="panel hsum" id="hist-review"></section>
   <div id="hist-list"></div>
   <button class="hmore" id="hist-more" hidden></button>
 </div>
@@ -742,23 +748,37 @@ function typeHistory(m) {
     `<div class="mline"><span>${esc(when(at))}</span><span>${typeChip(t, null)}</span></div>`).join("")}</div>`;
 }
 
-// Мачовете на деня, които влизат по правилото: id на събитието -> влиза ли (лимитът за деня).
+// Предварителната присъда - както ще я даде решението час преди мача (bets/decide.py):
+// първите DAY_MAX залога на деня по реда на мачовете, без дербита.
 function ruleRanks(rows) {
-  const ok = rows.filter(m => m.pick && m.pick.tier === "A").sort((a, b) => b.pick.edge - a.pick.edge);
+  const ok = rows.filter(m => !m.derby && m.pick && m.pick.tier === "A")
+    .sort((a, b) => a.commence_iso.localeCompare(b.commence_iso) || a.home.localeCompare(b.home));
   return new Map(ok.map((m, i) => [m.event_id, i < DAY_MAX]));
 }
 
+// Най-ниската цена, при която залогът си струва при твоя букмейкър: честната + 2%.
+const ownMin = p => (p && p.p_fair ? 1.02 / p.p_fair : null);
+const ownLine = p => (ownMin(p) ? `<span class="own">При твоя букмейкър (efbet, winbet...) залагай само ако дава поне <b>${ownMin(p).toFixed(2)}</b> - ако дава по-малко, без залог.</span>` : "");
+
 function ruleLine(m, ranks) {
-  const p = m.pick, s = m.signal;
+  const d = m.decision, p = d ? d.pick : m.pick, s = m.signal;
   const opinion = !s ? "Моделът: няма сигнал."
     : p && p.outcome_idx === s.pick ? `Моделът е съгласен (шанс по модела ${pct(s.p)}).`
-    : `Моделът сочи друго: ${esc(selName(s.name))} @ ${s.odds.toFixed(2)} (шанс по модела ${pct(s.p)}) - това е само мнение.`;
+    : `Моделът сочи друго: ${esc(selName(s.name))} @ ${s.odds.toFixed(2)} (шанс по модела ${pct(s.p)}) - само мнение.`;
+  const what = p ? `${esc(selName(p.selection))} @ <b>${p.odds.toFixed(2)}</b>${p.book_name || p.bookmaker ? " при " + esc(p.book_name || p.bookmaker) : ""} · група A · шанс ${pct(p.p_fair)} · ${FLAT_STAKE}% от банката (${FLAT_STAKE} € на 100 €)` : "";
+  if (d) {
+    // Решението - окончателно. Каквото и да стане с цените след него, то не се мени.
+    if (d.bet) return `<div class="rule go"><b>РЕШЕНО в ${esc(d.time)}: ЗАЛОГ</b> ${what}${ownLine(p)}<span class="op">${opinion}</span></div>`;
+    return `<div class="rule none"><b>Решено в ${esc(d.time)}: без залог</b> - ${esc(d.reason)}<span class="op">${opinion}</span></div>`;
+  }
+  const pre = `<span class="pre">Предварително - решението е около час преди мача и тогава идва известие.</span>`;
+  if (m.derby) return `<div class="rule none"><b>Без залог</b> - дерби, там не се залага${pre}<span class="op">${opinion}</span></div>`;
   if (p && p.tier === "A" && !(ranks && ranks.get(m.event_id) === false))
-    return `<div class="rule go"><b>ЗАЛОГ:</b> ${esc(selName(p.selection))} @ <b>${p.odds.toFixed(2)}</b> · група A · шанс ${pct(p.p_fair)} · ${FLAT_STAKE}% от банката (${FLAT_STAKE} € на 100 €)<span class="op">${opinion}</span></div>`;
-  const why = p && p.tier === "A" ? `над лимита от ${DAY_MAX} залога за деня`
+    return `<div class="rule go"><b>ЗАЛОГ</b> ${what}${ownLine(p)}${pre}<span class="op">${opinion}</span></div>`;
+  const why = p && p.tier === "A" ? `над ${DAY_MAX} залога за деня`
     : p ? `група ${p.tier} - залага се само група A`
-    : m.type === "C" ? "група C" : m.type === "-" ? "без група - никоя цена не е над честната" : "няма данни за цените";
-  return `<div class="rule none"><b>Без залог</b> - ${why}<span class="op">${opinion}</span></div>`;
+    : m.type === "C" ? "група C - почти винаги замръзнала цена" : m.type === "-" ? "без група - никоя цена не е над честната" : "няма данни за цените";
+  return `<div class="rule none"><b>Без залог</b> - ${why}${pre}<span class="op">${opinion}</span></div>`;
 }
 
 function pickLine(m) {
@@ -842,6 +862,7 @@ function renderDetail() {
     const open = openMatches.has(m.event_id);
     const chips = [];
     chips.push(typeChip(m.type, pathOf(m)));
+    if (m.derby) chips.push(`<span class="chip2 warn">дерби</span>`);
     if (CHANGED.has(m.event_id)) chips.push(`<span class="chip2 warn">променена</span>`);
     if (m.pick) chips.push(`<span class="chip2 val">${esc(selName(m.pick.selection))} @ ${m.pick.odds.toFixed(2)}</span>`);
     return `<div class="mcard">
@@ -893,11 +914,12 @@ function matchRow(m) {
     tags.push(`<span class="tag${cls ? (cls === " ok" ? " bad" : " ok") : ""}">пазар даде ${pct(pk)}</span>`);
   }
   tags.push(typeChip(m.type, pathOf(m)));
+  if (m.derby) tags.push(`<span class="tag derby">дерби - без залог</span>`);
   if (m.pick) {
-    const r = m.pick.result, bet = m.pick.tier === "A";
+    const r = m.pick.result, bet = m.pick.tier === "A" && !m.derby;
     const res = played && r != null ? (r ? " · позна" : " · сгреши") : "";
     const cls = played && r != null ? (r ? "ok" : "bad") : (bet ? "sig" : "no");
-    tags.push(`<span class="tag ${cls}">${bet ? "ЗАЛОГ" : "избор, група " + m.pick.tier + " - без залог"} · ${esc(selName(m.pick.selection))} @ ${m.pick.odds.toFixed(2)} · ${esc(m.pick.book_name || m.pick.bookmaker)}${res}</span>`);
+    tags.push(`<span class="tag ${cls}">${bet ? "ЗАЛОГ" : m.derby ? "избор, но е дерби - без залог" : "избор, група " + m.pick.tier + " - без залог"} · ${esc(selName(m.pick.selection))} @ ${m.pick.odds.toFixed(2)} · ${esc(m.pick.book_name || m.pick.bookmaker)}${res}</span>`);
   }
   if (m.signal) {
     const res = played ? (m.signal.pick === m.outcome ? " · позна" : " · сгреши") : "";
@@ -991,7 +1013,8 @@ const HIST = DATA.history || { leagues: [], rows: [] };
 // Ред: [0 дата, 1 лига, 2 домакин, 3 гост, 4 [голове]|null, 5 изход|null, 6 (1 - записан),
 //       7 модел ‰, 8 пазар ‰|null, 9 коефициенти при записа|null,
 //       10 избор по цена [изход, коеф., спечелен, група, разлика, честен шанс, индекс]|null,
-//       11 час|null, 12 група|null, 13 пътят на групата ("BA-")|null]
+//       11 час|null, 12 група|null, 13 пътят на групата ("BA-")|null, 14 дерби (0/1),
+//       15 решението час преди мача [залог 0/1, защо, час]|null]
 const HIST_PERIODS = [[7, "7 дни"], [14, "2 седмици"], [30, "1 месец"], [61, "2 месеца"],
                       [92, "3 месеца"], [183, "6 месеца"]];
 const HIST_FILTERS = [["all", "Всички"], ["bet", "Със залог"], ["hit", "Моделът позна"], ["miss", "Не позна"]];
@@ -1034,7 +1057,13 @@ function candidate(r) {
   const win = p[2] != null ? !!p[2] : (histSettled(r) && j != null ? j === r[5] : null);
   const c = { j, label: `Избор по цена (група ${p[3]}): ${selName(p[0])}`, odds: +p[1], chance: p[5],
               chanceText: "честен шанс", win, rank: -(p[4] || 0) };
-  if (p[3] !== "A") c.skip = `група ${p[3]} - залага се само група A`;
+  const dec = r[15];
+  if (dec) {
+    // Решението час преди мача е окончателното.
+    c.decided = dec[2];
+    if (!dec[0]) c.skip = dec[1];
+  } else if (r[14]) c.skip = "дерби - там не се залага";
+  else if (p[3] !== "A") c.skip = `група ${p[3]} - залага се само група A`;
   return c;
 }
 
@@ -1043,8 +1072,8 @@ function runBank(items, mode) {
   items = [...items].sort((a, b) => a.key.localeCompare(b.key));
   const byDay = {}, chosen = new Set(), over = new Set();
   for (const it of items) (byDay[it.day] ||= []).push(it);
-  for (const list of Object.values(byDay))
-    [...list].sort((a, b) => a.rank - b.rank).forEach((it, i) => (i < DAY_MAX ? chosen : over).add(it));
+  // Лимитът за деня - първите DAY_MAX по реда на мачовете, както решенията час преди мача.
+  for (const list of Object.values(byDay)) list.forEach((it, i) => (i < DAY_MAX ? chosen : over).add(it));
   let bank = BANK_START, hi = bank, lo = bank, n = 0, won = 0, waiting = 0, bust = null;
   const path = [bank], flat = [], out = new Map();
   for (const it of items) {
@@ -1132,11 +1161,31 @@ function spreadNote(sp) {
       ${r(`${FLAT_STAKE} € на залог`, sp.flat)}${r("10% от баланса", sp.share)}</tbody></table>`;
 }
 
+// Самопроверката (bets/review.py): веднъж седмично системата премерва своите залози по
+// сегменти и изключва сегмент, който губи ясно - поне 60 залога и под нулата с над 2 грешки.
+function reviewPanel() {
+  const R = DATA.review, el = document.getElementById("hist-review");
+  const head = `<p class="eyebrow">Самопроверка · системата се учи сама на своите залози</p>`;
+  if (!R || !R.settled) {
+    el.innerHTML = head + `<p class="rnote">Всяка седмица системата преглежда своите уредени залози по
+      коефициент, лига и изход. Сегмент, който губи ясно - поне ${R ? R.min_bets : 60} залога и под нулата с
+      повече от 2 грешки - се изключва сам от следващите решения. Засега няма достатъчно уредени залози;
+      това започва с първите мачове след паузата.</p>`;
+    return;
+  }
+  const rows = Object.entries(R.segments).sort((a, b) => b[1].n - a[1].n).map(([k, v]) =>
+    `<tr><td>${esc(k.replace(":", ": "))}${R.excluded.includes(k) ? " · <b>изключен</b>" : ""}</td><td>${v.n}</td><td>${v.roi < 0 ? "−" : "+"}${Math.abs(v.roi * 100).toFixed(1)}% ± ${(v.se * 100).toFixed(1)}%</td></tr>`).join("");
+  el.innerHTML = head + `<p class="rnote">Последна проверка: ${esc(R.at.slice(0, 10))} · ${R.settled} уредени залога.
+      Изключени: ${R.excluded.length ? R.excluded.map(esc).join(", ") : "няма - нито един сегмент не губи ясно"}.
+      Сегмент се изключва само при поне ${R.min_bets} залога и доход под нулата с повече от 2 грешки.</p>
+    <table class="rtab"><thead><tr><th>сегмент</th><th>залози</th><th>доход на залог</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 // Лентата назад: изиграни мачове с истинските цени отпреди мача (legacy/rule_backtest.py).
 function renderRewind() {
   const R = DATA.rewind, el = document.getElementById("hist-rewind");
   if (!R || !R.bets) { el.hidden = true; return; }
-  const items = R.bets.R2.map(b => ({ key: b[1] + " " + b[2], day: b[0], odds: b[5], win: !!b[6], rank: -b[8] }));
+  const items = (R.bets.R6 || R.bets.R2).map(b => ({ key: b[1] + " " + b[2], day: b[0], odds: b[5], win: !!b[6], rank: -b[8] }));
   const flat = runBank(items, "flat"), share = runBank(items, "share");
   const f = d => { const x = new Date(d + "T12:00:00"); return x.getDate() + "." + (x.getMonth() + 1) + "." + x.getFullYear(); };
   const roi = m => m && m.n ? `${m.roi < 0 ? "−" : "+"}${Math.abs(m.roi * 100).toFixed(1)}% ± ${(m.se * 100).toFixed(1)}%` : "—";
@@ -1148,10 +1197,11 @@ function renderRewind() {
     <p class="rnote">Все едно сме били там: цените са истинските, които букмейкърите са давали 30 минути
       преди мачовете; резултатите са истинските; моделът за всеки мач знае само мачовете отпреди седмицата
       му. Нищо не е нагласено след мача.</p>
-    <div class="bgrid">${bankCard("r-flat", `Избор по цена A · ${FLAT_STAKE} € на залог`, flat, false)}${bankCard("r-share", "Същите залози · 10% от баланса", share, false)}</div>
+    <div class="bgrid">${bankCard("r-flat", `Правилото · ${FLAT_STAKE} € на залог`, flat, false)}${bankCard("r-share", "Същите залози · 10% от баланса", share, false)}</div>
     ${spreadNote(R.spread)}
     <table class="rtab"><thead><tr><th>правило</th><th>залози</th><th>познати</th><th>ср. коеф.</th><th>доход на залог</th></tr></thead><tbody>
-      ${row("R2", "избор по цена, група A")}
+      ${row("R6", "правилото: избор по цена A, без дербита")}
+      ${row("R2", "избор по цена A, с дербитата")}
       ${row("R1", "старото: сигнал на модела + група A/B")}
       ${row("R5", "всички сигнали на модела")}
     </tbody></table>
@@ -1236,8 +1286,9 @@ function betLine(r, c, bi) {
     const res = c.win == null ? "" : c.win ? " · позна" : " · сгреши";
     return `<div class="hsig skip">${head}${why}${res}</div>`;
   }
-  if (bi.after == null) return `<div class="hsig"><b>ЗАЛОГ:</b> ${head} · ${bi.stake.toFixed(2)} € · чака резултат</div>`;
-  return `<div class="hsig ${bi.win ? "won" : "lost"}"><b>ЗАЛОГ:</b> ${head} · ${bi.stake.toFixed(2)} € · ${bi.win ? "спечели" : "загуби"} · баланс след мача ${bi.after.toFixed(2)} €</div>`;
+  const when = c.decided ? ` (решено в ${esc(c.decided)})` : "";
+  if (bi.after == null) return `<div class="hsig"><b>ЗАЛОГ${when}:</b> ${head} · ${bi.stake.toFixed(2)} € · чака резултат</div>`;
+  return `<div class="hsig ${bi.win ? "won" : "lost"}"><b>ЗАЛОГ${when}:</b> ${head} · ${bi.stake.toFixed(2)} € · ${bi.win ? "спечели" : "загуби"} · баланс след мача ${bi.after.toFixed(2)} €</div>`;
 }
 
 function histRow(r) {
@@ -1326,7 +1377,7 @@ document.addEventListener("click", e => {
 });
 
 renderAheadDays(); renderAheadList(); renderDetailDays(); renderDetail(); renderSoon();
-renderHistControls(); renderHistPeriods(); renderHistory(); renderRewind();
+renderHistControls(); renderHistPeriods(); renderHistory(); renderRewind(); reviewPanel();
 </script>
 </body>
 </html>

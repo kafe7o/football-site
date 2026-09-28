@@ -13,7 +13,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, model, predict, results, teams, value
+from . import config, db, decide, derbies, model, predict, results, review, teams, value
 from .market import implied_row
 from zoneinfo import ZoneInfo
 
@@ -47,6 +47,7 @@ def day_matches(conn, since, until):
         played = r["fthg"] is not None
         out.append({
             "id": r["id"], "date": r["date"], "time": (r["kickoff"] or "")[:5],
+            "derby": derbies.is_derby(r["league"], r["home_team"], r["away_team"]),
             "league": results.LEAGUES.get(r["league"], r["league"]),
             "home": r["home_team"], "away": r["away_team"],
             "model": [r["p_home"], r["p_draw"], r["p_away"]] if r["p_home"] is not None else None,
@@ -264,7 +265,8 @@ def preview(conn, days=PREVIEW_DAYS, exported=None, events_conn=None):
         start = local(e["commence_time"])
         market = [e["p_home"], e["p_draw"], e["p_away"]]
         out.append({
-            "event_id": e["event_id"], "commence_iso": e["commence_time"],
+            "event_id": e["event_id"], "commence_iso": e["commence_time"], "sport": e["sport"],
+            "derby": bool(league) and derbies.is_derby(league, e["home_team"], e["away_team"]),
             "date": start.date().isoformat(), "time": start.strftime("%H:%M"),
             "league": results.LEAGUES.get(league, e["sport"].replace("soccer_", "")),
             "home": e["home_team"], "away": e["away_team"],
@@ -334,6 +336,7 @@ def match_types(match_conn, value_conn, since, until):
                 WHERE date BETWEEN ? AND ?""", (since, until)):
         fixtures.setdefault((m["league"], m["date"]), []).append(dict(m))
     types = load_types(value_conn)
+    decisions = decide.load(value_conn)
     out = {}
     for e in events.values():
         league = SPORT_TO_LEAGUE.get(e["sport"])
@@ -345,7 +348,15 @@ def match_types(match_conn, value_conn, since, until):
             continue
         found = bets.get(e["event_id"], [])
         now = types.get(e["event_id"])
-        if now:
+        made = decisions.get(e["event_id"])
+        if made:
+            # Решението час преди мача е окончателното - и за историята, и за банката.
+            kind, pick = made["type"], made["pick"]
+            path = [t for t, _ in now["path"]] if now else []
+            if pick:
+                name, url = BOOK_LINKS.get(pick["bookmaker"], (pick["bookmaker"], None))
+                pick = {**pick, "book_name": name, "url": url}
+        elif now:
             kind, pick, path = now["type"], now["pick"], [t for t, _ in now["path"]]
         else:
             kind, pick, path = match_type(found, True), value.pick_for_match(found), []
@@ -362,7 +373,8 @@ def match_types(match_conn, value_conn, since, until):
                            else 1 if fixture["fthg"] == fixture["ftag"] else 2)
                 result = int(outcome == pick["outcome_idx"])
             pick = {**pick, "result": result}
-        out[fixture["id"]] = {"type": kind, "pick": pick, "path": path}
+        out[fixture["id"]] = {"type": kind, "pick": pick, "path": path,
+                              "decision": [made["bet"], made["reason"], made["time"]] if made else None}
     return out
 
 
@@ -511,7 +523,7 @@ def history_section(vconn, days=190, types=None):
 
     Ред: [дата, лига, домакин, гост, [голове] | None, изход | None, на_живо, модел ‰,
           пазар ‰ | None, коефициенти | None, избор | None, час | None, тип | None,
-          пътят на типа ("BA-") | None]
+          пътят на типа ("BA-") | None, дерби (0/1), решението [залог, защо, час] | None]
 
     Тип: A/B/C от цените (match_types), "-" без цена над честната, None - без данни за
     цените (лигата не е сканирана тогава).
@@ -551,7 +563,9 @@ def history_section(vconn, days=190, types=None):
                      [r["fthg"], r["ftag"]] if settled and r["fthg"] is not None else None,
                      r["outcome"], 1, [r["p_home"], r["p_draw"], r["p_away"]],
                      implied_row(odds) if has_odds else None, odds if has_odds else None, pick, clock,
-                     kind["type"] if kind else None, "".join(kind["path"]) if kind else None])
+                     kind["type"] if kind else None, "".join(kind["path"]) if kind else None,
+                     int(derbies.is_derby(r["league"], r["home_team"], r["away_team"])),
+                     kind["decision"] if kind else None])
 
     rows.sort(key=lambda x: (x[0], x[11] or "", x[1], x[2]), reverse=True)
 
@@ -681,6 +695,14 @@ def _build(conn, vconn, from_snapshot):
         snap = {"pnl": daily_pnl(conn)}
 
     attach_bets(vconn, preview_rows)
+    if vconn is conn:
+        # Само в облака: там е книгата. Лаптопът не записва решения.
+        decide.decide(vconn, preview_rows)
+    made = decide.load(vconn)
+    for m in preview_rows:
+        m["decision"] = made.get(m["event_id"])
+        if m["decision"]:
+            m["decision"] = {k: m["decision"][k] for k in ("bet", "reason", "time", "min_odds", "pick", "type")}
     log_forecasts(vconn, preview_rows)
     changed = forecast_changes(vconn, preview_rows)
     if changed:
@@ -699,6 +721,7 @@ def _build(conn, vconn, from_snapshot):
         "pnl": snap.get("pnl"),
         "research": research,
         "rewind": rewind_summary(),
+        "review": review.summary(vconn),
         "history": history_section(vconn, types=match_types(
             vconn, vconn, (today - timedelta(days=190)).isoformat(), today.isoformat())),
         "source": source,

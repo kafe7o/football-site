@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 
-from bets import config, db, model, notify, odds_api, predict, publish, results, site, value
+from bets import config, db, model, notify, review, odds_api, predict, publish, results, site, value
 
 
 def setup_logging():
@@ -170,6 +170,7 @@ def main():
         # Резултатите от odds API идват часове след мача - football-data чака 1-3 дни.
         ok += [step(log, "4. Резултати часове след мача (odds API)", results.fill_from_scores, conn),
                step(log, "4а. Уреждане на прогнози", predict.settle, conn)]
+        ok.append(step(log, "4б. Самопроверка на правилото (веднъж седмично)", review.run_if_due, conn))
         ok += [step(log, "5. Скенер за цени", value.scan, conn, predict.active_sports(conn)),
                step(log, "6. Уреждане на залозите по цена", value.settle, conn),
                step(log, "7. Прогнози за днешните мачове", predict.run, conn)]
