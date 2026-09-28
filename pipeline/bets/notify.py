@@ -231,12 +231,22 @@ def mark(conn, ids, value):
     conn.executemany("UPDATE type_log SET notified_at = ? WHERE id = ?", [(value, i) for i in ids])
 
 
-def forecast_changes(conn, rows):
-    """Известие, когато прогнозата за мач се премести осезаемо (над 2 пп). Всяка промяна -
-    веднъж: ключът е мачът + часът на последния запис в дневника."""
+def forecast_changes(conn, rows, model_tag=None):
+    """Едно известие за осезаемите промени в прогнозата на модела (над 2 пп) - само за мачове в
+    следващите NOTICE_AHEAD часа и без решение. Всяка промяна - веднъж.
+
+    Смяна на самия модел (model_tag, напр. когато влезе xG) мести всички прогнози наведнъж - това
+    не е новина. Тогава промените се записват тихо като нова отправна точка. На 2026-09-28 при
+    влизането на xG тръгнаха 42 отделни известия - затова и са събрани в едно."""
+    from . import db
     conn.execute(SCHEMA)
     now = datetime.now(timezone.utc)
-    sent = 0
+    stamp = now.isoformat(timespec="seconds")
+    quiet = False
+    if model_tag and db.get_meta(conn, "forecast_model") != model_tag:
+        db.set_meta(conn, "forecast_model", model_tag)
+        quiet = True
+    lines = []
     for m in rows:
         history = m.get("history") or []
         if len(history) < 2 or not m.get("shift"):
@@ -244,19 +254,25 @@ def forecast_changes(conn, rows):
         key = f"change:{m['event_id']}:{history[-1]['recorded_at']}"
         if conn.execute("SELECT 1 FROM alerts_sent WHERE event_id = ?", (key,)).fetchone():
             continue
+        conn.execute("INSERT OR REPLACE INTO alerts_sent (event_id, sent_at) VALUES (?, ?)", (key, stamp))
+        start = (datetime.fromisoformat(m["commence_iso"].replace("Z", "+00:00"))
+                 if m.get("commence_iso") else None)
+        if quiet or m.get("decision") or not start or not (now < start <= now + NOTICE_AHEAD):
+            continue
         first, last = history[0], history[-1]
         fmt = lambda h, k: " / ".join(pct(h[f"{k}_{x}"]) for x in "hda")
-        lines = [f"модел: {fmt(first, 'p_model')} -> {fmt(last, 'p_model')}",
-                 f"пазар: {fmt(first, 'p_fair')} -> {fmt(last, 'p_fair')}"]
-        pick = m.get("pick")
-        lines.append(f"Избор сега: {pick['selection']} @ {pick['odds']:.2f} ({pick.get('book_name', pick['bookmaker'])})"
-                     if pick else "Избор сега: няма")
-        if send(f"Промяна: {m['home']} - {m['away']}", "\n".join(lines),
-                tags="chart_with_upwards_trend"):
-            sent += 1
-        conn.execute("INSERT OR REPLACE INTO alerts_sent (event_id, sent_at) VALUES (?, ?)",
-                     (key, now.isoformat(timespec="seconds")))
+        lines.append(f"{m['home']} - {m['away']} ({start.astimezone(SOFIA):%d.%m %H:%M}): "
+                     f"модел {fmt(first, 'p_model')} -> {fmt(last, 'p_model')}")
     conn.commit()
-    if sent:
-        log.info("Пратени известия за промени: %d", sent)
-    return sent
+    if quiet:
+        log.info("Нов модел (%s) - промените в прогнозите са записани без известие", model_tag)
+        return 0
+    if not lines:
+        return 0
+    title = (f"Промяна в прогнозата: {len(lines)} мача" if len(lines) > 1
+             else f"Промяна в прогнозата: {lines[0].split(' (')[0]}")
+    body = "\n".join(lines[:15]) + (f"\nи още {len(lines) - 15}" if len(lines) > 15 else "")
+    send(title, body + "\n(моделът е само мнение - залогът се решава по цена час преди мача)",
+         tags="chart_with_upwards_trend")
+    log.info("Известие за промени в прогнозите: %d мача", len(lines))
+    return len(lines)

@@ -183,7 +183,7 @@ def main():
                            notify.prematch, conn, built.get("preview", [])))
             changed = [m for m in built.get("preview", []) if m["event_id"] in set(built.get("changed", []))]
             ok.append(step(log, "10. Известия за променени прогнози",
-                           notify.forecast_changes, conn, changed))
+                           notify.forecast_changes, conn, changed, f"{model.VERSION}+xg"))
         ok.append(step(log, "11. Известия за смяна на типа A/B/C", notify.type_changes, conn))
         conn.close()
         log.info("===== Край. Стъпки: %d, паднали: %d =====", len(ok), ok.count(False))
