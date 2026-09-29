@@ -161,14 +161,20 @@ if __name__ == "__main__":
 def pull_data():
     """Местно копие на това, което облакът е построил: сайтът и базата му.
 
-    Пипат се само двата файла с данни (index.html и robot.db) - кодът в site/pipeline не се
+    Пипат се само данните (index.html, robot.db, pipeline/data) - кодът в site/pipeline не се
     пипа, за да не се загубят промени, които още не са качени.
     """
     token, repo = config.require("GITHUB_TOKEN", "GITHUB_REPO")
     if not (SITE_DIR / ".git").exists():
         raise RuntimeError(f"{SITE_DIR} не е git хранилище - пусни веднъж publish.run()")
     git("fetch", "-q", "origin", "main", token=token)
-    git("checkout", "origin/main", "--", "index.html", "robot.db")
+    git("checkout", "origin/main", "--", "index.html", "robot.db", "pipeline/data")
+    # анализите се смятат в облака (седмичният анализ) - местното копие ги взима оттам
+    import shutil
+    for name in ("leagues.json", "backtest.json"):
+        src = SITE_DIR / "pipeline" / "data" / name
+        if src.exists():
+            shutil.copy2(src, config.DATA_DIR / name)
     stamp = git("log", "-1", "--format=%cd", "--date=iso", "origin/main")
     log.info("Местното копие е обновено от облака (последна промяна там: %s)", stamp)
     return stamp

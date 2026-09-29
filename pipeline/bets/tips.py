@@ -31,7 +31,7 @@ DAY_STARTS = 7                       # часът, в който започва 
 LOCK_MARGIN = timedelta(minutes=5)
 FINISHED_AFTER = timedelta(hours=2, minutes=30)
 SCORES_EVERY = timedelta(hours=4)
-TOTO = set()                         # попълва се от data/leagues.json (run.py)
+TOTO = robot.TOTO_LEAGUES            # заключени в кода (bets/robot.py)
 
 
 # ---------- моделът: веднъж на ден за лига ----------

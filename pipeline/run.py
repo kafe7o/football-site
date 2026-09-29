@@ -2,7 +2,9 @@
 Един вход за всичко (системата по идеите на професионалиста, 2026-09-29).
 
     python run.py cloud      ЦЕЛИЯТ цикъл, на всеки час - това пуска GitHub Actions
-    python run.py local      лаптопът: пълният архив за проучванията + местно копие от облака
+    python run.py weekly     седмичният анализ - в облака всеки понеделник (archive.yml): архивът,
+                             новите мачове, анализът по първенства, веднъж месечно роботът назад
+    python run.py local      лаптопът (ръчно, когато работим): архивът и копие на сайта от облака
     python run.py seed       строи базата на облака от архива (последните 3 сезона + текущия)
     python run.py site       само строи сайта от текущата база
     python run.py status     какво има в базата и колко кредита са останали
@@ -15,9 +17,11 @@
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 from bets import config, db, fixtures, notify, odds_api, prices, results, site, tips, xg
 from bets.leagues import LEAGUES
@@ -54,13 +58,6 @@ def due(conn, key, every, now):
     return last is None or now - datetime.fromisoformat(last) >= every
 
 
-def load_toto():
-    path = config.DATA_DIR / "leagues.json"
-    if path.exists():
-        data = json.loads(path.read_text(encoding="utf-8"))
-        tips.TOTO = {c for c, v in data["leagues"].items() if v["toto"].get("confirmed")}
-
-
 def refresh_results(conn, years_back):
     results.update_history(conn, years_back)
     results.update_new(conn, since=results.history_window_start() if years_back <= 1 else None)
@@ -71,7 +68,6 @@ def refresh_results(conn, years_back):
 def cloud(log):
     results.KEEP_PLAYED_ODDS = False
     conn = db.init()
-    load_toto()
     now = datetime.now(timezone.utc)
     ok = []
     if due(conn, "results_at", RESULTS_EVERY, now):
@@ -131,22 +127,94 @@ def seed(log, target, source=None):
     conn.close()
 
 
-def local(log):
-    """Лаптопът: пълният архив (football.db) за проучванията и местно копие на сайта от облака."""
-    conn = db.init()
-    ok = [step(log, "1. Архивът: 22 лиги, 16 държави, 3. Бундеслига", refresh_results, conn, 2),
-          step(log, "2. xG от Understat", xg.update, conn)]
+def read_data(name):
+    path = config.DATA_DIR / name
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def weekly(log, backtest=False, keep_local=False):
+    """Седмичният анализ (2026-09-30) - в облака, без лаптопа.
+
+    Архивът (football.db, всички лиги от 2012) идва шифрован от изданието „archive“ на хранилището
+    (bets/archive.py), допълва се с новите мачове и xG, анализът по първенства се смята наново,
+    а веднъж месечно (първия понеделник) и роботът назад. После архивът се качва обратно.
+    Правилата на робота НЕ се пипат - само числата. Ако по новите данни тото лигите не са
+    същите като заключените в bets/robot.py, идва известие и собственикът решава.
+    """
+    from bets import archive
+    from research import league_analysis, robot_backtest
+    path = config.DB_PATH
+    if not keep_local:
+        archive.pull_db(path)      # без архива - нищо; грешката спира всичко и нищо не се качва
+    old_bt = read_data("backtest.json")
+    conn = db.init(path)
+    count = lambda: conn.execute("SELECT COUNT(*) FROM matches WHERE fthg IS NOT NULL").fetchone()[0]
+    before = count()
+    steps = [("новите мачове", step(log, "1. Новите мачове: 22 лиги, 16 държави, 3. Бундеслига",
+                                    refresh_results, conn, 2)),
+             ("xG", step(log, "2. xG от Understat", xg.update, conn))]
+    after = count()
     conn.close()
-    if config.GITHUB_TOKEN and config.GITHUB_REPO:
-        from bets import publish
-        ok.append(step(log, "3. Местно копие на сайта и базата от облака", publish.pull_data))
+    out = {}
+    steps.append(("анализът", step(log, "3. Анализът по първенства", lambda: out.update(la=league_analysis.main()))))
+    if backtest or datetime.now(timezone.utc).day <= 7:
+        steps.append(("роботът назад", step(log, "4. Роботът назад (веднъж месечно)",
+                                            lambda: out.update(bt=robot_backtest.main()))))
+    if steps[0][1] and not keep_local:
+        steps.append(("качването на архива", step(log, "5. Качване на архива", archive.push_db, path)))
+    failed = [name for name, good in steps if not good]
+    weekly_notify(after - before, after, out, old_bt, failed)
+    return 1 if failed else 0
+
+
+def weekly_notify(new, total, out, old_bt, failed):
+    from bets import robot
+    from bets.leagues import LEAGUES
+    la, bt = out.get("la"), out.get("bt")
+    lines = [f"+{new} нови мача (общо {total:,}).".replace(",", " ")]
+    if la:
+        data_toto = {c for c, v in la["leagues"].items() if v["toto"].get("confirmed")}
+        names = lambda codes: ", ".join(LEAGUES[c].title for c in sorted(codes)) or "няма"
+        lines.append("Тото по данните: " + names(data_toto) +
+                     (" - същите като в робота." if data_toto == robot.TOTO_LEAGUES else ""))
+        rank = la.get("goals_ranking") or []
+        if rank:
+            g = lambda c: la["leagues"][c]["goals"]["last3"]["avg"]
+            lines.append("Голове: " + ", ".join(f"{i + 1}. {LEAGUES[c].title} {g(c):.2f}" for i, c in enumerate(rank[:3]))
+                         + f" ... последна {LEAGUES[rank[-1]].title} {g(rank[-1]):.2f}.")
+        if data_toto != robot.TOTO_LEAGUES:
+            notify.send("Тото лигите по данните се промениха",
+                        f"Роботът работи с: {names(robot.TOTO_LEAGUES)}.\nПо новите данни: {names(data_toto)}.\n"
+                        "Нищо не е сменено - кажи дали да се приложи.", tags="warning", priority=4)
+    if bt:
+        a = bt["leagues"]["ALL"].get(f"tip:{bt['rule']}:all") or {}
+        b = ((old_bt.get("leagues") or {}).get("ALL") or {}).get(f"tip:{old_bt.get('rule')}:all") or {}
+        if a:
+            lines.append(f"Роботът назад: {a['hit']:.1%} познати на {a['n']:,} съвета, доход {a['roi']:+.1%}".replace(",", " ")
+                         + (f" (преди: {b['hit']:.1%}, {b['roi']:+.1%})." if b else "."))
+    if failed:
+        lines.append("ПРОБЛЕМ: " + ", ".join(failed) + " - виж Actions -> archive.")
+    notify.send("Седмичният анализ" + (" - с проблем" if failed else ""), "\n".join(lines),
+                tags="warning" if failed else "bar_chart", priority=4 if failed else 3)
+    if os.environ.get("RUNNER_TEMP"):          # в облака: archive.yml не праща второ известие
+        (Path(os.environ["RUNNER_TEMP"]) / "weekly_notified").write_text("1", encoding="utf-8")
+
+
+def local(log):
+    """Лаптопът (ръчно, когато работим): архивът от облака + местно копие на сайта и анализите.
+    Задачите на Windows са изключени от 2026-09-30 - всичко редовно върви в облака."""
+    from bets import archive, publish
+    ok = [step(log, "1. Архивът от облака", archive.pull_db, config.DB_PATH),
+          step(log, "2. Местно копие на сайта, базата на робота и анализите", publish.pull_data)]
     return 1 if ok.count(False) else 0
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["cloud", "local", "seed", "site", "status"])
+    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status"])
     parser.add_argument("--target", default=None, help="за seed: къде да се запише базата на облака")
+    parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
+    parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")
     args = parser.parse_args()
     log = setup_logging()
     log.info("===== Старт: %s %s =====", args.command, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -154,13 +222,14 @@ def main():
         return cloud(log)
     if args.command == "local":
         return local(log)
+    if args.command == "weekly":
+        return weekly(log, args.backtest, args.keep_local)
     if args.command == "seed":
         from pathlib import Path
         seed(log, Path(args.target) if args.target else config.SITE_DIR / "robot.db")
         return 0
     if args.command == "site":
         conn = db.init()
-        load_toto()
         site.build(conn)
         conn.close()
         return 0

@@ -159,6 +159,7 @@ def main():
     print("\nСлед пауза:", summary["after_break"], "\nОстанали:", summary["other"])
     print("  2012-2019:", summary["after_break_2012_2019"]["diff"], "срещу", summary["other_2012_2019"]["diff"])
     print("  2019-2026:", summary["after_break_2019_2026"]["diff"], "срещу", summary["other_2019_2026"]["diff"])
+    return json.loads(OUT.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -133,14 +133,11 @@ def run_league(code, toto_leagues=()):
     return out
 
 
-def main():
-    toto_file = ROOT / "data" / "leagues.json"
-    toto = set()
-    if toto_file.exists():
-        toto = {c for c, v in json.loads(toto_file.read_text(encoding="utf-8"))["leagues"].items()
-                if v.get("toto", {}).get("confirmed")}
+def main(codes=None):
+    """codes - лигите (по подразбиране всички с история). Връща обобщението (data/backtest.json)."""
+    toto = robot.TOTO_LEAGUES          # същите като на живо (заключени в bets/robot.py)
     print("тото лиги:", sorted(toto))
-    codes = [c for c in (sys.argv[1:] or WITH_HISTORY)]
+    codes = list(codes or WITH_HISTORY)
     with Pool(4) as pool:
         parts = pool.starmap(run_league, [(c, toto) for c in codes])
     conn = db.init()
@@ -153,6 +150,7 @@ def main():
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     report(summary)
+    return summary
 
 
 def stat(items):
@@ -222,4 +220,4 @@ def report(summary):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:] or None)
