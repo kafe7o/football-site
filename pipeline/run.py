@@ -69,6 +69,7 @@ def refresh_results(conn, years_back):
 
 
 def cloud(log):
+    results.KEEP_PLAYED_ODDS = False
     conn = db.init()
     load_toto()
     now = datetime.now(timezone.utc)
@@ -114,12 +115,13 @@ def seed(log, target, source=None):
                     SELECT id, league, season, date, home_team, away_team, fthg, ftag, hthg, htag, kickoff
                       FROM src.matches WHERE date >= ? AND league IN (%s)""" % ",".join("?" * len(LEAGUES)),
                  (since, *LEAGUES))
+    # коефициенти - само за предстоящите мачове (виж results.KEEP_PLAYED_ODDS)
     conn.execute("INSERT INTO odds (match_id, bookmaker, odds_home, odds_draw, odds_away) "
                  "SELECT o.match_id, o.bookmaker, o.odds_home, o.odds_draw, o.odds_away FROM src.odds o JOIN matches m ON m.id = o.match_id "
-                 "WHERE o.bookmaker IN ('AVG', 'MAX', 'B365', 'PS')")
+                 "WHERE o.bookmaker IN ('AVG', 'MAX', 'B365', 'PS') AND m.fthg IS NULL")
     conn.execute("INSERT INTO odds_totals (match_id, bookmaker, line, odds_over, odds_under) "
                  "SELECT o.match_id, o.bookmaker, o.line, o.odds_over, o.odds_under FROM src.odds_totals o JOIN matches m ON m.id = o.match_id "
-                 "WHERE o.bookmaker IN ('AVG', 'MAX') AND o.line = 2.5")
+                 "WHERE o.bookmaker IN ('AVG', 'MAX') AND o.line = 2.5 AND m.fthg IS NULL")
     conn.execute("INSERT INTO xg (match_id, xg_h, xg_a, source) "
                  "SELECT x.match_id, x.xg_h, x.xg_a, x.source FROM src.xg x JOIN matches m ON m.id = x.match_id")
     conn.commit()

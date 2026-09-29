@@ -154,6 +154,11 @@ def _num(value):
     return x if x == x else None       # NaN -> None
 
 
+# Облакът (run.py cloud) пази коефициенти само за предстоящите мачове: за изиграните не му трябват,
+# а базата се качва в git всеки час (142 000 реда коефициенти правеха базата 18 MB, 2026-09-29).
+KEEP_PLAYED_ODDS = True
+
+
 def store_rows(conn, df, season=None, league=None):
     """Общата логика за история и разписание. league - кодът, ако файлът е на една държава."""
     stored = 0
@@ -176,6 +181,8 @@ def store_rows(conn, df, season=None, league=None):
         match_id = db.upsert_match(conn, code, this_season, day.isoformat(), home, away,
                                    goals["FTHG"], goals["FTAG"], goals["HTHG"], goals["HTAG"], kickoff)
         stored += 1
+        if goals["FTHG"] is not None and not KEEP_PLAYED_ODDS:
+            continue
         for book, cols in ODDS_COLUMNS.items():
             values = [_num(row.get(c)) for c in cols]
             if all(v is not None for v in values):
@@ -344,6 +351,9 @@ def prune_history(conn, since=None):
     """Маха изиграните мачове преди прозореца - за да остане базата на облака малка."""
     since = since or history_window_start()
     removed = conn.execute("DELETE FROM matches WHERE date < ? AND fthg IS NOT NULL", (since,)).rowcount
+    if not KEEP_PLAYED_ODDS:
+        for table in ("odds", "odds_totals"):
+            conn.execute(f"DELETE FROM {table} WHERE match_id IN (SELECT id FROM matches WHERE fthg IS NOT NULL)")
     conn.commit()
     if removed:
         log.info("Махнати %d мача преди %s", removed, since)
