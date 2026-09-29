@@ -1,0 +1,141 @@
+"""
+Роботът - прогноза за всеки мач от всяко първенство (идеята на професионалиста, 2026-09-29).
+
+За всеки мач роботът избира по един изход на всеки пазар:
+  1x2   най-вероятното от 1 / X / 2
+  dc    най-вероятният двоен шанс: 1X / X2 / 12
+  ou    над или под 2.5 гола
+и ГЛАВЕН СЪВЕТ - един изход с коефициент поне MIN_ODDS (1.40, прагът на професионалиста),
+избран по правилото RULE. Правилото е избрано по проверката назад (research/robot_backtest.py,
+протоколът е в docstring-а му), не по усещане. 2026-09-29, 39 лиги, 2023/24-2026/27:
+
+  правило          избор (24 600 съвета)          чиста проверка (14 500)
+  market_likely    58.2% познати, доход -5.44%    57.0%, -7.70%     <- прието (най-висок доход в избора)
+  value            54.8%, -5.53%                  54.1%, -7.38%
+  agree            58.1%, -5.59%                  57.0%, -7.73%
+  likely (модела)  56.1%, -5.96%                  54.9%, -8.22%
+
+Втори етап (същия ден): в лигите без коефициенти над/под, когато всички вероятни изходи са под
+1.40, правилото избираше аутсайдер (X2 @ 3.50 - Норвегия: 48.8% познати). Добавено условие шансът
+по пазара да е поне MIN_PROB = 50% (съветът по-скоро излиза, отколкото не). Прието, защото е по-добро
+и в избора (-4.75% срещу -5.44%), и в чистата проверка (-7.15% срещу -7.70%); 59.7% / 58.6% познати.
+
+Тоест главният съвет е най-вероятният изход ПО ПАЗАРА сред тези с цена от 1.40 нагоре. Всички
+правила губят на средната цена колкото маржа на букмейкъра - предимство няма, мери се къде е
+най-малко лошо. Изборът по пазари (1x2, dc, ou) остава на модела - за да се вижда къде е по-силен.
+
+Вероятностите на робота са от модела (Poisson с атака/защита, половин голове половин xG за
+5-те големи лиги, bets/model.py). Където модел няма (лига без история, непознат отбор, малко
+мачове) - от пазара (средните цени без маржа). Кое е ползвано, пише в `basis`.
+
+Съветът НЕ се дава:
+  - в дерби (съветът на професионалиста, потвърден на 1465 дербита: повече равни от обещаното);
+  - на фаворит 1.30-1.55 в „тото“ лига (потвърдено за Холандия - фаворитите там печелят 63.9%
+    при обещани 68.4%, и в 2012-2019, и в 2019-2026).
+Прогнозата по пазари се записва и тогава - за статистиката.
+"""
+
+MIN_ODDS = 1.40
+MIN_PROB = 0.50       # главният съвет - само изход с шанс поне 50% по пазара
+SELECTIONS = ["1", "X", "2", "1X", "X2", "12", "O", "U"]
+MARKET_OF = {"1": "1x2", "X": "1x2", "2": "1x2", "1X": "dc", "X2": "dc", "12": "dc", "O": "ou", "U": "ou"}
+LABEL = {"1": "1", "X": "X", "2": "2", "1X": "1X", "X2": "X2", "12": "12", "O": "над 2.5", "U": "под 2.5"}
+# „Тото“ лиги по съвета на професионалиста: фаворит в тази лента печели по-рядко от обещаното -
+# и в двата периода (виж research/league_analysis.py). Попълва се от data/leagues.json.
+TOTO_BAND = (1.30, 1.55)
+RULE = "market_likely"
+
+
+def result_of(hg, ag):
+    return "1" if hg > ag else ("X" if hg == ag else "2")
+
+
+def hit(sel, hg, ag):
+    r = result_of(hg, ag)
+    if sel in ("1", "X", "2"):
+        return sel == r
+    if sel in ("1X", "X2", "12"):
+        return r in sel
+    if sel == "O":
+        return hg + ag >= 3
+    if sel == "U":
+        return hg + ag <= 2
+    raise ValueError(sel)
+
+
+def picks(p):
+    """Изборът на всеки пазар по вероятностите p."""
+    out = {"1x2": max(("1", "X", "2"), key=lambda s: p[s]),
+           "dc": max(("1X", "X2", "12"), key=lambda s: p[s])}
+    if p.get("O") is not None:
+        out["ou"] = "O" if p["O"] >= p["U"] else "U"
+    return out
+
+
+def candidates(p, prices):
+    """(изход, вероятност, средна цена) за изходите с цена поне MIN_ODDS."""
+    avg = (prices or {}).get("avg") or {}
+    return [(s, p[s], avg[s]) for s in SELECTIONS
+            if p.get(s) is not None and avg.get(s) and avg[s] >= MIN_ODDS]
+
+
+def choose(rule, robot, market, prices):
+    """Главният съвет по правилото: (изход, средна цена) или (None, None)."""
+    if rule == "likely":            # най-вероятното по робота
+        c = candidates(robot, prices)
+        best = max(c, key=lambda x: x[1], default=None)
+    elif rule == "market_likely":   # най-вероятното по пазара, ако шансът е поне 50%
+        c = [x for x in candidates(market or {}, prices) if x[1] >= MIN_PROB]
+        best = max(c, key=lambda x: x[1], default=None)
+    elif rule == "value":           # най-голяма стойност p*цена сред изходите с шанс поне 50%
+        c = [x for x in candidates(robot, prices) if x[1] >= 0.5]
+        best = max(c, key=lambda x: x[1] * x[2], default=None)
+    elif rule == "agree":           # най-вероятното по робота, само ако и пазарът го дава за най-вероятно
+        c = candidates(robot, prices)
+        best = max(c, key=lambda x: x[1], default=None)
+        mc = candidates(market or {}, prices)
+        mbest = max(mc, key=lambda x: x[1], default=None)
+        if not best or not mbest or best[0] != mbest[0]:
+            best = None
+    else:
+        raise ValueError(rule)
+    return (best[0], best[2]) if best else (None, None)
+
+
+def block_reason(sel, odds, flags):
+    """Защо съветът не се дава (правилата на професионалиста), или None."""
+    if flags.get("derby"):
+        return "дерби - там не се залага"
+    if (flags.get("toto") and sel in ("1", "2") and odds
+            and TOTO_BAND[0] <= odds <= TOTO_BAND[1]):
+        return "тото лига: фаворитите на 1.30-1.55 тук печелят по-рядко от обещаното"
+    return None
+
+
+def tip(robot, market, prices, flags, rule=RULE):
+    """(изход, цена, защо няма) - главният съвет за мача."""
+    sel, odds = choose(rule, robot, market, prices)
+    if sel is None:
+        return None, None, "няма изход с цена от 1.40 и шанс над 50%" if prices else "цените идват до 3 дни преди мача"
+    reason = block_reason(sel, odds, flags)
+    if reason:
+        return None, None, reason
+    return sel, odds, None
+
+
+def after_break(dates, day, min_gap=12, max_gap=25, within=4):
+    """Първи кръг след пауза: преди тази дата лигата е спряла 12-25 дни (от 2026 г. септемврийският
+    и октомврийският прозорец за националните отбори са слети - паузата е до 3 седмици).
+    dates - датите с мачове на лигата (изиграни и предстоящи), day - датата на мача (ISO)."""
+    from datetime import date
+    d = date.fromisoformat(day)
+    prev = sorted({date.fromisoformat(x) for x in dates if x < day}, reverse=True)
+    start = d
+    for p in prev:
+        gap = (start - p).days
+        if gap >= min_gap:
+            return gap <= max_gap and (d - start).days <= within and start.month not in (6, 7)
+        if (d - p).days > within:
+            return False
+        start = p
+    return False

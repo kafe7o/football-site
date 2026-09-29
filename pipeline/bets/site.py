@@ -1,0 +1,166 @@
+"""
+Сайтът: един самостоятелен HTML файл (site_template.html + данните като JSON вътре в него).
+
+Четири таба, всичко по идеите на професионалиста:
+  Прогнози      всички мачове от всички първенства за следващите 7 дни - роботът по пазари
+                (1/X/2, двоен шанс, над/под 2.5) и главният съвет с цена поне 1.40
+  Резултати     записаните преди мача прогнози и кои са познати - за 7 дни до 6 месеца назад,
+                по лиги и по пазари, с дохода в пари
+  Лиги          голове, „тото“, паузите, дербитата, шампион и изпадащи, колко познава роботът
+                в лигата (назад във времето и на живо)
+  Професионалист  неговите съвети, проверката им на данни и как роботът ги прилага
+"""
+
+import json
+import logging
+from datetime import datetime, timedelta, timezone
+
+from . import config, db, season, tips
+from .leagues import LEAGUES
+
+log = logging.getLogger(__name__)
+
+KEEP_DAYS = 190          # колко назад се пазят резултатите в сайта (филтърът стига до 6 месеца)
+
+
+def read_json(name, default=None):
+    path = config.DATA_DIR / name
+    if not path.exists():
+        log.warning("%s го няма - частта от сайта ще е празна", path)
+        return default
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def short(p):
+    return None if p is None else round(p, 3)
+
+
+def compact_forecast(m):
+    """Един мач за таба с прогнозите - кратки ключове, за да е малък файлът."""
+    out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
+           "h": m.get("home_src") or m["home"], "a": m.get("away_src") or m["away"],
+           "lk": m.get("locked")}
+    if not m.get("basis"):
+        out["w"] = m.get("why")
+        return out
+    r, mk = m["probs"]["robot"], m["probs"].get("market") or {}
+    avg = (m.get("prices") or {}).get("avg") or {}
+    out.update({
+        "b": m["basis"],
+        "r": {k: short(r.get(k)) for k in ("1", "X", "2", "1X", "X2", "12", "O", "U") if r.get(k) is not None},
+        "m": {k: short(mk.get(k)) for k in ("1", "X", "2", "1X", "X2", "12", "O", "U") if mk.get(k) is not None},
+        "o": {k: round(v, 2) for k, v in avg.items()},
+        "n": (m.get("prices") or {}).get("n"),
+        "pk": m["picks"]["robot"], "t": m.get("tip"), "to": m.get("tip_odds"), "tb": m.get("tip_best"),
+        "w": m.get("why"), "f": [k for k, v in (m.get("flags") or {}).items() if v is True],
+    })
+    if r.get("xg_home") is not None:
+        out["xg"] = [round(r["xg_home"], 2), round(r["xg_away"], 2)]
+    return out
+
+
+def record(conn, now):
+    """Уредените прогнози от последните KEEP_DAYS дни - за таба с резултатите."""
+    since = (now - timedelta(days=KEEP_DAYS)).isoformat()
+    out = []
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
+                              WHERE t.kickoff >= ? AND t.hg IS NOT NULL ORDER BY t.kickoff""", (since,)):
+        probs, picks = json.loads(t["probs_json"]), json.loads(t["picks_json"])
+        avg = ((json.loads(t["prices_json"]) or {}).get("avg") or {}) if t["prices_json"] else {}
+        flags = json.loads(t["flags_json"] or "{}")
+        rp, mp = picks["robot"], picks.get("market") or {}
+        out.append({"k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"], "a": t["away_src"] or t["away"],
+                    "b": t["basis"], "s": [t["hg"], t["ag"]],
+                    "pk": rp, "mk": mp,
+                    "po": {mkt: avg.get(sel) for mkt, sel in rp.items()},
+                    "mo": {mkt: avg.get(sel) for mkt, sel in mp.items()},
+                    "pp": {mkt: short(probs["robot"].get(sel)) for mkt, sel in rp.items()},
+                    "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
+                    "f": [k for k, v in flags.items() if v is True], "w": flags.get("why")})
+    return out
+
+
+def pending(conn, now):
+    """Записани, но още неуредени (започнали или чакат резултат)."""
+    return [{"k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"], "a": t["away_src"] or t["away"],
+             "t": t["tip"], "to": t["tip_odds"]}
+            for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t
+                                       LEFT JOIN fixtures f ON f.id = t.fixture_id
+                                      WHERE t.hg IS NULL AND t.kickoff <= ? ORDER BY t.kickoff""", (now.isoformat(),))]
+
+
+def backtest_summary():
+    """От data/backtest.json - само нужното за сайта."""
+    bt = read_json("backtest.json", {})
+    rule = bt.get("rule", "likely")
+    keep = {}
+    for code, d in (bt.get("leagues") or {}).items():
+        item = {k: d.get(k) for k in (f"tip:{rule}:all", f"tip:{rule}:clean", f"tip:{rule}:select",
+                                      "robot:1x2:all", "market:1x2:all", "robot:dc:all", "market:dc:all",
+                                      "robot:ou:all", "market:ou:all", "robot:1x2:after_break", "market:1x2:after_break")}
+        item["seasons"] = {k.split(":", 1)[1]: v for k, v in d.items() if k.startswith("tip_season:")}
+        keep[code] = {k: v for k, v in item.items() if v}
+    return {"rule": rule, "start": bt.get("start"), "select_end": bt.get("select_end"),
+            "generated": bt.get("generated"), "leagues": keep}
+
+
+def analysis_summary():
+    la = read_json("leagues.json", {})
+    out = {}
+    for code, d in (la.get("leagues") or {}).items():
+        out[code] = {"goals": d["goals"], "gs": {s: (g or {}).get("avg") for s, g in d["goals_by_season"].items()},
+                     "toto": d["toto"], "fav": d["favourites"], "ab": d["after_break"], "derbies": d["derbies"],
+                     "odds": d["odds"]}
+    return {"generated": la.get("generated"), "band": la.get("band"), "leagues": out,
+            "summary": la.get("summary"), "ranking": la.get("goals_ranking")}
+
+
+def seasons(conn, now):
+    """Симулацията на сезона за всяка лига - веднъж на ден (кешът е в meta)."""
+    today = now.date().isoformat()
+    out = {}
+    for code, lg in LEAGUES.items():
+        if not lg.has_history or season.meetings(code) == 0:
+            continue
+        cached = db.get_meta(conn, f"season:{code}")
+        if cached:
+            data = json.loads(cached)
+            if data.get("day") == today:
+                if data.get("sim"):
+                    out[code] = data["sim"]
+                continue
+        fitted = tips.fitted_model(conn, code, now)
+        sim = season.simulate(conn, code, fitted) if fitted else None
+        db.set_meta(conn, f"season:{code}", json.dumps({"day": today, "sim": sim}))
+        if sim:
+            out[code] = sim
+    return out
+
+
+def build(conn, now=None, upcoming=None):
+    now = now or datetime.now(timezone.utc)
+    upcoming = upcoming if upcoming is not None else tips.preview(conn, now)
+    data = {
+        "generated": now.isoformat(timespec="seconds"),
+        "credits": db.get_meta(conn, "credits_remaining"),
+        "leagues": {c: {"c": lg.country, "n": lg.name, "tier": lg.tier, "src": lg.source,
+                        "rr": season.meetings(c) if lg.has_history else 0, "split": lg.split}
+                    for c, lg in LEAGUES.items()},
+        "upcoming": [compact_forecast(m) for m in upcoming],
+        "record": record(conn, now),
+        "pending": pending(conn, now),
+        "first_tip": db.get_meta(conn, "first_tip"),
+        "backtest": backtest_summary(),
+        "analysis": analysis_summary(),
+        "seasons": seasons(conn, now),
+        "pro": read_json("pro_tips.json", []),
+        "url": config.SITE_URL,
+    }
+    template = config.TEMPLATE.read_text(encoding="utf-8")
+    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    html = template.replace("/*__DATA__*/null", payload)
+    config.SITE_DIR.mkdir(exist_ok=True)
+    (config.SITE_DIR / "index.html").write_text(html, encoding="utf-8")
+    log.info("Сайтът е построен: %d предстоящи, %d уредени, %d KB", len(data["upcoming"]), len(data["record"]),
+             len(html) // 1024)
+    return data
