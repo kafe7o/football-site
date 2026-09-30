@@ -45,8 +45,10 @@ def load(conn, code):
         """SELECT o.match_id, o.odds_home, o.odds_draw, o.odds_away FROM odds o JOIN matches m ON m.id = o.match_id
             WHERE m.league = ? AND o.bookmaker = ?""", (code, book))}
     rows = [dict(r) for r in conn.execute(
-        """SELECT id, date, season, home_team, away_team, fthg, ftag FROM matches
-            WHERE league = ? AND fthg IS NOT NULL AND date >= '2012-07-01' ORDER BY date""", (code,))]
+        """SELECT m.id, m.date, m.season, m.home_team, m.away_team, m.fthg, m.ftag,
+                  s.hy + s.ay AS cards, s.hc + s.ac AS corners
+             FROM matches m LEFT JOIN match_stats s ON s.match_id = m.id
+            WHERE m.league = ? AND m.fthg IS NOT NULL AND m.date >= '2012-07-01' ORDER BY m.date""", (code,))]
     ok = [(r["id"], odds[r["id"]]) for r in rows if r["id"] in odds]
     probs = implied_probs([o for _, o in ok]) if ok else []
     pmap = {mid: (o, p) for (mid, o), p in zip(ok, probs) if p[0] == p[0]}
@@ -81,7 +83,16 @@ def goals(rows):
     if not n:
         return None
     tot = [r["fthg"] + r["ftag"] for r in rows]
-    return {"n": n, "avg": round(sum(tot) / n, 3), "over25": round(sum(t >= 3 for t in tot) / n, 4),
+    cards = [r["cards"] for r in rows if r.get("cards") is not None]
+    corners = [r["corners"] for r in rows if r.get("corners") is not None]
+    extra = {}
+    if len(cards) >= 30:      # картони и корнери - само 22-те лиги на football-data (указание от 2026-09-30)
+        extra.update({"cards": round(sum(cards) / len(cards), 2),
+                      "cards_o45": round(sum(c >= 5 for c in cards) / len(cards), 4)})
+    if len(corners) >= 30:
+        extra.update({"corners": round(sum(corners) / len(corners), 2),
+                      "corners_o95": round(sum(c >= 10 for c in corners) / len(corners), 4)})
+    return {"n": n, "avg": round(sum(tot) / n, 3), "over25": round(sum(t >= 3 for t in tot) / n, 4), **extra,
             "btts": round(sum(r["fthg"] > 0 and r["ftag"] > 0 for r in rows) / n, 4),
             "nil": round(sum(t == 0 for t in tot) / n, 4),
             "home": round(sum(r["res"] == "1" for r in rows) / n, 4),

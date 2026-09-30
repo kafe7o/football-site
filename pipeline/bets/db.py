@@ -7,6 +7,7 @@
   fixtures      предстоящите мачове от всички източници, с последните цени
   tips          прогнозата на робота, записана ПРЕДИ мача; после само резултатът
   backtest_tips същата прогноза, симулирана назад (walk-forward) - никога не се смесва с tips
+  match_stats   картони, корнери, удари, фаулове на мача (22-те лиги на football-data)
   model_cache   обученият модел на лигата за деня (за да не се обучава на всеки час)
   meta          служебни стойности
 
@@ -109,6 +110,18 @@ CREATE TABLE IF NOT EXISTS backtest_tips (
     UNIQUE(league, date, home, away)
 );
 
+-- Статистиката на мача (съветът на професионалиста от 2026-09-30: анализ и на картоните и
+-- корнерите). Само 22-те лиги на football-data я имат; съдията - само Англия и Шотландия.
+CREATE TABLE IF NOT EXISTS match_stats (
+    match_id    INTEGER PRIMARY KEY REFERENCES matches(id) ON DELETE CASCADE,
+    hs INTEGER, as_ INTEGER,        -- удари
+    hst INTEGER, ast INTEGER,       -- удари в целта
+    hf INTEGER, af INTEGER,         -- фаулове
+    hc INTEGER, ac INTEGER,         -- корнери
+    hy INTEGER, ay INTEGER,         -- жълти картони
+    hr INTEGER, ar INTEGER          -- червени картони
+);
+
 CREATE TABLE IF NOT EXISTS model_cache (
     league      TEXT PRIMARY KEY,
     day         TEXT NOT NULL,
@@ -127,6 +140,8 @@ MIGRATIONS = [
     ("matches", "hthg", "INTEGER"),
     ("matches", "htag", "INTEGER"),
     ("matches", "kickoff", "TEXT"),
+    ("matches", "referee", "TEXT"),     # съдията (Англия и Шотландия - и за предстоящите мачове)
+    ("tips", "match_id", "INTEGER"),    # редът в matches, когато резултатът дойде от историята
 ]
 
 
@@ -196,6 +211,20 @@ def upsert_totals(conn, match_id, bookmaker, line, over, under):
            ON CONFLICT(match_id, bookmaker, line) DO UPDATE SET
                odds_over = excluded.odds_over, odds_under = excluded.odds_under""",
         (match_id, bookmaker, line, over, under))
+
+
+STATS = ["hs", "as_", "hst", "ast", "hf", "af", "hc", "ac", "hy", "ay", "hr", "ar"]
+
+
+def upsert_stats(conn, match_id, values):
+    """values: {колона: число} - записват се само наличните, другите остават."""
+    cols = [c for c in STATS if values.get(c) is not None]
+    if not cols:
+        return
+    conn.execute(
+        f"""INSERT INTO match_stats (match_id, {", ".join(cols)}) VALUES (?, {", ".join("?" * len(cols))})
+            ON CONFLICT(match_id) DO UPDATE SET {", ".join(f"{c} = excluded.{c}" for c in cols)}""",
+        (match_id, *(values[c] for c in cols)))
 
 
 def counts(conn):

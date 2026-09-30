@@ -148,6 +148,25 @@ td .num, td.num { font-family: "IBM Plex Mono", monospace; }
 .hbar .fill.hl { background: var(--away); }
 .hbar .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* анализът на мача */
+details.an { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; }
+details.an summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--home); list-style: none; }
+details.an summary::-webkit-details-marker { display: none; }
+details.an summary::before { content: "▸ "; }
+details.an[open] summary::before { content: "▾ "; }
+.an-text { margin: 6px 0 0; padding-left: 16px; font-size: 13px; }
+.an-text li { margin: 3px 0; }
+.an-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.an-box { background: var(--chip); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; min-width: 0; }
+.an-box b.h { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+.fc { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; margin: 1px; }
+.fc.W { background: var(--ok); } .fc.D { background: var(--draw); } .fc.L { background: var(--bad); }
+.an-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; padding: 2px 0; }
+.an-row span:last-child { font-family: "IBM Plex Mono", monospace; margin-left: auto; text-align: right; }
+.an-grid > * { min-width: 0; }
+.round ul { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; }
+.round li { margin: 4px 0; }
+@media (max-width: 560px) { .an-grid { grid-template-columns: 1fr; } }
 .pro-tip { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
 .pro-date { font-size: 12px; color: var(--muted); }
 .pro-h { font: 600 16px/1.3 "IBM Plex Sans", sans-serif; margin: 4px 0 6px; }
@@ -224,6 +243,11 @@ const AN = (DATA.analysis || {}).leagues || {};
 const BT = (DATA.backtest || {}).leagues || {};
 const RULE = (DATA.backtest || {}).rule || "likely";
 const STAKE = 10;
+// Професионалистът (2026-09-30): „топ 10“ първенства за анализите на кръга. България - когато има данни.
+const TOP10 = ["E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1"];
+const XBT = DATA.extras_bt || {};
+const XK = {cards: "Картони", corners: "Корнери"};
+const XU = {cards: "жълти", corners: "корнера"};
 const FLAG = {"Англия":"🇬🇧","Шотландия":"🇬🇧","Германия":"🇩🇪","Италия":"🇮🇹","Испания":"🇪🇸","Франция":"🇫🇷",
   "Нидерландия":"🇳🇱","Белгия":"🇧🇪","Португалия":"🇵🇹","Турция":"🇹🇷","Гърция":"🇬🇷","Аржентина":"🇦🇷","Австрия":"🇦🇹",
   "Бразилия":"🇧🇷","Китай":"🇨🇳","Дания":"🇩🇰","Финландия":"🇫🇮","Ирландия":"🇮🇪","Япония":"🇯🇵","Мексико":"🇲🇽",
@@ -332,7 +356,10 @@ function fillLeagues() {
   const sel = document.getElementById("fc-league");
   const codes = Object.keys(cnt).sort((a, b) => title(a).localeCompare(title(b), "bg"));
   if (fc.league && !cnt[fc.league]) fc.league = "";
+  const top = codes.filter(c => TOP10.includes(c)).reduce((a, c) => a + cnt[c], 0);
+  if (fc.league === "__top10" && !top) fc.league = "";
   sel.innerHTML = `<option value="">Всички първенства (${codes.length})</option>` +
+    (top ? `<option value="__top10" ${fc.league === "__top10" ? "selected" : ""}>Топ 10 първенства (${top})</option>` : "") +
     codes.map(c => `<option value="${c}" ${c === fc.league ? "selected" : ""}>${esc(title(c))} (${cnt[c]})</option>`).join("");
 }
 
@@ -355,22 +382,98 @@ function matchCard(m) {
     if (mk["1"] != null) sub.push(`пазарът: ${pct(mk["1"])} / ${pct(mk["X"])} / ${pct(mk["2"])}`);
     if (r.O != null) sub.push(`над 2.5: ${pct(r.O)}${mk.O != null ? ` (пазарът ${pct(mk.O)})` : ""}`);
     if (m.xg) sub.push(`очаквани голове ${m.xg[0].toFixed(1)} : ${m.xg[1].toFixed(1)}`);
-    sub.push(m.b === "model" ? "по модела" : "по пазара (няма модел)");
+    sub.push(m.b === "model" ? "процентите са на робота" : "роботът няма собствена оценка - процентите са на букмейкъра");
+    const an = m.an || {};
     const picks = Object.entries(m.pk || {}).map(([mkt, sel]) =>
-      `<span class="pk">${MKT[mkt]}: <b>${LABEL[sel]}</b> <span class="num">${pct(r[sel])}${o[sel] ? " @" + o[sel].toFixed(2) : ""}</span></span>`).join("");
+      `<span class="pk">${MKT[mkt]}: <b>${LABEL[sel]}</b> <span class="num">${pct(r[sel])}${o[sel] ? " @" + o[sel].toFixed(2) : ""}</span></span>`).join("") +
+      ["cards", "corners"].filter(k => an[k]).map(k => { const x = an[k], ch = x.pick === "O" ? x.over : 1 - x.over;
+        return x.skill
+          ? `<span class="pk">${XK[k]}: <b>${x.pick === "O" ? "над" : "под"} ${x.line}</b> <span class="num">${pct(ch)}</span></span>`
+          : `<span class="pk" title="Очакван брой по робота. Проверката назад не показа, че процентът му е по-точен от средното на лигата - затова процент няма.">${XK[k]}: очаквани <b class="num">${x.total.toFixed(1)}</b>${x.base != null ? ` <span class="muted">· в лигата над ${x.line}: ${pct(x.base)}</span>` : ""}</span>`; }).join("");
     let tip;
     if (m.t) {
       const bt = btTip(m.l);
       tip = `<div class="tip"><span>Съвет: <b>${LABEL[m.t]}</b> @ <b class="num">${m.to.toFixed(2)}</b></span>
-        <span class="meta">шанс ${mk[m.t] != null ? pct(mk[m.t]) + " по пазара" : pct(r[m.t])}${m.b === "model" && mk[m.t] != null ? ` · ${pct(r[m.t])} по модела` : ""}${m.tb && m.tb > m.to + 0.005 ? ` · най-добра цена ${m.tb.toFixed(2)}` : ""}${bt ? ` · в тази лига съветите познават ${pct(bt.hit)} (назад, ${bt.n} мача)` : ""}</span></div>`;
+        <span class="meta">шанс ${pct(r[m.t])} по робота (коефициентът не влиза в процента)${mk[m.t] != null ? ` · букмейкърът: ${pct(mk[m.t])}` : ""}${m.tb && m.tb > m.to + 0.005 ? ` · най-добра цена ${m.tb.toFixed(2)}` : ""}${bt ? ` · в тази лига съветите познават ${pct(bt.hit)} (назад, ${bt.n} мача)` : ""}</span></div>`;
     } else {
       tip = `<div class="tip none">Без съвет - ${esc(m.w || "")}</div>`;
     }
     body = probBar(r) + `<div class="sub">${sub.map(esc).join("<span aria-hidden='true'>·</span>")}</div>
-      <div class="picks">${picks}</div>${tip}`;
+      <div class="picks">${picks}</div>${tip}${analysisBlock(m)}`;
   }
   return `<div class="m"><div class="top"><span class="time">${fmtTime(m.k)}</span>
     <span class="teams">${esc(m.h)} – ${esc(m.a)}</span><span class="flags">${flags}${state}</span></div>${body}</div>`;
+}
+
+function xSkill(kind) { return !!(XBT[kind] && XBT[kind].skill); }
+
+function formChips(xs) {
+  return (xs || []).map(f => `<span class="fc ${f[0]}" title="${f[3] === "д" ? "у дома" : "като гост"} срещу ${esc(f[4])}: ${f[1]}:${f[2]}">${{W: "П", D: "Р", L: "З"}[f[0]]}</span>`).join("") || `<span class="muted">няма</span>`;
+}
+
+function analysisBlock(m) {
+  const a = m.an;
+  if (!a) return "";
+  const rows = [];
+  rows.push(`<div class="an-box"><b class="h">Форма (последни 5, най-новият вляво)</b>
+    <div class="an-row"><span>${esc(m.h)}</span><span>${formChips(a.f.h)}</span></div>
+    <div class="an-row"><span>${esc(m.a)}</span><span>${formChips(a.f.a)}</span></div>
+    <div class="an-row"><span>${esc(m.h)} у дома</span><span>${formChips(a.f.hh)}</span></div>
+    <div class="an-row"><span>${esc(m.a)} като гост</span><span>${formChips(a.f.aa)}</span></div></div>`);
+  const sh = (a.season || {}).h, sa = (a.season || {}).a;
+  if (sh && sa) {
+    const line = (lbl, k, d = 1) => sh[k] != null && sa[k] != null ? `<div class="an-row"><span>${lbl}</span><span>${sh[k].toFixed(d)} : ${sa[k].toFixed(d)}</span></div>` : "";
+    rows.push(`<div class="an-box"><b class="h">Сезонът, средно на мач (${esc(m.h)} : ${esc(m.a)})</b>
+      ${a.table ? `<div class="an-row"><span>Място / точки</span><span>${a.table.h.pos} (${a.table.h.pts}) : ${a.table.a.pos} (${a.table.a.pts})</span></div>` : ""}
+      ${line("Вкарани голове", "gf")}${line("Допуснати голове", "ga")}${line("Удари", "shots")}${line("Удари в целта", "sot")}
+      ${line("Жълти картони", "cards")}${line("Корнери", "corners")}</div>`);
+  }
+  const g = a.goals;
+  if (g) rows.push(`<div class="an-box"><b class="h">Голове по робота</b>
+    <div class="an-row"><span>Очаквани</span><span>${g.xg[0].toFixed(2)} : ${g.xg[1].toFixed(2)}</span></div>
+    <div class="an-row"><span>Най-вероятни резултати</span><span>${g.scores.map(x => `${x[0]}:${x[1]} ${pct(x[2])}`).join(" · ")}</span></div>
+    <div class="an-row"><span>Над 1.5 / 2.5 / 3.5</span><span>${pct(g.o15)} / ${pct(g.o25)} / ${pct(g.o35)}</span></div>
+    <div class="an-row"><span>Двата вкарват</span><span>${pct(g.btts)}</span></div></div>`);
+  const xl = ["cards", "corners"].filter(k => a[k]).map(k => { const x = a[k];
+    return `<div class="an-row"><span>${XK[k]}: очаквани ${x.total.toFixed(1)} (${x.home.toFixed(1)} + ${x.away.toFixed(1)})</span><span>${x.skill
+      ? Object.entries(x.lines).map(([l, p]) => `над ${l} ${pct(p)}`).join(" · ")
+      : (x.base != null ? `в лигата над ${x.line}: ${pct(x.base)}` : "")}</span></div>`; }).join("");
+  if (xl) rows.push(`<div class="an-box"><b class="h">Картони и корнери по робота</b>${xl}
+    ${a.cards && a.cards.referee ? `<div class="an-row"><span>Съдия</span><span>${esc(a.cards.referee.name)}${a.cards.referee.avg ? ` · ${a.cards.referee.avg.toFixed(1)} жълти (${a.cards.referee.n} мача)` : ""}</span></div>` : ""}
+    ${["cards", "corners"].some(k => a[k] && !a[k].skill) ? `<div class="small muted">Проверката назад (2023-2026, 22 лиги): шансът на робота за над/под на картони и корнери не е по-точен от средното на лигата - затова процент няма, само очакван брой. Изборът му се записва и се мери на живо (таб Резултати).</div>` : ""}</div>`);
+  if ((a.h2h || []).length) rows.push(`<div class="an-box"><b class="h">Директни срещи</b>${a.h2h.map(x =>
+    `<div class="an-row"><span>${esc(x[0].slice(0, 4))} ${esc(x[1])} – ${esc(x[2])}</span><span>${x[3]}:${x[4]}</span></div>`).join("")}</div>`);
+  return `<details class="an"><summary>Анализ на мача</summary><ul class="an-text">${(a.t || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+    <div class="an-grid">${rows.join("")}</div></details>`;
+}
+
+function roundPanel(rows) {
+  const name = fc.league === "__top10" ? "Топ 10 първенства" : title(fc.league);
+  const g = rows.filter(m => m.an && m.an.goals);
+  const nm = m => `${esc(m.h)} – ${esc(m.a)}`;
+  const tot = m => m.an.goals.xg[0] + m.an.goals.xg[1];
+  const items = [];
+  if (g.length) {
+    const s = g.slice().sort((a, b) => tot(b) - tot(a));
+    const sum = g.reduce((x, m) => x + tot(m), 0);
+    items.push(`Очаквани голове общо <b>${sum.toFixed(1)}</b> в ${g.length} мача (средно ${(sum / g.length).toFixed(2)} на мач).`);
+    items.push(`Най-много голове се очакват в: ${s.slice(0, 3).map(m => `${nm(m)} (${tot(m).toFixed(1)})`).join(", ")}.`);
+    items.push(`Най-малко: ${s.slice(-3).reverse().map(m => `${nm(m)} (${tot(m).toFixed(1)})`).join(", ")}.`);
+  }
+  ["cards", "corners"].forEach(k => {
+    const x = rows.filter(m => m.an && m.an[k]).sort((a, b) => b.an[k].total - a.an[k].total);
+    if (x.length) items.push(`Най-много ${XU[k]} се очакват в: ${x.slice(0, 3).map(m => `${nm(m)} (${m.an[k].total.toFixed(1)})`).join(", ")}; най-малко - ${nm(x[x.length - 1])} (${x[x.length - 1].an[k].total.toFixed(1)}).`);
+  });
+  const sure = rows.filter(m => m.t).sort((a, b) => b.r[b.t] - a.r[a.t]).slice(0, 5);
+  if (sure.length) items.push(`Най-вероятните съвети на робота: ${sure.map(m => `${nm(m)} - <b>${LABEL[m.t]}</b> ${pct(m.r[m.t])} @${m.to.toFixed(2)}`).join("; ")}.`);
+  const top1 = p => ["1", "X", "2"].reduce((a, b) => (p[b] || 0) > (p[a] || 0) ? b : a, "1");
+  const dis = rows.filter(m => m.b === "model" && m.m && m.m["1"] != null && top1(m.m) !== m.pk["1x2"]);
+  if (dis.length) items.push(`Роботът вижда различно от букмейкъра (1/X/2): ${dis.slice(0, 6).map(m => `${nm(m)} - роботът ${m.pk["1x2"]} (${pct(m.r[m.pk["1x2"]])}), букмейкърът ${top1(m.m)} (${pct(m.m[top1(m.m)])})`).join("; ")}${dis.length > 6 ? ` и още ${dis.length - 6}` : ""}.`);
+  const der = rows.filter(m => (m.f || []).includes("derby"));
+  if (der.length) items.push(`Дерби (без съвет): ${der.map(nm).join(", ")}.`);
+  if (rows.some(m => (m.f || []).includes("after_break"))) items.push(`Първи кръг след паузата - професионалистът очаква повече изненади.`);
+  if (fc.league === "__top10" && !rows.some(m => m.l === "BUL")) items.push(`<span class="muted">България: още няма източник на данни (нужен е ключ за API-Football).</span>`);
+  return items.length ? `<div class="panel round"><h3>Анализ на кръга: ${esc(name)}</h3><ul>${items.map(x => `<li>${x}</li>`).join("")}</ul></div>` : "";
 }
 
 function leagueBadges(code) {
@@ -386,7 +489,8 @@ function leagueBadges(code) {
 function renderForecasts() {
   let rows = UP.filter(m => dayKey(m.k) === fc.day);
   const all = rows;
-  if (fc.league) rows = rows.filter(m => m.l === fc.league);
+  if (fc.league === "__top10") rows = rows.filter(m => TOP10.includes(m.l));
+  else if (fc.league) rows = rows.filter(m => m.l === fc.league);
   if (fc.q) rows = rows.filter(m => (m.h + " " + m.a + " " + title(m.l)).toLowerCase().includes(fc.q));
   if (fc.tip) rows = rows.filter(m => m.t);
   const note = [];
@@ -399,8 +503,9 @@ function renderForecasts() {
   if (breaks.length) html += `<div class="note warn"><b>Първи кръг след паузата</b> в ${breaks.length} първенства. Професионалистът: след пауза има повече изненади. Данните от 12 400 такива мача досега не го потвърждават (фаворитите печелят колкото обещава коефициентът) - следи се тук.</div>`;
   if (derb.length) html += `<div class="note warn"><b>Дерби</b>: ${derb.map(m => esc(m.h + " – " + m.a)).join("; ")}. Професионалистът: избягвай - роботът не дава съвет.</div>`;
   if (!rows.length) { document.getElementById("fc-note").innerHTML = html; document.getElementById("fc-list").innerHTML = `<div class="empty">Няма мачове по този избор.</div>`; return; }
+  if (fc.league) html += roundPanel(rows);
   if (fc.sort === "sure") {
-    const sure = m => (m.m && m.m[m.t] != null) ? m.m[m.t] : m.r[m.t];
+    const sure = m => m.r[m.t];      // шансът на робота - не на коефициентите
     const t = rows.filter(m => m.t).sort((a, b) => sure(b) - sure(a));
     const rest = rows.filter(m => !m.t).sort((a, b) => a.k.localeCompare(b.k));
     document.getElementById("fc-note").innerHTML = html;
@@ -475,6 +580,9 @@ function renderResults() {
       <div class="s">${th} от ${tipRows.length} познати${tipRows.length ? ` · ± ${pct(Math.sqrt(th / tipRows.length * (1 - th / tipRows.length) / tipRows.length))}` : ""}</div></div>
     <div class="tile"><div class="k">При ${STAKE} € на съвет</div><div class="v ${mo && mo.sum >= 0 ? "pos" : "neg"}">${mo ? eur(mo.sum) : "–"}</div>
       <div class="s">${mo ? `доход ${sgn(mo.roi)} ± ${pct(mo.se, 1)} · ср. цена ${mo.odds.toFixed(2)}` : "няма цени"}</div></div>
+    ${["cards", "corners"].map(k => { const xs = rows.filter(r => r.x && r.x[k] && r.x[k][2] != null);
+      if (!xs.length) return ""; const h = xs.filter(r => r.x[k][0] === "O" ? r.x[k][2] > r.x[k][1] : r.x[k][2] < r.x[k][1]).length;
+      return `<div class="tile"><div class="k">${XK[k]} - роботът</div><div class="v">${pct(h / xs.length)}</div><div class="s">${h} от ${xs.length} (над/под по очаквания брой; умение още не е доказано)</div></div>`; }).join("")}
     ${["1x2", "dc", "ou"].map(k => { const a = hits(rows, "robot", k), b = hits(rows, "market", k);
       return a ? `<div class="tile"><div class="k">${MKT[k]} - роботът</div><div class="v">${pct(a.p)}</div>
         <div class="s">${a.h} от ${a.n}${b ? ` · пазарът ${pct(b.p)}` : ""}</div></div>` : ""; }).join("")}
@@ -510,8 +618,9 @@ function renderResults() {
       const mark = sel => sel ? (hit(sel, r.s) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) : "";
       const picks = Object.entries(r.pk || {}).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mark(sel)}</span>`).join("");
       const tip = r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mark(r.t)}</span>` : `<span class="pk muted">без съвет${r.w ? " - " + esc(r.w) : ""}</span>`;
+      const xs = Object.entries(r.x || {}).map(([k, v]) => `<span class="pk">${XK[k]}: ${v[0] === "O" ? "над" : "под"} ${v[1]} ${v[2] == null ? `<span class="muted">(чака)</span>` : ((v[0] === "O" ? v[2] > v[1] : v[2] < v[1]) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) + ` <span class="muted">${v[2]}</span>`}</span>`).join("");
       out += `<div class="res"><span class="muted num">${fmtTime(r.k)}</span><span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
-        <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}</div></div>`;
+        <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}${xs}</div></div>`;
     });
     list.innerHTML = out;
     more.hidden = rows.length <= rs.shown;
@@ -529,6 +638,7 @@ function leagueRow(c) {
   const tip = b[`tip:${RULE}:all`], r1 = b["robot:1x2:all"], m1 = b["market:1x2:all"];
   const live = REC.filter(r => r.l === c), lt = live.filter(r => r.t);
   return {c, goals: g ? g.avg : null, over: g ? g.over25 : null, btts: g ? g.btts : null,
+          cards: g && g.cards != null ? g.cards : null, corners: g && g.corners != null ? g.corners : null,
           toto: t ? t.diff : null, totoT: t ? t.t : null, totoOk: a.toto && a.toto.confirmed,
           tip: tip ? tip.hit : null, tipN: tip ? tip.n : 0, roi: tip ? tip.roi : null, roiSe: tip ? tip.roi_se : null,
           r1: r1 ? r1.hit : null, m1: m1 ? m1.hit : null,
@@ -562,10 +672,11 @@ function renderLeagues() {
     Засега данните не показват повече изненади след пауза. Мачовете след паузата се отбелязват и се мерят отделно на живо (таб Резултати → След паузата).</p></div>`;
   html += `<h2>Всички първенства</h2><p class="small muted" style="margin:0 0 8px">Роботът назад във времето (${esc((DATA.backtest || {}).start || "")} - днес, обучен само на миналото): главният съвет и 1/X/2 срещу пазара. Натисни ред за класиране, шанс за титла и изпадане.</p>
   <div class="tbl-wrap"><table id="lg-tbl"><thead><tr><th>Първенство</th>
-    <th data-sort="goals">Голове</th><th data-sort="over">Над 2.5</th><th data-sort="toto">Тото</th>
+    <th data-sort="goals">Голове</th><th data-sort="over">Над 2.5</th><th data-sort="cards">Жълти</th><th data-sort="corners">Корнери</th><th data-sort="toto">Тото</th>
     <th data-sort="tip">Съвети</th><th data-sort="roi">Доход</th><th data-sort="r1">1/X/2 робот</th><th data-sort="m1">1/X/2 пазар</th><th data-sort="live">На живо</th></tr></thead><tbody>
     ${rows.map(x => `<tr class="click ${lg.sel === x.c ? "sel" : ""}" data-c="${x.c}"><td class="l">${flag(x.c)} ${esc(title(x.c))}</td>
       <td class="num">${x.goals == null ? "–" : x.goals.toFixed(2)}</td><td class="num">${pct(x.over)}</td>
+      <td class="num">${x.cards == null ? "–" : x.cards.toFixed(1)}</td><td class="num">${x.corners == null ? "–" : x.corners.toFixed(1)}</td>
       <td class="num ${x.toto == null ? "" : x.toto < 0 ? "neg" : "pos"}">${sgn(x.toto)}${x.totoOk ? " ⚠" : ""}</td>
       <td class="num">${pct(x.tip)} <span class="muted">${x.tipN ? "(" + x.tipN + ")" : ""}</span></td>
       <td class="num ${x.roi == null ? "" : x.roi >= 0 ? "pos" : "neg"}">${sgn(x.roi)}</td>
@@ -609,7 +720,9 @@ function leagueDetail(c) {
     h += `<h3 style="margin-top:12px">Голове на мач по сезони</h3>` + ss.map(s =>
       `<div class="hbar"><span class="lbl small">${esc(s)}</span><span class="track"><span class="fill" style="display:block;width:${((gs[s] || 0) / mx * 100).toFixed(1)}%"></span></span><span class="num small">${gs[s] ? gs[s].toFixed(2) : "–"}</span></div>`).join("");
     const g = (a.goals || {}).current;
-    if (g) h += `<p class="small">Този сезон: ${g.n} мача, ${g.avg.toFixed(2)} гола, над 2.5 - ${pct(g.over25)}, и двата вкарват - ${pct(g.btts)}, 0:0 - ${pct(g.nil, 1)}; домакин ${pct(g.home)} · равен ${pct(g.draw)} · гост ${pct(g.away)}.</p>`;
+    if (g) h += `<p class="small">Този сезон: ${g.n} мача, ${g.avg.toFixed(2)} гола, над 2.5 - ${pct(g.over25)}, и двата вкарват - ${pct(g.btts)}, 0:0 - ${pct(g.nil, 1)}; домакин ${pct(g.home)} · равен ${pct(g.draw)} · гост ${pct(g.away)}${g.cards != null ? `; ${g.cards.toFixed(1)} жълти на мач (5+ в ${pct(g.cards_o45)})` : ""}${g.corners != null ? `, ${g.corners.toFixed(1)} корнера (10+ в ${pct(g.corners_o95)})` : ""}.</p>`;
+    const xb = ["cards", "corners"].map(k => [k, ((XBT[k] || {}).leagues || {})[c]]).filter(x => x[1] && x[1].all);
+    if (xb.length) h += `<p class="small"><b>Картони и корнери назад (роботът, над/под основната линия):</b> ${xb.map(([k, v]) => `${XK[k].toLowerCase()} - ${pct(v.all.hit)} познати на ${v.all.n} мача (грешка на броя ${v.all.mae.toFixed(2)} срещу ${v.all.mae_base.toFixed(2)} на средното на лигата)`).join("; ")}.</p>`;
   }
   const rowsM = ["1x2", "dc", "ou"].map(k => [k, b[`robot:${k}:all`], b[`market:${k}:all`]]).filter(x => x[1]);
   if (rowsM.length) {

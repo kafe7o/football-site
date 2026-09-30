@@ -115,7 +115,7 @@ def morning(conn, upcoming, now=None):
         yesterday = score(settled_between(conn, start_y, start_y + timedelta(days=1)))
         lines = []
         if today:
-            chance = lambda m: (m["probs"].get("market") or {}).get(m["tip"]) or m["probs"]["robot"][m["tip"]]
+            chance = lambda m: m["probs"]["robot"][m["tip"]]      # шансът на робота, не на коефициентите
             with_tip = sorted((m for m in today if m.get("tip")), key=lambda m: -chance(m))
             leagues = {m["league"] for m in today}
             lines.append(f"{len(today)} мача в {len(leagues)} първенства, съвет с цена от 1.40 нагоре: {len(with_tip)}.")

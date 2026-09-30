@@ -35,6 +35,20 @@ def short(p):
     return None if p is None else round(p, 3)
 
 
+def compact_analysis(a):
+    """Анализът на мача - по-кратко (формата и директните срещи като списъци)."""
+    if not a:
+        return None
+    form = lambda xs: [[x["r"], x["gf"], x["ga"], x["v"], x["o"]] for x in xs]
+    out = {"t": a.get("text") or [],
+           "f": {k: form(v) for k, v in a["form"].items()},
+           "h2h": [[x["d"], x["h"], x["a"], x["s"][0], x["s"][1]] for x in a.get("h2h") or []]}
+    for k in ("table", "season", "goals", "cards", "corners"):
+        if a.get(k):
+            out[k] = a[k]
+    return out
+
+
 def compact_forecast(m):
     """Един мач за таба с прогнозите - кратки ключове, за да е малък файлът."""
     out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
@@ -56,6 +70,9 @@ def compact_forecast(m):
     })
     if r.get("xg_home") is not None:
         out["xg"] = [round(r["xg_home"], 2), round(r["xg_away"], 2)]
+    an = compact_analysis(m.get("analysis"))
+    if an:
+        out["an"] = an
     return out
 
 
@@ -63,7 +80,9 @@ def record(conn, now):
     """Уредените прогнози от последните KEEP_DAYS дни - за таба с резултатите."""
     since = (now - timedelta(days=KEEP_DAYS)).isoformat()
     out = []
-    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners
+                               FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
+                               LEFT JOIN match_stats s ON s.match_id = t.match_id
                               WHERE t.kickoff >= ? AND t.hg IS NOT NULL ORDER BY t.kickoff""", (since,)):
         probs, picks = json.loads(t["probs_json"]), json.loads(t["picks_json"])
         avg = ((json.loads(t["prices_json"]) or {}).get("avg") or {}) if t["prices_json"] else {}
@@ -76,7 +95,10 @@ def record(conn, now):
                     "mo": {mkt: avg.get(sel) for mkt, sel in mp.items()},
                     "pp": {mkt: short(probs["robot"].get(sel)) for mkt, sel in rp.items()},
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
-                    "f": [k for k, v in flags.items() if v is True], "w": flags.get("why")})
+                    "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
+                    # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
+                    # football-data 1-3 дни след мача; дотогава None
+                    "x": {k: [v["pick"], v["line"], t[k]] for k, v in (picks.get("extras") or {}).items()}})
     return out
 
 
@@ -102,6 +124,15 @@ def backtest_summary():
         keep[code] = {k: v for k, v in item.items() if v}
     return {"rule": rule, "start": bt.get("start"), "select_end": bt.get("select_end"),
             "generated": bt.get("generated"), "leagues": keep}
+
+
+def extras_summary():
+    """Картони и корнери назад (data/extras_backtest.json) - има ли умение и колко познава по лиги."""
+    xb = read_json("extras_backtest.json", {})
+    keep = ("n", "hit", "brier", "brier_base", "mae", "mae_base")
+    return {kind: {"skill": d["skill"],
+                   "leagues": {c: {"all": {k: v["all"][k] for k in keep}} for c, v in d["leagues"].items() if v.get("all")}}
+            for kind, d in (xb.get("kinds") or {}).items()}
 
 
 def analysis_summary():
@@ -152,6 +183,7 @@ def build(conn, now=None, upcoming=None):
         "first_tip": db.get_meta(conn, "first_tip"),
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),
+        "extras_bt": extras_summary(),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),
         "url": config.SITE_URL,

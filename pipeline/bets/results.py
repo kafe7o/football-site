@@ -44,6 +44,9 @@ TOTALS_COLUMNS = {
     "MAX": ("Max>2.5", "Max<2.5"), "MAXC": ("MaxC>2.5", "MaxC<2.5"),
     "AVG": ("Avg>2.5", "Avg<2.5"), "AVGC": ("AvgC>2.5", "AvgC<2.5"),
 }
+# Статистиката на мача: колона в CSV-то -> колона в match_stats
+STATS_COLUMNS = {"HS": "hs", "AS": "as_", "HST": "hst", "AST": "ast", "HF": "hf", "AF": "af",
+                 "HC": "hc", "AC": "ac", "HY": "hy", "AY": "ay", "HR": "hr", "AR": "ar"}
 # Файловете на /new/ са с други имена на колоните
 NEW_COLUMNS = {"Home": "HomeTeam", "Away": "AwayTeam", "HG": "FTHG", "AG": "FTAG"}
 NEW_COUNTRY = {"Argentina": "ARG", "Austria": "AUT", "Brazil": "BRA", "China": "CHN",
@@ -126,7 +129,7 @@ def repair_names(conn):
         if good["fthg"] is None and row["fthg"] is not None:
             conn.execute("UPDATE matches SET fthg=?, ftag=?, hthg=?, htag=? WHERE id=?",
                          (row["fthg"], row["ftag"], row["hthg"], row["htag"], good["id"]))
-        for table in ("odds", "odds_totals"):
+        for table in ("odds", "odds_totals", "match_stats"):
             conn.execute(f"UPDATE OR IGNORE {table} SET match_id = ? WHERE match_id = ?", (good["id"], row["id"]))
             conn.execute(f"DELETE FROM {table} WHERE match_id = ?", (row["id"],))
         conn.execute("DELETE FROM matches WHERE id = ?", (row["id"],))
@@ -181,6 +184,13 @@ def store_rows(conn, df, season=None, league=None):
         match_id = db.upsert_match(conn, code, this_season, day.isoformat(), home, away,
                                    goals["FTHG"], goals["FTAG"], goals["HTHG"], goals["HTAG"], kickoff)
         stored += 1
+        stats = {col: int(v) for csv_col, col in STATS_COLUMNS.items()
+                 if (v := _num(row.get(csv_col))) is not None}
+        if stats:
+            db.upsert_stats(conn, match_id, stats)
+        referee = str(row.get("Referee", "") or "").strip()
+        if referee and referee.lower() != "nan":
+            conn.execute("UPDATE matches SET referee = ? WHERE id = ?", (referee, match_id))
         if goals["FTHG"] is not None and not KEEP_PLAYED_ODDS:
             continue
         for book, cols in ODDS_COLUMNS.items():

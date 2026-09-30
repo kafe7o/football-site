@@ -93,13 +93,22 @@ def upload(name, data, replace=True):
         log.info("%s вече е качен - не се презаписва", name)
         return old[0]
     blob = encrypt(data)
-    # първо се качва под временно име: ако качването падне, старият файл остава
+    # първо се качва под временно име: ако качването падне, старият файл остава.
+    # 3 опита - голямо качване се прекъсва понякога (SSL EOF, 2026-09-30 от лаптопа)
     tmp = name + ".new"
-    for a in rel.get("assets", []):
-        if a["name"] == tmp:
-            _call("DELETE", f"{API}/repos/{repo}/releases/assets/{a['id']}", token)
     up = rel["upload_url"].split("{")[0]
-    asset = _call("POST", f"{up}?name={tmp}", token, blob, "application/octet-stream", timeout=900)
+    asset = None
+    for attempt in range(1, 4):
+        for a in release(create=False).get("assets", []):
+            if a["name"] == tmp:
+                _call("DELETE", f"{API}/repos/{repo}/releases/assets/{a['id']}", token)
+        try:
+            asset = _call("POST", f"{up}?name={tmp}", token, blob, "application/octet-stream", timeout=900)
+            break
+        except (RuntimeError, OSError) as e:
+            log.warning("Качването на %s падна (опит %d от 3): %s", name, attempt, str(e)[:200])
+            if attempt == 3:
+                raise
     for a in old:
         _call("DELETE", f"{API}/repos/{repo}/releases/assets/{a['id']}", token)
     _call("PATCH", f"{API}/repos/{repo}/releases/assets/{asset['id']}", token, {"name": name})

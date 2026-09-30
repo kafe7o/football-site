@@ -142,7 +142,7 @@ def weekly(log, backtest=False, keep_local=False):
     същите като заключените в bets/robot.py, идва известие и собственикът решава.
     """
     from bets import archive
-    from research import league_analysis, robot_backtest
+    from research import extras_backtest, league_analysis, robot_backtest
     path = config.DB_PATH
     if not keep_local:
         archive.pull_db(path)      # без архива - нищо; грешката спира всичко и нищо не се качва
@@ -160,6 +160,8 @@ def weekly(log, backtest=False, keep_local=False):
     if backtest or datetime.now(timezone.utc).day <= 7:
         steps.append(("роботът назад", step(log, "4. Роботът назад (веднъж месечно)",
                                             lambda: out.update(bt=robot_backtest.main()))))
+        steps.append(("картоните и корнерите назад", step(log, "4а. Картони и корнери назад (веднъж месечно)",
+                                                          lambda: out.update(xb=extras_backtest.main()))))
     if steps[0][1] and not keep_local:
         steps.append(("качването на архива", step(log, "5. Качване на архива", archive.push_db, path)))
     failed = [name for name, good in steps if not good]
@@ -192,6 +194,15 @@ def weekly_notify(new, total, out, old_bt, failed):
         if a:
             lines.append(f"Роботът назад: {a['hit']:.1%} познати на {a['n']:,} съвета, доход {a['roi']:+.1%}".replace(",", " ")
                          + (f" (преди: {b['hit']:.1%}, {b['roi']:+.1%})." if b else "."))
+    xb = out.get("xb")
+    if xb:
+        parts = []
+        for kind, name in (("cards", "картони"), ("corners", "корнери")):
+            a = ((xb["kinds"].get(kind) or {}).get("leagues") or {}).get("ALL", {}).get("all")
+            if a:
+                parts.append(f"{name} {a['hit']:.1%} познати ({'с умение' if xb['kinds'][kind]['skill'] else 'умение не е доказано'})")
+        if parts:
+            lines.append("Над/под назад: " + ", ".join(parts) + ".")
     if failed:
         lines.append("ПРОБЛЕМ: " + ", ".join(failed) + " - виж Actions -> archive.")
     notify.send("Седмичният анализ" + (" - с проблем" if failed else ""), "\n".join(lines),

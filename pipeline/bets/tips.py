@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from . import db, derbies, model, odds_api, prices as P, results, robot, xg
+from . import analysis, db, derbies, model, odds_api, prices as P, results, robot, xg
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -66,7 +66,25 @@ def league_dates(conn, code):
            [r[0][:10] for r in conn.execute("SELECT kickoff FROM fixtures WHERE league = ?", (code,))]
 
 
-def forecast(conn, fx, fitted, dates_cache):
+def referee_of(conn, fx):
+    if not fx["match_id"]:
+        return None
+    row = conn.execute("SELECT referee FROM matches WHERE id = ?", (fx["match_id"],)).fetchone()
+    return row[0] if row else None
+
+
+def match_analysis(ctx, fx, fitted, flags):
+    """Подробният анализ (bets/analysis.py) и изборът за картони/корнери за записа."""
+    if ctx is None:
+        return None, {}
+    names = (fx["home_src"] or fx["home"], fx["away_src"] or fx["away"])
+    an = analysis.build(ctx, {**dict(fx), "flags": flags}, fitted, names, referee_of(ctx.conn, fx))
+    extras = {k: {x: an[k][x] for x in ("pick", "line", "over", "total")} for k in ("cards", "corners")
+              if an and an.get(k)}
+    return an, extras
+
+
+def forecast(conn, fx, fitted, dates_cache, ctx=None):
     """Прогнозата на робота за мача: вероятности, изборът по пазари, главният съвет, флагове."""
     pr = P.for_fixture(conn, fx)
     market = P.fair(pr)
@@ -85,9 +103,14 @@ def forecast(conn, fx, fitted, dates_cache):
     flags = {"derby": derbies.is_derby(fx["league"], fx["home"], fx["away"]),
              "after_break": LEAGUES[fx["league"]].has_history and robot.after_break(dates_cache[fx["league"]], day),
              "toto": fx["league"] in TOTO}
-    sel, odds, why = robot.tip(robot_p, market, pr, flags)
+    if basis == "model":
+        sel, odds, why = robot.tip(robot_p, market, pr, flags)
+    else:
+        # професионалистът: процентът да не идва от коефициентите - без модел съвет няма
+        sel, odds, why = None, None, "роботът няма собствена оценка за тези отбори (няма история) - показан е само пазарът"
     best = (pr or {}).get("best", {}).get(sel) if sel else None
-    return {"basis": basis,
+    an, extras = match_analysis(ctx, fx, fitted, flags)
+    return {"basis": basis, "analysis": an, "extras": extras,
             "probs": {"robot": {k: round(v, 4) for k, v in robot_p.items()},
                       "market": {k: round(v, 4) for k, v in (market or {}).items()}},
             "prices": pr,
@@ -115,10 +138,11 @@ def lock(conn, now=None):
         ((now + LOCK_MARGIN).isoformat(), end.isoformat())).fetchall()
     stamp = now.isoformat(timespec="seconds")
     models, dates, locked, skipped = {}, {}, 0, 0
+    ctx = analysis.Context(conn, now)
     for fx in rows:
         if fx["league"] not in models:
             models[fx["league"]] = fitted_model(conn, fx["league"], now)
-        f = forecast(conn, fx, models[fx["league"]], dates)
+        f = forecast(conn, fx, models[fx["league"]], dates, ctx)
         if f is None:
             skipped += 1
             continue
@@ -127,7 +151,8 @@ def lock(conn, now=None):
                    prices_json, picks_json, tip, tip_odds, tip_best, flags_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (fx["id"], fx["league"], fx["kickoff"], fx["home"], fx["away"], stamp, f["basis"],
-             json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None, json.dumps(f["picks"]),
+             json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None,
+             json.dumps({**f["picks"], "extras": f["extras"]}),
              f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"]})))
         locked += 1
     conn.commit()
@@ -142,21 +167,26 @@ def preview(conn, now=None, days=14):
     rows = conn.execute("SELECT * FROM fixtures WHERE kickoff > ? AND kickoff <= ? ORDER BY kickoff",
                         (now.isoformat(), (now + timedelta(days=days)).isoformat())).fetchall()
     models, dates, out = {}, {}, []
+    ctx = analysis.Context(conn, now)
     locked = {r["fixture_id"]: r for r in conn.execute("SELECT * FROM tips WHERE kickoff > ?", (now.isoformat(),))}
     for fx in rows:
+        if fx["league"] not in models:
+            models[fx["league"]] = fitted_model(conn, fx["league"], now)
         if fx["id"] in locked:
             t = locked[fx["id"]]
             flags = json.loads(t["flags_json"] or "{}")
+            why = flags.pop("why", None)
+            picks = json.loads(t["picks_json"])
+            an, _ = match_analysis(ctx, fx, models[fx["league"]], flags)
             out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
                         "away": fx["away"], "home_src": fx["home_src"], "away_src": fx["away_src"],
                         "locked": t["locked_at"], "basis": t["basis"], "probs": json.loads(t["probs_json"]),
                         "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
-                        "picks": json.loads(t["picks_json"]), "tip": t["tip"], "tip_odds": t["tip_odds"],
-                        "tip_best": t["tip_best"], "why": flags.pop("why", None), "flags": flags})
+                        "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
+                        "tip": t["tip"], "tip_odds": t["tip_odds"],
+                        "tip_best": t["tip_best"], "why": why, "flags": flags})
             continue
-        if fx["league"] not in models:
-            models[fx["league"]] = fitted_model(conn, fx["league"], now)
-        f = forecast(conn, fx, models[fx["league"]], dates)
+        f = forecast(conn, fx, models[fx["league"]], dates, ctx)
         if f is None:
             out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
                         "away": fx["away"], "home_src": fx["home_src"], "away_src": fx["away_src"], "locked": None,
@@ -181,11 +211,11 @@ def settle(conn, now=None):
             ((now - FINISHED_AFTER).isoformat(),)).fetchall():
         m = None
         if t["match_id"]:
-            m = conn.execute("SELECT fthg, ftag FROM matches WHERE id = ? AND fthg IS NOT NULL", (t["match_id"],)).fetchone()
+            m = conn.execute("SELECT id, fthg, ftag FROM matches WHERE id = ? AND fthg IS NOT NULL", (t["match_id"],)).fetchone()
         if m is None:
             day = datetime.fromisoformat(t["kickoff"]).astimezone(ZoneInfo("Europe/London")).date()
             m = conn.execute(
-                """SELECT fthg, ftag FROM matches WHERE league = ? AND home_team = ? AND away_team = ?
+                """SELECT id, fthg, ftag FROM matches WHERE league = ? AND home_team = ? AND away_team = ?
                      AND date BETWEEN ? AND ? AND fthg IS NOT NULL""",
                 (t["league"], t["home"], t["away"], (day - timedelta(days=1)).isoformat(),
                  (day + timedelta(days=1)).isoformat())).fetchone()
@@ -197,8 +227,8 @@ def settle(conn, now=None):
             corrected += 1
         elif t["hg"] is None:
             done += 1
-        conn.execute("UPDATE tips SET hg = ?, ag = ?, settled_at = ?, result_src = 'history' WHERE fixture_id = ?",
-                     (m["fthg"], m["ftag"], stamp, t["fixture_id"]))
+        conn.execute("UPDATE tips SET hg = ?, ag = ?, settled_at = ?, result_src = 'history', match_id = ? "
+                     "WHERE fixture_id = ?", (m["fthg"], m["ftag"], stamp, m["id"], t["fixture_id"]))
     conn.commit()
     # 2. от odds API - за мачовете от odds API, които историята още няма
     waiting = conn.execute(
