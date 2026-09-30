@@ -100,6 +100,20 @@ def goals(rows):
             "away": round(sum(r["res"] == "2" for r in rows) / n, 4)}
 
 
+def referees(conn, code, since):
+    """Съдиите в лигата от since нататък (поне 8 мача): жълти, червени, фаулове, голове на мач.
+    Имена има само за Англия и Шотландия."""
+    rows = conn.execute(
+        """SELECT m.referee, COUNT(*), AVG(s.hy + s.ay), AVG(s.hr + s.ar), AVG(s.hf + s.af), AVG(m.fthg + m.ftag),
+                  AVG(CASE WHEN s.hy + s.ay >= 5 THEN 1.0 ELSE 0.0 END), AVG(CASE WHEN m.fthg > m.ftag THEN 1.0 ELSE 0.0 END)
+             FROM matches m JOIN match_stats s ON s.match_id = m.id
+            WHERE m.league = ? AND m.referee IS NOT NULL AND m.date >= ? AND s.hy IS NOT NULL
+            GROUP BY m.referee HAVING COUNT(*) >= 8 ORDER BY AVG(s.hy + s.ay) DESC""", (code, since)).fetchall()
+    return [{"name": r[0], "n": r[1], "yellows": round(r[2], 2), "reds": round(r[3] or 0, 2),
+             "fouls": round(r[4], 1) if r[4] is not None else None, "goals": round(r[5], 2),
+             "o45": round(r[6], 3), "home_win": round(r[7], 3)} for r in rows]
+
+
 def break_flags(rows):
     dates = sorted({r["date"] for r in rows})
     flagged = {d for d in dates if robot.after_break(dates, d, max_gap=25)}
@@ -141,6 +155,7 @@ def main():
                             "other": calib([r for r in rows if not r["after_break"]]),
                             "goals_after": goals([r for r in rows if r["after_break"]])},
             "derbies": {"n": len(d_rows), "calib": calib(d_rows)},
+            "referees": referees(conn, code, f"{date.today().year - 2}-{date.today().isoformat()[5:]}"),
         }
         print(f"{code:<5} {len(rows):>6} мача  голове {out[code]['goals']['last3']['avg'] if out[code]['goals']['last3'] else '-'}  "
               f"тото {whole['diff'] if whole else '-'} t {whole['t'] if whole else '-'} {'ПОТВЪРДЕНО' if confirmed else ''}")

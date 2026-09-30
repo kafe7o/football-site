@@ -10,6 +10,14 @@
     22-те лиги на football-data);
   - моделът: очаквани голове, най-вероятните резултати, над/под 1.5/2.5/3.5, двата вкарват;
   - картони (със съдията - Англия и Шотландия) и корнери: очакван брой и над/под (bets/extras.py);
+  - последните 5 мача на всеки отбор: голове, картони, корнери, фаулове, удари - средно на мач;
+  - СЪДИЯТА на мача (професионалистът, 2026-09-30: „да разглежда съдиите в дадените мачове - в
+    последните им мачове колко картона са давали и подобни статистики“): последните му 10 мача
+    (в същата държава) с картоните, фауловете, корнерите и головете, средното му за 10 мача и за
+    2 години срещу средното на лигата. Защо има смисъл: колко жълти дава съдията е стабилно от
+    сезон на сезон - корелация 0.48 на 1342 двойки съдия-сезон (t = 20); за головете - 0.07.
+    Имена на съдии има само football-data за Англия и Шотландия (и за предстоящите мачове около
+    седмица напред);
   - текст на български от горните числа.
 """
 
@@ -20,6 +28,7 @@ from .leagues import LEAGUES
 
 FORM_N = 5
 H2H_N = 6
+REF_N = 10
 LETTER = {"W": "П", "D": "Р", "L": "З"}
 
 
@@ -109,6 +118,80 @@ def head_to_head(conn, league, home, away, before, n=H2H_N):
     return [{"d": r[0], "h": r[1], "a": r[2], "s": [r[3], r[4]]} for r in rows]
 
 
+def _country_leagues(league):
+    country = LEAGUES[league].country
+    return [c for c, lg in LEAGUES.items() if lg.country == country and lg.has_history]
+
+
+def team_recent(conn, league, team, before, n=FORM_N):
+    """Последните n мача на отбора (в лигата): средно на мач - вкарани/допуснати, неговите
+    картони и корнери и тези на противника, фаулове, удари, удари в целта."""
+    rows = conn.execute(
+        """SELECT m.home_team = ? AS home, m.fthg, m.ftag, s.hy, s.ay, s.hc, s.ac, s.hf, s.af, s.hs, s.as_, s.hst, s.ast, s.hr, s.ar
+             FROM matches m LEFT JOIN match_stats s ON s.match_id = m.id
+            WHERE m.league = ? AND (m.home_team = ? OR m.away_team = ?) AND m.fthg IS NOT NULL AND m.date < ?
+            ORDER BY m.date DESC LIMIT ?""", (team, league, team, team, before, n)).fetchall()
+    if not rows:
+        return None
+    own = lambda r, h, a: r[h] if r["home"] else r[a]
+    opp = lambda r, h, a: r[a] if r["home"] else r[h]
+
+    def avg(vals):
+        vals = [v for v in vals if v is not None]
+        return round(sum(vals) / len(vals), 2) if vals else None
+    return {"n": len(rows),
+            "gf": avg([own(r, "fthg", "ftag") for r in rows]), "ga": avg([opp(r, "fthg", "ftag") for r in rows]),
+            "cards": avg([own(r, "hy", "ay") for r in rows]), "cards_opp": avg([opp(r, "hy", "ay") for r in rows]),
+            "reds": avg([own(r, "hr", "ar") for r in rows]),
+            "corners": avg([own(r, "hc", "ac") for r in rows]), "corners_opp": avg([opp(r, "hc", "ac") for r in rows]),
+            "fouls": avg([own(r, "hf", "af") for r in rows]), "shots": avg([own(r, "hs", "as_") for r in rows]),
+            "sot": avg([own(r, "hst", "ast") for r in rows])}
+
+
+def referee_profile(conn, league, referee, before, n=REF_N):
+    """Съдията: последните n мача (в същата държава) и средното му срещу лигата. None без име."""
+    if not referee:
+        return None
+    codes = _country_leagues(league)
+    q = ",".join("?" * len(codes))
+    rows = conn.execute(
+        f"""SELECT m.date, m.league, m.home_team, m.away_team, m.fthg, m.ftag, s.hy, s.ay, s.hr, s.ar, s.hf, s.af, s.hc, s.ac
+              FROM matches m LEFT JOIN match_stats s ON s.match_id = m.id
+             WHERE m.referee = ? AND m.league IN ({q}) AND m.fthg IS NOT NULL AND m.date < ?
+             ORDER BY m.date DESC""", (referee, *codes, before)).fetchall()
+    if not rows:
+        return {"name": referee, "n": 0}
+
+    def summary(rs):
+        """Средно на мач - всеки показател само от мачовете, в които го има (football-data понякога
+        дава картоните без корнерите и фауловете - напр. Англия 5 през 2024/25 и 2025/26)."""
+        rs = [r for r in rs if r["hy"] is not None]
+        k = len(rs)
+        if not k:
+            return None
+
+        def avg(f, d=2, min_n=3):
+            vals = [v for v in (f(r) for r in rs) if v is not None]
+            return round(sum(vals) / len(vals), d) if len(vals) >= min(min_n, k) else None
+        both = lambda a, b: (lambda r: None if r[a] is None or r[b] is None else r[a] + r[b])
+        y = [r["hy"] + r["ay"] for r in rs]
+        return {"n": k, "yellows": round(sum(y) / k, 2), "reds": avg(both("hr", "ar")),
+                "fouls": avg(both("hf", "af"), 1), "corners": avg(both("hc", "ac"), 1),
+                "goals": round(sum(r["fthg"] + r["ftag"] for r in rs) / k, 2),
+                "home_yellows": round(sum(r["hy"] for r in rs) / k, 2), "away_yellows": round(sum(r["ay"] for r in rs) / k, 2),
+                "o45": round(sum(v >= 5 for v in y) / k, 3), "home_win": round(sum(r["fthg"] > r["ftag"] for r in rs) / k, 3)}
+    two_years = f"{int(before[:4]) - 2}{before[4:]}"
+    league_rows = conn.execute(
+        """SELECT m.fthg, m.ftag, s.hy, s.ay, s.hr, s.ar, s.hf, s.af, s.hc, s.ac FROM matches m JOIN match_stats s ON s.match_id = m.id
+            WHERE m.league = ? AND m.date >= ? AND m.date < ? AND s.hy IS NOT NULL""", (league, two_years, before)).fetchall()
+    return {"name": referee, "n": len(rows),
+            "last": summary(rows[:n]), "two_years": summary([r for r in rows if r["date"] >= two_years]),
+            "league": summary(league_rows),
+            "matches": [[r["date"], r["league"], r["home_team"], r["away_team"], r["fthg"], r["ftag"],
+                         r["hy"], r["ay"], (r["hr"] or 0) + (r["ar"] or 0) if r["hr"] is not None else None]
+                        for r in rows[:n]]}
+
+
 def season_stats(conn, league, season, team):
     """Средно на мач за сезона: голове вкарани/допуснати; картони, корнери, удари (ако ги има)."""
     r = conn.execute(
@@ -163,7 +246,11 @@ def build(ctx, fx, fitted, names, referee=None):
     out = {"form": {"h": team_matches(conn, league, home, before), "a": team_matches(conn, league, away, before),
                     "hh": team_matches(conn, league, home, before, venue="home"),
                     "aa": team_matches(conn, league, away, before, venue="away")},
+           "recent": {"h": team_recent(conn, league, home, before), "a": team_recent(conn, league, away, before)},
            "h2h": head_to_head(conn, league, home, away, before)}
+    ref = referee_profile(conn, league, referee, before)
+    if ref:
+        out["referee"] = ref
     if th and ta:
         out["table"] = {"h": {k: th[k] for k in ("pos", "pts", "p", "gf", "ga")},
                         "a": {k: ta[k] for k in ("pos", "pts", "p", "gf", "ga")}, "n": table["n"]}
@@ -205,6 +292,34 @@ def text(a, home, hn, an, flags):
                      f"({pct(best[2])}), после " + ", ".join(f"{s[0]}:{s[1]} ({pct(s[2])})" for s in g["scores"][1:]) + ".")
         lines.append(f"Голове: над 1.5 - {pct(g['o15'])}, над 2.5 - {pct(g['o25'])}, над 3.5 - {pct(g['o35'])}; "
                      f"двата вкарват - {pct(g['btts'])}.")
+    rc = a.get("recent") or {}
+    rh, ra = rc.get("h"), rc.get("a")
+    if rh and ra and rh.get("cards") is not None and ra.get("cards") is not None:
+        fouls = (f", {rh['fouls']:.0f} фаула" if rh.get("fouls") is not None else "",
+                 f", {ra['fouls']:.0f} фаула" if ra.get("fouls") is not None else "")
+        lines.append(f"Последните 5 мача, средно: {hn} - голове {rh['gf']:.1f}:{rh['ga']:.1f}, {rh['cards']:.1f} жълти "
+                     f"(противниците {rh['cards_opp']:.1f}), {rh['corners']:.1f} корнера{fouls[0]}; {an} - голове "
+                     f"{ra['gf']:.1f}:{ra['ga']:.1f}, {ra['cards']:.1f} жълти (противниците {ra['cards_opp']:.1f}), "
+                     f"{ra['corners']:.1f} корнера{fouls[1]}.")
+    ref = a.get("referee")
+    if ref and ref.get("last"):
+        L, lg = ref["last"], ref.get("league") or {}
+        comp = (f" (средното в лигата: {lg['yellows']:.1f} жълти"
+                + (f", {lg['corners']:.1f} корнера" if lg.get("corners") is not None else "")
+                + f", {lg['goals']:.1f} гола)" if lg else "")
+        extra = "".join(x for x in (f", {L['reds']:.2f} червени" if L.get("reds") is not None else "",
+                                     f", {L['fouls']:.0f} фаула" if L.get("fouls") is not None else "",
+                                     f", {L['corners']:.1f} корнера" if L.get("corners") is not None else ""))
+        lines.append(f"Съдия {ref['name']}: в последните си {L['n']} мача средно {L['yellows']:.1f} жълти "
+                     f"(домакините {L['home_yellows']:.1f}, гостите {L['away_yellows']:.1f}){extra}, {L['goals']:.1f} гола; "
+                     f"5+ жълти в {pct(L['o45'])} от мачовете{comp}.")
+        t = ref.get("two_years")
+        if t and t["n"] > L["n"]:
+            reds = f", {t['reds']:.2f} червени" if t.get("reds") is not None else ""
+            lines.append(f"Съдия {ref['name']} за 2 години ({t['n']} мача): {t['yellows']:.1f} жълти{reds}, "
+                         f"{t['goals']:.1f} гола на мач; домакинът печели в {pct(t['home_win'])}.")
+    elif ref:
+        lines.append(f"Съдия {ref['name']} - няма негови мачове в базата.")
     s = a.get("season") or {}
     sh, sa = s.get("h"), s.get("a")
     if sh and sa and sh.get("cards") is not None and sa.get("cards") is not None:

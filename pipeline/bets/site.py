@@ -43,7 +43,7 @@ def compact_analysis(a):
     out = {"t": a.get("text") or [],
            "f": {k: form(v) for k, v in a["form"].items()},
            "h2h": [[x["d"], x["h"], x["a"], x["s"][0], x["s"][1]] for x in a.get("h2h") or []]}
-    for k in ("table", "season", "goals", "cards", "corners"):
+    for k in ("table", "season", "goals", "cards", "corners", "recent", "referee"):
         if a.get(k):
             out[k] = a[k]
     return out
@@ -143,7 +143,7 @@ def analysis_summary():
     for code, d in (la.get("leagues") or {}).items():
         out[code] = {"goals": d["goals"], "gs": {s: (g or {}).get("avg") for s, g in d["goals_by_season"].items()},
                      "toto": d["toto"], "fav": d["favourites"], "ab": d["after_break"], "derbies": d["derbies"],
-                     "odds": d["odds"]}
+                     "odds": d["odds"], "refs": d.get("referees") or []}
     return {"generated": la.get("generated"), "band": la.get("band"), "leagues": out,
             "summary": la.get("summary"), "ranking": la.get("goals_ranking")}
 
