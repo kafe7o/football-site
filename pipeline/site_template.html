@@ -736,22 +736,20 @@ function initResults() {
   renderResults();
 }
 
-// Един мач в „Резултати“: до резултата ✓/✗ на прогнозата за залог (по-сигурната; без нея - рисковата;
-// по старите правила - съветът). При ✓ - само „Подробно“; при ✗ - отдолу прогнозите и 1/X/2 с ✓/✗, и
+// Един мач в „Резултати“: до резултата ✓/✗ на прогнозата 1/X/2 (собственикът, 2026-10-01: „хиксът зависи
+// от 1 X 2 прогнозата, за всички мачове“). При ✓ - само „Подробно“; при ✗ - отдолу 1/X/2 и другите прогнози, и
 // „Подробно“: шансовете за 1/X/2 и кое излезе, двоен шанс, над/под, очаквани голове, картони, корнери,
 // съдията, бонусът. Където източникът няма данни (картони, съдии) - пише го, вместо да мълчи.
 function resultRow(r) {
   const hm = sel => hitAny(sel, r.s, r.ct);
   const mk = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
-  const main = r.sf ? ["По-сигурна", r.sf] : r.rk ? ["Рискова", r.rk] : r.t ? ["Съвет", [r.t, null, r.to]] : null;
-  const mh = main ? hm(main[1][0]) : null;
-  const big = !main ? `<span class="big w" title="Без прогноза на робота">–</span>`
-    : mh == null ? `<span class="big w" title="Чака статистиката">…</span>`
-    : mh ? `<span class="big y" title="${esc(main[0])}: излезе">✓</span>` : `<span class="big n" title="${esc(main[0])}: не излезе">✗</span>`;
   const R = r.r || {}, O = r.o || {}, own = r.b === "model";
+  const p1 = (r.pk || {})["1x2"];
+  const mh = p1 ? hit(p1, r.s) : null;
+  const big = !p1 ? `<span class="big w" title="Без прогноза 1/X/2">–</span>`
+    : mh ? `<span class="big y" title="1/X/2: ${LABEL[p1]} - излезе">✓</span>` : `<span class="big n" title="1/X/2: ${LABEL[p1]} - не излезе">✗</span>`;
   const predLine = (name, x) => x ? `<span class="pk"><b>${name}: ${lab(x[0])}</b>${x[1] != null ? " " + pct(x[1]) : ""}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${mk(hm(x[0]))}</span>` : "";
   const old = !r.rk && r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
-  const p1 = (r.pk || {})["1x2"];
   const x12 = p1 ? `<span class="pk">1/X/2: <b>${LABEL[p1]}</b>${R[p1] != null ? " " + pct(R[p1]) : ""}${O[p1] ? ` @${O[p1].toFixed(2)}` : ""} ${mk(hit(p1, r.s))}</span>` : "";
   const preds = predLine("Рискова", r.rk) + predLine("По-сигурна", r.sf) + old;
   const res = r.s[0] > r.s[1] ? "1" : r.s[0] === r.s[1] ? "X" : "2";
@@ -783,9 +781,9 @@ function resultRow(r) {
     : `<span class="muted">${REF_LEAGUES.includes(r.l) ? "името още не е качено" : "няма данни - имената на съдиите идват само за Англия и Шотландия"}</span>`]);
   const bo = BONUS[r.i];
   if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${mk(hm(bo.rk[0]))}` : ""}`]);
-  if (r.w && !main) dd.push(["Защо без прогноза", esc(r.w)]);
+  if (r.w && !p1) dd.push(["Защо без прогноза", esc(r.w)]);
   const details = `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>`;
-  const lost = main && mh === false ? `<div class="lost">${preds}${x12}</div>` : "";
+  const lost = mh === false ? `<div class="lost">${x12}${preds}</div>` : "";
   return `<div class="rs2"><div class="top"><span class="muted num">${fmtTime(r.k)}</span>
       <span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
       <span class="sc">${r.s[0]}:${r.s[1]}</span>${big}</div>${lost}${details}</div>`;
