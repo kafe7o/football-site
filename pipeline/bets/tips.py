@@ -59,6 +59,53 @@ def fitted_model(conn, code, today=None):
     return fitted
 
 
+# Новаците (2026-10-01, research/pyramid_backtest.py): моделът на лигата няма оценка за отбор с под 10
+# претеглени мача в нея - новак в Бундеслигата с 5 мача. РЕЗЕРВЕН модел се учи на лигата И съседната
+# дивизия заедно (новакът носи силата си отдолу) и се ползва САМО когато основният няма оценка.
+# Назад (8 229 мача, топ 5 + E1, D2): покритие 89% -> 99%; при новаците (812 мача) Brier 0.6130 срещу
+# 0.6911 „без модел“; при останалите - основният, без промяна.
+PYRAMID = {"E0": ["E0", "E1"], "SP1": ["SP1", "SP2"], "I1": ["I1", "I2"], "D1": ["D1", "D2"], "F1": ["F1", "F2"],
+           "E1": ["E0", "E1", "E2"], "D2": ["D1", "D2", "D3"]}
+
+
+def fitted_pyramid(conn, code, today=None):
+    """Резервният модел (лигата + съседната дивизия) за днес - от кеша (ключ "<лига>|pyr") или сега."""
+    if code not in PYRAMID:
+        return None
+    today = (today or datetime.now(timezone.utc)).date().isoformat()
+    key = f"{code}|pyr"
+    row = conn.execute("SELECT day, params_json FROM model_cache WHERE league = ?", (key,)).fetchone()
+    if row and row["day"] == today:
+        return model.Poisson.from_export(json.loads(row["params_json"]))
+    since = results.history_window_start()
+    parts = [results.history(conn, c, blend_xg=c in xg.LEAGUES, since=since) for c in PYRAMID[code]]
+    hist = pd.concat([p for p in parts if not p.empty], ignore_index=True).sort_values("date").reset_index(drop=True)
+    if len(hist) < model.MIN_TRAIN_MATCHES:
+        return None
+    fitted = model.Poisson().fit(hist, as_of=pd.Timestamp(today))
+    conn.execute("INSERT INTO model_cache (league, day, params_json) VALUES (?, ?, ?) "
+                 "ON CONFLICT(league) DO UPDATE SET day = excluded.day, params_json = excluded.params_json",
+                 (key, today, json.dumps(fitted.export())))
+    conn.commit()
+    log.info("%s: резервният модел (%s) е обучен на %d мача", code, "+".join(PYRAMID[code]), len(hist))
+    return fitted
+
+
+def own_or_pyramid(conn, fx, fitted, now=None):
+    """(шансовете на робота, моделът) - основният модел, а ако няма оценка - резервният. (None, None)."""
+    if fitted is not None and fx["mapped"]:
+        p = fitted.markets(fx["home"], fx["away"])
+        if p:
+            return p, fitted
+    if fx["mapped"] and fx["league"] in PYRAMID:
+        pyr = fitted_pyramid(conn, fx["league"], now)
+        if pyr is not None:
+            p = pyr.markets(fx["home"], fx["away"])
+            if p:
+                return p, pyr
+    return None, None
+
+
 # ---------- прогноза за един мач ----------
 
 def league_dates(conn, code):
@@ -88,11 +135,10 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
     """Прогнозата на робота за мача: вероятности, изборът по пазари, главният съвет, флагове."""
     pr = P.for_fixture(conn, fx)
     market = P.fair(pr)
-    robot_p, basis = None, "market"
-    if fitted is not None and fx["mapped"]:
-        robot_p = fitted.markets(fx["home"], fx["away"])
-        if robot_p:
-            basis = "model"
+    robot_p, used = own_or_pyramid(conn, fx, fitted)
+    basis = "model" if robot_p else "market"
+    if used is not None:
+        fitted = used                      # анализът (очаквани голове) - от модела, дал прогнозата
     if robot_p is None:
         robot_p = market
     if robot_p is None:

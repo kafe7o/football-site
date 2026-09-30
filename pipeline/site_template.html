@@ -137,6 +137,18 @@ td .num, td.num { font-family: "IBM Plex Mono", monospace; }
 .res { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 8px; padding: 8px 12px; border-bottom: 1px solid var(--line);
   font-size: 13.5px; align-items: baseline; }
 .res:last-child { border-bottom: 0; }
+/* мач по мач с падащо меню */
+.rs2 { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.rs2:last-child { border-bottom: 0; }
+.rs2 .top { display: grid; grid-template-columns: 44px 1fr auto auto; gap: 4px 10px; align-items: baseline; font-size: 13.5px; }
+.rs2 .sc { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+.big { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; font-weight: 700; font-size: 14px; }
+.big.y { background: var(--ok-bg); } .big.n { background: var(--bad-bg); } .big.w { background: var(--chip); color: var(--muted); font-size: 12px; }
+.rs2 .lost { margin: 6px 0 0 54px; display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.rs2 details.an { margin: 6px 0 0 54px; }
+.dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 12.5px; margin-top: 6px; }
+.dl dt { color: var(--muted); } .dl dd { margin: 0; }
+@media (max-width: 560px) { .rs2 .lost, .rs2 details.an { margin-left: 0; } }
 .res .sc { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
 .res .rp { grid-column: 2 / 4; display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
 .y { color: var(--ok); font-weight: 600; } .n { color: var(--bad); font-weight: 600; }
@@ -696,6 +708,41 @@ function initResults() {
   renderResults();
 }
 
+// Един мач в „Резултати“: до резултата ✓/✗ на прогнозата за залог (по-сигурната; без нея - рисковата;
+// по старите правила - съветът). При ✓ - само падащото меню; при ✗ - отдолу какво е заложено и излязло,
+// и менюто. В менюто: рисковата и по-сигурната, пазарите, картоните и корнерите, съдията, бонусът.
+function resultRow(r, waiting) {
+  const hm = (sel) => waiting || !r.s ? null : hitAny(sel, r.s, r.ct);
+  const mk = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
+  const main = r.sf ? ["По-сигурна", r.sf] : r.rk ? ["Рискова", r.rk] : r.t ? ["Съвет", [r.t, null, r.to]] : null;
+  const mh = main ? hm(main[1][0]) : null;
+  const big = waiting ? `<span class="big w" title="Чака резултат">…</span>`
+    : !main ? `<span class="big w" title="Без прогноза на робота">–</span>`
+    : mh == null ? `<span class="big w" title="Чака статистиката">…</span>`
+    : mh ? `<span class="big y" title="${esc(main[0])}: излезе">✓</span>` : `<span class="big n" title="${esc(main[0])}: не излезе">✗</span>`;
+  const predLine = (name, x) => x ? `<span class="pk"><b>${name}: ${lab(x[0])}</b>${x[1] != null ? " " + pct(x[1]) : ""}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${waiting ? "" : mk(hm(x[0]))}</span>` : "";
+  const old = !r.rk && r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${waiting ? "" : mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
+  const preds = predLine("Рискова", r.rk) + predLine("По-сигурна", r.sf) + old;
+  // подробностите
+  const dd = [];
+  if (preds) dd.push(["Прогнози", preds]);
+  if (!waiting && r.b === "model" && r.pk) dd.push(["По пазари", Object.entries(r.pk).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mk(hit(sel, r.s))}</span>`).join(" ")]);
+  Object.entries(r.x || {}).forEach(([k, v]) => {
+    const h = v[2] == null ? null : (v[0] === "O" ? v[2] > v[1] : v[2] < v[1]);
+    dd.push([XK[k], `${v[3] != null ? `очаквани ${(+v[3]).toFixed(1)} · ` : ""}изборът ${v[0] === "O" ? "над" : "под"} ${v[1]} ${waiting ? "" : mk(h)}${v[2] != null ? ` · станаха <b>${v[2]}</b>` : ""}`]);
+  });
+  if (!waiting && !r.x && r.ct && r.ct[0] != null) dd.push(["Картони / корнери", `станаха ${r.ct[0]} жълти${r.ct[1] != null ? `, ${r.ct[1]} корнера` : ""}`]);
+  if (r.ref) dd.push(["Съдия", `${esc(r.ref)}${r.ya && r.ya[0] != null ? ` · в мача ${r.ya[0] + r.ya[1]} жълти (${r.ya[0]}-${r.ya[1]})` : ""}`]);
+  const bo = BONUS[r.i];
+  if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${waiting ? "" : mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${waiting ? "" : mk(hm(bo.rk[0]))}` : ""}`]);
+  if (r.w && !main) dd.push(["Защо без прогноза", esc(r.w)]);
+  const details = dd.length ? `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>` : "";
+  const lost = !waiting && main && mh === false ? `<div class="lost">${preds}</div>` : "";
+  return `<div class="rs2"><div class="top"><span class="muted num">${fmtTime(r.k)}</span>
+      <span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
+      <span class="sc">${waiting || !r.s ? "–:–" : r.s[0] + ":" + r.s[1]}</span>${big}</div>${lost}${details}</div>`;
+}
+
 function renderResults() {
   const since = new Date(Date.now() - (+rs.period) * 864e5).toISOString();
   let rows = REC.filter(r => r.k >= since);
@@ -711,7 +758,12 @@ function renderResults() {
       Докато се натрупа, в таба <b>Лиги</b> е проверката назад във времето (симулация на същия робот за 2023-2026).</div>`;
   }
   if (pend.length) html += `<div class="note">Чакат резултат: <b>${pend.length}</b> мача.</div>`;
-  if (!rows.length) { el.innerHTML = html + (REC.length ? `<div class="empty">Няма уредени мачове за този период.</div>` : ""); return; }
+  if (!rows.length) {
+    const pend = DATA.pending || [];
+    el.innerHTML = html + (REC.length ? `<div class="empty">Няма уредени мачове за този период.</div>` : "") +
+      (pend.length ? `<h2>Чакат резултат</h2><div class="tbl-wrap">${pend.map(p => resultRow(p, true)).join("")}</div>` : "");
+    return;
+  }
   const mo = money(rows.filter(r => !r.sf));
   const tipRows = rows.filter(r => r.t && !r.sf);
   const th = tipRows.filter(r => hit(r.t, r.s)).length;
@@ -762,23 +814,23 @@ function renderResults() {
   const list = document.getElementById("rs-list"), more = document.getElementById("rs-more");
   const draw = () => {
     let last = "", out = "";
-    rows.slice(0, rs.shown).forEach(r => {
-      const d = fmtDate(r.k);
-      if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
-      const mark = sel => sel ? (hit(sel, r.s) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) : "";
-      const picks = r.b === "model" ? Object.entries(r.pk || {}).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mark(sel)}</span>`).join("") : "";
-      const pm = (key, name) => { const x = r[key]; if (!x) return ""; const h = hitAny(x[0], r.s, r.ct);
-        return `<span class="pk"><b>${name}: ${lab(x[0])}</b> ${pct(x[1])}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${h == null ? `<span class="muted">(чака статистиката)</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`}</span>`; };
-      const tip = r.rk ? pm("rk", "Рискова") + pm("sf", "По-сигурна")
-        : r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mark(r.t)} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : `<span class="pk muted">без прогноза${r.w ? " - " + esc(r.w) : ""}</span>`;
-      const xs = Object.entries(r.x || {}).map(([k, v]) => `<span class="pk">${XK[k]}: ${v[0] === "O" ? "над" : "под"} ${v[1]} ${v[2] == null ? `<span class="muted">(чака)</span>` : ((v[0] === "O" ? v[2] > v[1] : v[2] < v[1]) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) + ` <span class="muted">${v[2]}</span>`}</span>`).join("");
-      const bo = BONUS[r.i];
-      const bon = bo ? `<span class="pk">Бонус: ${bo.ch.length ? `${bo.ch.length} промени` : "без промяна"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${hitAny(bo.sf[0], r.s, r.ct) == null ? "" : hitAny(bo.sf[0], r.s, r.ct) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`}` : ""}</span>` : "";
-      out += `<div class="res"><span class="muted num">${fmtTime(r.k)}</span><span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
-        <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}${xs}${bon}</div></div>`;
-    });
+    // чакащите резултат - най-горе, с прогнозите си
+    const pend = (DATA.pending || []).slice().sort((a, b) => b.k.localeCompare(a.k));
+    if (pend.length && rs.filter === "all") {
+      out += `<div class="day-h" style="padding:0 12px">Чакат резултат</div>` + pend.map(p => resultRow(p, true)).join("");
+    }
+    if (rows.length) {
+      rows.slice(0, rs.shown).forEach(r => {
+        const d = fmtDate(r.k);
+        if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
+        out += resultRow(r, false);
+      });
+      list.innerHTML = out;
+      more.hidden = rows.length <= rs.shown;
+      return;
+    }
     list.innerHTML = out;
-    more.hidden = rows.length <= rs.shown;
+    more.hidden = true;
   };
   more.onclick = () => { rs.shown += 60; draw(); };
   draw();

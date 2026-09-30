@@ -181,7 +181,8 @@ def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30
         now_prices = fresh.get(f["id"]) or P.for_fixture(conn, f)
         referee = tips.referee_of(conn, f)
         fitted = tips.fitted_model(conn, f["league"], now)
-        robot_now = fitted.markets(f["home"], f["away"]) if (fitted is not None and f["mapped"]) else None
+        robot_now, used = tips.own_or_pyramid(conn, f, fitted, now)
+        fitted = used or fitted
         changes, new, nums = compare(f, record, now_prices, referee, ctx.base(f["league"]), robot_now)
         an = analysis.build(ctx, {**dict(f), "flags": {}}, fitted, (f["home_src"] or f["home"], f["away_src"] or f["away"]), referee)
         out["matches"].append({

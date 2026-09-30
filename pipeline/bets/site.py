@@ -89,9 +89,11 @@ def record(conn, now):
     """Уредените прогнози от последните KEEP_DAYS дни - за таба с резултатите."""
     since = (now - timedelta(days=KEEP_DAYS)).isoformat()
     out = []
-    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners,
+                                     s.hy AS hy, s.ay AS ay, mm.referee AS referee
                                FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
                                LEFT JOIN match_stats s ON s.match_id = t.match_id
+                               LEFT JOIN matches mm ON mm.id = t.match_id
                               WHERE t.kickoff >= ? AND t.hg IS NOT NULL ORDER BY t.kickoff""", (since,)):
         probs, picks = json.loads(t["probs_json"]), json.loads(t["picks_json"])
         avg = ((json.loads(t["prices_json"]) or {}).get("avg") or {}) if t["prices_json"] else {}
@@ -110,17 +112,22 @@ def record(conn, now):
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
                     # football-data 1-3 дни след мача; дотогава None
-                    "x": {k: [v["pick"], v["line"], t[k]] for k, v in (picks.get("extras") or {}).items()}})
+                    "x": {k: [v["pick"], v["line"], t[k], v.get("total")] for k, v in (picks.get("extras") or {}).items()},
+                    "ref": t["referee"] or flags.get("referee"), "ya": [t["hy"], t["ay"]]})
     return out
 
 
 def pending(conn, now):
-    """Записани, но още неуредени (започнали или чакат резултат)."""
-    return [{"k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"], "a": t["away_src"] or t["away"],
-             "t": t["tip"], "to": t["tip_odds"]}
-            for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t
-                                       LEFT JOIN fixtures f ON f.id = t.fixture_id
-                                      WHERE t.hg IS NULL AND t.kickoff <= ? ORDER BY t.kickoff""", (now.isoformat(),))]
+    """Записани, но още неуредени (започнали или чакат резултат) - с прогнозите, за списъка."""
+    out = []
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t
+                               LEFT JOIN fixtures f ON f.id = t.fixture_id
+                              WHERE t.hg IS NULL AND t.kickoff <= ? ORDER BY t.kickoff""", (now.isoformat(),)):
+        picks, flags = json.loads(t["picks_json"]), json.loads(t["flags_json"] or "{}")
+        out.append({"i": t["fixture_id"], "k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"],
+                    "a": t["away_src"] or t["away"], "t": t["tip"], "to": t["tip_odds"],
+                    "rl": robot.rule_of(flags, t["locked_at"]), "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer"))})
+    return out
 
 
 def backtest_summary():
