@@ -114,9 +114,11 @@ def pct(x):
     return f"{x * 100:.0f}%"
 
 
-def compare(fx, record, now_prices, referee, base):
-    """Сравнение сутрин -> сега за един мач. Връща (промени като текст, новите прогнози, числата)."""
-    robot_p = json.loads(record["probs_json"])["robot"] if record else None
+def compare(fx, record, now_prices, referee, base, robot_now=None):
+    """Сравнение сутрин -> сега за един мач. Връща (промени като текст, новите прогнози, числата).
+    Без сутрешен запис (напр. мачът се е появил след 07:00) - прогнозите се смятат сега от модела
+    (robot_now) и промени няма: това е първият анализ."""
+    robot_p = (json.loads(record["probs_json"])["robot"] if record and record["basis"] == "model" else None) or robot_now
     morning_prices = json.loads(record["prices_json"]) if record and record["prices_json"] else None
     picks = json.loads(record["picks_json"]) if record else {}
     m_avg, n_avg = (morning_prices or {}).get("avg") or {}, (now_prices or {}).get("avg") or {}
@@ -134,7 +136,7 @@ def compare(fx, record, now_prices, referee, base):
             if abs(n_fair[s] - m_fair[s]) >= MOVE_PROB:
                 changes.append(f"букмейкърите за {s}: {pct(m_fair[s])} -> {pct(n_fair[s])}")
     new = {}
-    if robot_p and record["basis"] == "model":
+    if robot_p:
         new["risky"] = robot.risky_by_odds(robot_p, base, n_avg or m_avg)
         new["safer"] = robot.safe_by_odds(robot_p, n_avg or m_avg)
         for kind, name in (("risky", "рисковата"), ("safer", "по-сигурната")):
@@ -149,7 +151,7 @@ def compare(fx, record, now_prices, referee, base):
                 changes.append(f"{name} {robot.label(cur_sel)}: коеф. {old['odds']:.2f} -> {cur['odds']:.2f}")
     morning_ref = (json.loads(record["flags_json"] or "{}").get("referee") if record else None)
     if not record:
-        changes.append("няма сутрешен запис за мача - това е първият анализ на робота за него")
+        changes = []                      # първи анализ - няма с какво да се сравни
     elif not m_avg and n_avg:
         changes.append("сутринта още нямаше коефициенти от букмейкърите - сега прогнозите са по техните")
     if referee and referee != morning_ref:
@@ -157,7 +159,7 @@ def compare(fx, record, now_prices, referee, base):
     return changes, new, {"moves": moves, "fair_morning": m_fair, "fair_now": n_fair}
 
 
-def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30)):
+def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30), prefix=""):
     """Бонус анализът за мачовете от топ 5 с начален час start (UTC ISO). Пише bonus/<час>.json.
     send=False, write=False - проба (bonus.yml с test: true): без известие и без файл."""
     now = now or datetime.now(timezone.utc)
@@ -178,15 +180,19 @@ def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30
         record = conn.execute("SELECT * FROM tips WHERE fixture_id = ?", (f["id"],)).fetchone()
         now_prices = fresh.get(f["id"]) or P.for_fixture(conn, f)
         referee = tips.referee_of(conn, f)
-        changes, new, nums = compare(f, record, now_prices, referee, ctx.base(f["league"]))
         fitted = tips.fitted_model(conn, f["league"], now)
+        robot_now = fitted.markets(f["home"], f["away"]) if (fitted is not None and f["mapped"]) else None
+        changes, new, nums = compare(f, record, now_prices, referee, ctx.base(f["league"]), robot_now)
         an = analysis.build(ctx, {**dict(f), "flags": {}}, fitted, (f["home_src"] or f["home"], f["away_src"] or f["away"]), referee)
         out["matches"].append({
             "id": f["id"], "league": f["league"], "kickoff": f["kickoff"],
             "home": f["home_src"] or f["home"], "away": f["away_src"] or f["away"],
             "recorded": bool(record), "changes": changes, "new": new,
+            "status": "first" if not record else ("changed" if changes else "same"),
             "odds_now": (now_prices or {}).get("avg"), **nums,
-            "referee": (an or {}).get("referee"), "lines": (an or {}).get("text", [])[:3]})
+            "referee": (an or {}).get("referee"), "lines": (an or {}).get("text", [])[:3],
+            "xg": ((an or {}).get("goals") or {}).get("xg"),
+            "cards": {k: (an or {}).get("cards", {}).get(k) for k in ("total", "line")} if (an or {}).get("cards") else None})
     if write:
         folder = config.SITE_DIR / "bonus"
         folder.mkdir(exist_ok=True)
@@ -195,14 +201,14 @@ def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30
         for m in out["matches"]:
             log.info("ПРОБА %s - %s: промени %s", m["home"], m["away"], m["changes"] or "няма")
     if send:
-        notify_slot(out)
+        notify_slot(out, prefix)
     log.info("Бонус анализ %s: %d мача, с промени %d", start, len(out["matches"]),
              sum(1 for m in out["matches"] if m["changes"]))
     return out
 
 
-def notify_slot(out):
-    local = datetime.fromisoformat(out["slot"]).astimezone(SOFIA).strftime("%H:%M")
+def notify_slot(out, prefix=""):
+    local = datetime.fromisoformat(out["slot"]).astimezone(SOFIA).strftime("%d.%m %H:%M")
     changed = [m for m in out["matches"] if m["changes"]]
     lines = []
     for m in out["matches"]:
@@ -212,11 +218,27 @@ def notify_slot(out):
             x = (m.get("new") or {}).get(kind)
             if x:
                 cur.append(f"{name} {robot.label(x['sel'])} @{x['odds']:.2f} ({pct(x['p'])})")
-        if m["changes"]:
+        if m.get("status") == "first":
+            lines.append(f"ПЪРВИ АНАЛИЗ - {head}: " + (", ".join(cur) if cur else "роботът няма собствена оценка за тези отбори"))
+        elif m["changes"]:
             lines.append(f"ПРОМЯНА - {head}: " + "; ".join(m["changes"]) + (". Сега: " + ", ".join(cur) if cur else "."))
         else:
             lines.append(f"Без промяна - {head}" + (": " + ", ".join(cur) if cur else ""))
-    title = f"Бонус анализ за {local}: " + (f"промени в {len(changed)} от {len(out['matches'])}" if changed else "без промени")
+        # кратък анализ: очаквани голове, картони, съдията
+        extra = []
+        if m.get("xg"):
+            extra.append(f"очаквани голове {m['xg'][0]:.1f}:{m['xg'][1]:.1f}")
+        if m.get("cards") and m["cards"].get("total"):
+            extra.append(f"очаквани жълти {m['cards']['total']:.1f}")
+        ref = m.get("referee") or {}
+        if ref.get("last"):
+            extra.append(f"съдия {ref['name']} - {ref['last']['yellows']:.1f} жълти/мач")
+        if extra:
+            lines.append("   " + ", ".join(extra))
+    first = [m for m in out["matches"] if m.get("status") == "first"]
+    state = (f"промени в {len(changed)} от {len(out['matches'])}" if changed
+             else f"първи анализ ({len(first)} мача)" if len(first) == len(out["matches"]) else "без промени")
+    title = prefix + f"Бонус анализ за {local}: " + state
     return notify.send(title, "\n".join(lines), tags="stopwatch", priority=4 if changed else 3)
 
 

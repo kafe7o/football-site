@@ -231,6 +231,7 @@ def main():
     parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus"])
     parser.add_argument("--slot", default=None, help="за bonus: началният час на мачовете (UTC ISO)")
     parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
+    parser.add_argument("--demo", action="store_true", help="за bonus: показ - без чакане и без запис, известие с „ПРОБА“")
     parser.add_argument("--target", default=None, help="за seed: къде да се запише базата на облака")
     parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
     parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")
@@ -248,13 +249,14 @@ def main():
         from bets import bonus
         if not args.slot:
             raise SystemExit("--slot е задължителен")
-        wait = 0 if args.test else bonus.wait_seconds(args.slot)
+        wait = 0 if (args.test or args.demo) else bonus.wait_seconds(args.slot)
         log.info("Бонус анализ за %s: чакане %d мин. до час преди мача", args.slot, wait // 60)
         time.sleep(wait)
         conn = db.init()
         from datetime import timedelta as _td
-        out = bonus.run(conn, args.slot, send=not args.test, write=not args.test,
-                        horizon=_td(days=14) if args.test else _td(hours=30))
+        out = bonus.run(conn, args.slot, send=not args.test, write=not (args.test or args.demo),
+                        horizon=_td(days=14) if (args.test or args.demo) else _td(hours=30),
+                        prefix="ПРОБА - " if args.demo else "")
         conn.close()
         return 0 if out is not None else 1
     if args.command == "seed":
