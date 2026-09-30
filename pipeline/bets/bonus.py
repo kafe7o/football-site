@@ -148,7 +148,9 @@ def compare(fx, record, now_prices, referee, base):
                 # само букмейкър срещу букмейкър: честният коефициент на робота от сутринта не е „движение“
                 changes.append(f"{name} {robot.label(cur_sel)}: коеф. {old['odds']:.2f} -> {cur['odds']:.2f}")
     morning_ref = (json.loads(record["flags_json"] or "{}").get("referee") if record else None)
-    if not m_avg and n_avg:
+    if not record:
+        changes.append("няма сутрешен запис за мача - това е първият анализ на робота за него")
+    elif not m_avg and n_avg:
         changes.append("сутринта още нямаше коефициенти от букмейкърите - сега прогнозите са по техните")
     if referee and referee != morning_ref:
         changes.append(f"съдия: {referee}")
