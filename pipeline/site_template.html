@@ -420,13 +420,14 @@ function matchCard(m) {
           : `<span class="pk" title="Очакван брой по робота. Проверката назад не показа, че процентът му е по-точен от средното на лигата - затова процент няма.">${XK[k]}: очаквани <b class="num">${x.total.toFixed(1)}</b>${x.base != null ? ` <span class="muted">· в лигата над ${x.line}: ${pct(x.base)}</span>` : ""}</span>`; }).join("") +
       (an.referee && an.referee.last ? `<span class="pk" title="Съдията в последните си ${an.referee.last.n} мача">Съдия: <b>${esc(an.referee.name)}</b> <span class="num">${an.referee.last.yellows.toFixed(1)} жълти/мач</span>${an.referee.league ? ` <span class="muted">(лигата ${an.referee.league.yellows.toFixed(1)})</span>` : ""}</span>` : "");
     let tip;
-    if (m.rk && m.sf) {
-      const odd = x => x[2] ? ` · коеф. ${x[2].toFixed(2)}` : "";
+    if (m.rk || m.sf) {
+      const odd = x => x[2] ? ` · коеф. ${x[2].toFixed(2)}${x[4] === "robot" ? " (по робота - букмейкърите още нямат)" : ""}` : "";
       tip = `<div class="preds">
-        <div class="pred risky"><span class="pl">Рискова прогноза</span><b class="pv">${lab(m.rk[0])}</b>
-          <span class="pm">шанс ${pct(m.rk[1])} по робота${m.rk[3] ? ` · обикновено в лигата ${pct(m.rk[3])}` : ""}${odd(m.rk)}</span></div>
-        <div class="pred safe"><span class="pl">По-сигурна прогноза</span><b class="pv">${lab(m.sf[0])}</b>
-          <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div></div>
+        ${m.rk ? `<div class="pred risky"><span class="pl">Рискова прогноза (над 1.80)</span><b class="pv">${lab(m.rk[0])}</b>
+          <span class="pm">шанс ${pct(m.rk[1])} по робота${m.rk[3] ? ` · обикновено в лигата ${pct(m.rk[3])}` : ""}${odd(m.rk)}</span></div>` : ""}
+        ${m.sf ? `<div class="pred safe"><span class="pl">По-сигурна прогноза (1.40-1.80)</span><b class="pv">${lab(m.sf[0])}</b>
+          <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div>`
+          : `<div class="pred safe"><span class="pl">По-сигурна прогноза (1.40-1.80)</span><span class="pm">няма събитие с коефициент 1.40-1.80</span></div>`}</div>
         ${(m.f || []).includes("derby") ? `<div class="pred-note"><b>Дерби</b> - професионалистът: избягвай за залог.</div>` : ""}`;
     } else if (m.t && m.rl === "market_likely") {
       // записан сутринта преди смяната на правилото (30.09) - по букмейкъра; записът не се пипа
@@ -560,7 +561,7 @@ function roundPanel(rows) {
   const bySign = s => pr.filter(m => m.rk[0] === s);
   if (pr.length) items.push(`Рисковите прогнози: 1 - ${bySign("1").length}, X - ${bySign("X").length}, 2 - ${bySign("2").length}.` +
     (bySign("X").length ? ` X: ${bySign("X").map(m => `${nm(m)} (${pct(m.rk[1])})`).join(", ")}.` : ""));
-  const sure = pr.slice().sort((a, b) => b.sf[1] - a.sf[1]).slice(0, 5);
+  const sure = rows.filter(m => m.sf).sort((a, b) => b.sf[1] - a.sf[1]).slice(0, 5);
   if (sure.length) items.push(`Най-сигурните по-сигурни прогнози: ${sure.map(m => `${nm(m)} - <b>${lab(m.sf[0])}</b> ${pct(m.sf[1])}`).join("; ")}.`);
   const top1 = p => ["1", "X", "2"].reduce((a, b) => (p[b] || 0) > (p[a] || 0) ? b : a, "1");
   const dis = rows.filter(m => m.b === "model" && m.m && m.m["1"] != null && top1(m.m) !== m.pk["1x2"]);
@@ -597,7 +598,7 @@ function renderForecasts() {
   const breaks = [...new Set(all.filter(m => (m.f || []).includes("after_break")).map(m => m.l))];
   const derb = all.filter(m => (m.f || []).includes("derby"));
   let html = `<div class="note">${note.join("")}${locked < all.length ? `<br><span class="muted small">Прогнозата се записва сутринта в деня на мача (след 07:00) и после не се променя. Дотогава е предварителна.</span>` : ""}
-    <br><span class="muted small">За всеки мач - две прогнози, <b>без коефициенти и без фаворити</b>: <b>рискова</b> - знакът 1, X или 2, който в този мач е най-вероятен спрямо обичайното за лигата; <b>по-сигурна</b> - най-вероятното събитие (двоен шанс, голове, двата вкарват, картони, корнери). X излиза средно в 26% от мачовете (в Серия Б - 32%, във Висшата лига - 23%).</span></div>`;
+    <br><span class="muted small">За всеки мач - две прогнози по професионалиста; <b>шансът е на робота</b>, коефициентът само казва сигурно ли е или рисково: <b>по-сигурна</b> - най-вероятното събитие с коефициент <b>1.40-1.80</b> (назад: познава 59%); <b>рискова</b> - знакът 1, X или 2 с коефициент <b>над 1.80</b>, който в този мач е най-вероятен спрямо обичайното за лигата (назад: 32% при ср. коеф. 3.26). X излиза средно в 26% от мачовете.</span></div>`;
   if (breaks.length) html += `<div class="note warn"><b>Първи кръг след паузата</b> в ${breaks.length} първенства. Професионалистът: след пауза има повече изненади. Данните от 12 400 такива мача досега не го потвърждават (фаворитите печелят колкото обещава коефициентът) - следи се тук.</div>`;
   if (derb.length) html += `<div class="note warn"><b>Дерби</b>: ${derb.map(m => esc(m.h + " – " + m.a)).join("; ")}. Професионалистът: избягвай - роботът не дава съвет.</div>`;
   if (!rows.length) { document.getElementById("fc-note").innerHTML = html; document.getElementById("fc-list").innerHTML = `<div class="empty">Няма мачове по този избор.</div>`; return; }

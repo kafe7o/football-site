@@ -153,6 +153,50 @@ def base_rates(conn, league, years=4):
     return {"1": row[1], "X": row[2], "2": row[3]}
 
 
+# ---------- по коефициент: сигурна 1.40-1.80, рискова над 1.80 (от 2026-10-01) ----------
+# Професионалистът (30.09 вечерта): „рисковата не може да е 1.48“; „сигурната - между 1.40 и 1.80;
+# всичко над 1.80 е рисково, до 1.80 всичко е сигурно“; „за мен рискова е над 1.80“. Кое събитие -
+# пак по шанса на робота; коефициентът само казва сигурно ли е или рисково. Без коефициент от
+# букмейкър (мачът е след повече от 3 дни или лигата няма цени) - честният коефициент на робота 1/шанс.
+# research/ranges_backtest.py (35 000 мача, 2023-2026): сигурната 1.40-1.80 - прогноза в 89% от
+# мачовете, 59.2% познати при ср. коеф. 1.60; рисковата над 1.80 - 32.0% при ср. коеф. 3.26 (X в 45%).
+# Целта „70% познати“ в този диапазон не се достига: букмейкърът дава ~62% при 1.60, а роботът не го бие.
+RULE_RANGES = "ranges"
+SAFE_RANGE = (1.40, 1.80)
+RISKY_ABOVE = 1.80
+SAFE_CANDIDATES = ["1", "2", "1X", "X2", "12", "O", "U"]
+
+
+def price(sel, p, avg):
+    """(коефициент, откъде): средният на букмейкърите или честният на робота 1/шанс."""
+    if (avg or {}).get(sel):
+        return round(avg[sel], 2), "book"
+    return (round(1 / p[sel], 2), "robot") if p.get(sel) else (None, None)
+
+
+def risky_by_odds(p, base, avg):
+    """Рисковата: знакът 1, X или 2 с коефициент над 1.80, най-много над обичайното за лигата."""
+    cands = [s for s in ("1", "X", "2") if (price(s, p, avg)[0] or 0) > RISKY_ABOVE]
+    if not cands:
+        return None
+    s = max(cands, key=lambda k: p[k] / base[k])
+    o, src = price(s, p, avg)
+    return {"sel": s, "p": round(p[s], 4), "odds": o, "src": src, "base": round(base[s], 4)}
+
+
+def safe_by_odds(p, avg):
+    """Сигурната: най-вероятното по робота събитие с коефициент 1.40-1.80."""
+    cands = []
+    for s in SAFE_CANDIDATES:
+        o, src = price(s, p, avg)
+        if o and SAFE_RANGE[0] <= o <= SAFE_RANGE[1]:
+            cands.append((s, p[s], o, src))
+    if not cands:
+        return None
+    s, prob, o, src = max(cands, key=lambda c: c[1])
+    return {"sel": s, "p": round(prob, 4), "odds": o, "src": src}
+
+
 def result_of(hg, ag):
     return "1" if hg > ag else ("X" if hg == ag else "2")
 

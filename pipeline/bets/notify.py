@@ -140,17 +140,19 @@ def morning(conn, upcoming, now=None):
         yesterday = score(settled_between(conn, start_y, start_y + timedelta(days=1)))
         lines = []
         if today:
-            with_pred = [m for m in today if m.get("risky")]
+            with_pred = [m for m in today if m.get("risky") or m.get("safer")]
             leagues = {m["league"] for m in today}
-            xs = sum(1 for m in with_pred if m["risky"]["sel"] == "X")
+            xs = sum(1 for m in with_pred if (m.get("risky") or {}).get("sel") == "X")
             lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} "
-                         f"(рискова X в {xs}). Без коефициенти и без фаворити.")
+                         f"(рискова X в {xs}). Сигурна - коеф. 1.40-1.80, рискова - над 1.80; шансът е на робота.")
             top10 = ("E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1")
             order = sorted(with_pred, key=lambda m: (m["league"] not in top10, m["kickoff"]))
             for m in order[:TOP]:
-                r, sf = m["risky"], m["safer"]
+                r, sf = m["risky"], m.get("safer")
+                odd = lambda x: f" @{x['odds']:.2f}" if x.get("odds") else ""
                 lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
-                             f"рискова {robot.label(r['sel'])} ({r['p']:.0%}), по-сигурна {robot.label(sf['sel'])} ({sf['p']:.0%})")
+                             f"рискова {robot.label(r['sel'])}{odd(r)} ({r['p']:.0%})"
+                             + (f", по-сигурна {robot.label(sf['sel'])}{odd(sf)} ({sf['p']:.0%})" if sf else ", по-сигурна няма (нищо в 1.40-1.80)"))
             if len(order) > TOP:
                 lines.append(f"... и още {len(order) - TOP} - на сайта.")
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]

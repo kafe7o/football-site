@@ -53,7 +53,7 @@ def _pred(x):
     """Рисковата/по-сигурната прогноза: [избор, шанс по робота, коефициент или None, обичайното за лигата]."""
     if not x:
         return None
-    return [x["sel"], x["p"], x.get("odds"), x.get("base")]
+    return [x["sel"], x["p"], x.get("odds"), x.get("base"), x.get("src")]
 
 
 def compact_forecast(m):

@@ -108,18 +108,19 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
     avg = (pr or {}).get("avg") or {}
     if basis == "model":
         # професионалистът (30.09 вечерта): без коефициенти и без фаворити; рискова (знак) и по-сигурна
+        # професионалистът (30.09 късно): сигурна 1.40-1.80, рискова над 1.80 - по шанса на робота
         base = ctx.base(fx["league"]) if ctx else robot.base_rates(conn, fx["league"])
-        sign = robot.risky_sign(robot_p, base)
-        s_sel, s_p = robot.safer_pick(robot_p, sign, extras)
-        risky = {"sel": sign, "p": round(robot_p[sign], 4), "odds": avg.get(sign), "base": round(base[sign], 4)}
-        safer = {"sel": s_sel, "p": round(s_p, 4), "odds": avg.get(s_sel)}
-        sel, odds = s_sel, avg.get(s_sel)
-        why = "дерби - професионалистът: избягвай за залог" if flags.get("derby") else None
+        risky = robot.risky_by_odds(robot_p, base, avg)
+        safer = robot.safe_by_odds(robot_p, avg)
+        sel = safer["sel"] if safer else None
+        odds = safer["odds"] if safer and safer["src"] == "book" else None
+        why = ("дерби - професионалистът: избягвай за залог" if flags.get("derby")
+               else None if safer else "няма събитие с коефициент 1.40-1.80")
     else:
         # професионалистът: процентът да не идва от коефициентите - без модел прогноза на робота няма
         sel, odds, why = None, None, "роботът няма собствена оценка за тези отбори (няма история) - показан е само пазарът"
     best = (pr or {}).get("best", {}).get(sel) if sel else None
-    return {"basis": basis, "analysis": an, "extras": extras, "rule": robot.RULE_SIGNS,
+    return {"basis": basis, "analysis": an, "extras": extras, "rule": robot.RULE_RANGES,
             "risky": risky, "safer": safer,
             "probs": {"robot": {k: round(v, 4) for k, v in robot_p.items()},
                       "market": {k: round(v, 4) for k, v in (market or {}).items()}},
@@ -163,7 +164,7 @@ def lock(conn, now=None):
             (fx["id"], fx["league"], fx["kickoff"], fx["home"], fx["away"], stamp, f["basis"],
              json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None,
              json.dumps({**f["picks"], "extras": f["extras"], "risky": f["risky"], "safer": f["safer"]}),
-             f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_SIGNS})))
+             f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_RANGES})))
         locked += 1
     conn.commit()
     log.info("Записани прогнози: %d (без цени и без модел: %d), денят свършва %s", locked, skipped,
