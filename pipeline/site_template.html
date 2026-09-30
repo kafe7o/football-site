@@ -575,18 +575,18 @@ function toRecord(m, x) {
           w: m.w, x: ex, ref: an.referee ? an.referee.name : null, ya: [null, null], fast: x.at};
 }
 async function fetchResults() {
-  const due = PEND.filter(m => Date.now() - new Date(m.k).getTime() > 95 * 60e3);
+  // само мачовете с бърз източник (odds API), започнали преди повече от 95 мин.
+  const due = PEND.filter(m => L[m.l] && L[m.l].fast && Date.now() - new Date(m.k).getTime() > 95 * 60e3);
   if (!due.length) return;
   let moved = 0;
-  for (const day of [...new Set(due.map(m => m.k.slice(0, 10)))]) {
-    try {
-      const r = await fetch(`results/${day}.json?t=${Date.now()}`, {cache: "no-store"});
-      if (!r.ok) continue;
+  try {
+    const r = await fetch(`results/live.json?t=${Date.now()}`, {cache: "no-store"});
+    if (r.ok) {
       const d = await r.json();
       due.forEach(m => { const x = d[m.i]; if (!x || !PEND.includes(m)) return;
         PEND.splice(PEND.indexOf(m), 1); REC.push(toRecord(m, x)); moved++; });
-    } catch (e) { /* файлът още го няма - следващата минута */ }
-  }
+    }
+  } catch (e) { /* няма връзка - следващата минута */ }
   if (moved) { REC.sort((a, b) => b.k.localeCompare(a.k)); renderResults(); }
 }
 

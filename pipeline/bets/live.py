@@ -10,8 +10,8 @@
   - тогава резултатът (/scores, 2 кредита на лига) - най-много веднъж на минута за лига;
   - и без изчезване: от 108-ата минута след началото (45 + почивка + 45 + добавено) на всеки 3 минути до
     150-ата, после на 10, после на 30 - ако списъкът не пусне мача навреме.
-Намереният резултат отива в results/<ден UTC>.json ({id на мача: {"s": [голове], "at": кога}}) и се
-качва веднага. Сайтът дотегля файла всяка минута и мести мача сам; часовото пускане урежда прогнозата
+Намереният резултат отива в results/live.json ({id на мача: {"s": [голове], "at": кога, "k": началото}},
+последните 4 дни; файлът винаги съществува - страницата не получава „няма такъв файл“) и се качва веднага. Сайтът дотегля файла всяка минута и мести мача сам; часовото пускане урежда прогнозата
 от същия файл (tips.settle) - без втори кредит. Официалният резултат (football-data) после само сверява.
 
 Кредити: под 3000 - само при изчезване от списъка; под 300 - нищо (остава часовото уреждане).
@@ -42,26 +42,27 @@ def results_dir():
     return config.SITE_DIR / "results"
 
 
-def load_results(days=4):
-    """Всички бързи резултати от последните дни: {id: {"s": [h, a], "at": ...}}."""
-    out = {}
-    folder = results_dir()
-    if not folder.exists():
-        return out
-    cut = (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
-    for path in sorted(folder.glob("*.json")):
-        if path.stem >= cut:
-            out.update(json.loads(path.read_text(encoding="utf-8")))
-    return out
+KEEP_DAYS = 4
+
+
+def results_file():
+    return results_dir() / "live.json"
+
+
+def load_results():
+    """Бързите резултати от последните дни: {id: {"s": [h, a], "at": ..., "k": началото}}."""
+    path = results_file()
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
 def save_result(fixture_id, kickoff, hg, ag, now, updated=None):
-    folder = results_dir()
-    folder.mkdir(exist_ok=True)
-    path = folder / f"{kickoff[:10]}.json"
-    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
-    data[fixture_id] = {"s": [hg, ag], "at": now.isoformat(timespec="seconds"), "upd": updated}   # upd - последната промяна по odds API
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=0), encoding="utf-8")
+    data = load_results()
+    cut = (now - timedelta(days=KEEP_DAYS)).isoformat()
+    data = {k: v for k, v in data.items() if v.get("k", "") >= cut}
+    # upd - последната промяна по odds API (около последния съдийски сигнал)
+    data[fixture_id] = {"s": [hg, ag], "at": now.isoformat(timespec="seconds"), "upd": updated, "k": kickoff}
+    results_dir().mkdir(exist_ok=True)
+    results_file().write_text(json.dumps(data, ensure_ascii=False, indent=0), encoding="utf-8")
 
 
 def tracked(now, known):
@@ -167,7 +168,7 @@ def watch(seconds, publish=True):
 
 def settle_from_files(conn, now):
     """Урежда записаните прогнози от бързите резултати (без кредити). Връща колко."""
-    known = load_results(days=7)
+    known = load_results()
     if not known:
         return 0
     stamp = now.isoformat(timespec="seconds")

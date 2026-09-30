@@ -236,7 +236,8 @@ def build(conn, now=None, upcoming=None):
         "generated": now.isoformat(timespec="seconds"),
         "credits": db.get_meta(conn, "credits_remaining"),
         "leagues": {c: {"c": lg.country, "n": lg.name, "tier": lg.tier, "src": lg.source,
-                        "rr": season.meetings(c) if lg.has_history else 0, "split": lg.split}
+                        "rr": season.meetings(c) if lg.has_history else 0, "split": lg.split,
+                        "fast": bool(lg.sport)}      # бърз резултат (bets/live.py) - само с odds API
                     for c, lg in LEAGUES.items()},
         "upcoming": [compact_forecast(m) for m in upcoming],
         "record": record(conn, now),
