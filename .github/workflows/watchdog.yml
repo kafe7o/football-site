@@ -1,0 +1,35 @@
+# Пазачът на облака (2026-10-01) - вместо старата задача на лаптопа „Проверка на облака“ (тя гледаше
+# стария update.yml и можеше да прати фалшиво „Облакът спря“). На всеки 2 часа: кога сайтът е
+# обновен за последно (последният комит на index.html). Ако е преди повече от 150 минути - веригата
+# на робота е спряла: пуска я отново и праща известие по ntfy. Иначе - нищо, без известие.
+name: watchdog
+
+on:
+  schedule:
+    - cron: "45 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Обновява ли се сайтът
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          last=$(gh api "repos/${{ github.repository }}/commits?path=index.html&per_page=1" -q '.[0].commit.committer.date')
+          age=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 60 ))
+          echo "последно обновяване на сайта: $last (преди $age мин.)"
+          if [ "$age" -gt 150 ]; then
+            gh workflow run robot.yml -R "${{ github.repository }}" --ref main || echo "пускането не мина"
+            msg="Сайтът не е обновяван от $age мин. Пуснах робота отново - ако до час не тръгне, провери Actions."
+            printf '{"topic":"%s","title":"Облакът спря","message":"%s","tags":["warning"],"priority":4,"click":"https://github.com/%s/actions"}' \
+              "$NTFY_TOPIC" "$msg" "${{ github.repository }}" | curl -s -H "Content-Type: application/json" --data-binary @- https://ntfy.sh/ > /dev/null
+            echo "известие пратено"
+          fi

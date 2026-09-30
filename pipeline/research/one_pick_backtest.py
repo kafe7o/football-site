@@ -48,6 +48,10 @@ C 58.3% / 57.7% (избор / чиста; ± 0.3-0.4%). A: роботът каз
 лигата изобщо - 63.1% / 63.0%; ср. коеф. 1.53; с коеф. от букмейкър 34% / 31% от прогнозите, доход
 -6.8% ± 0.9% / -7.9% ± 1.2%. От какво (чиста): голове над/под 64%, двоен шанс 17%, двата вкарват 8%,
 1/X/2 6%, картони 3%, корнери 1%. C е по-малко вероятно, но най-много над обичайното (+7 пункта).
+
+С ГРАНИЦИТЕ ОТ 01.10 (1.50-1.80, резерва от 2.50 - професионалистът): пак A - 56.7% / 56.8%; роботът казва
+59.8% / 59.2%; в лигата изобщо 56.2% / 55.7%; ср. к 1.77; доход -7.3% / -8.4%. A2 55.7 / 56.0, B 48.3 / 46.8,
+C 53.7 / 53.9. От какво (чиста): голове над/под 43%, двоен шанс 18%, двата вкарват 15%, 1/X/2 11%, картони 10%.
 """
 
 import json
@@ -69,7 +73,10 @@ from research import extras_backtest                 # noqa: E402
 OUT = ROOT / "data" / "one_backtest.json"
 SELECT_END = "2025-07-01"
 BASE_BEFORE, BASE_YEARS = "2023-07-01", 4
-BAND = (1.40, 1.80)
+# границите - тези на робота (bets/robot.py): от 2026-10-01 1.50-1.80, резерва от 2.50 нагоре
+# (професионалистът: „нищо под 1.50“, „рисковата от 2.50“); при първото пускане бяха 1.40-1.80 / над 1.80
+BAND = robot.SAFE_RANGE
+FALLBACK_FROM = robot.RISKY_FROM
 MIN_PROB = 0.50
 TOTO_LEAGUES, TOTO_BAND = robot.TOTO_LEAGUES, robot.TOTO_BAND
 VARIANTS = ("A", "A2", "B", "C")
@@ -120,7 +127,7 @@ def choose(variant, cands, base):
         if variant == "C":
             return max(band, key=lambda c: c[1] - c[4]), True
         return max(band, key=lambda c: c[1]), True
-    risky = [c for c in pool if c[2] > BAND[1]]
+    risky = [c for c in pool if c[2] >= FALLBACK_FROM]
     return (max(risky, key=lambda c: c[1]), False) if risky else (None, False)
 
 
@@ -212,7 +219,8 @@ def main():
             item = {"hit": ok, "p": c[1], "odds": c[2], "book": c[3], "base": c[4], "band": in_band, "kind": kind_of(c[0])}
             res[v][period].append(item)
             per_league[v][r["league"]].append(item)
-    out = {"generated": str(np.datetime64("today")), "select_end": SELECT_END, "band": BAND, "skipped": skipped,
+    out = {"generated": str(np.datetime64("today")), "select_end": SELECT_END, "band": BAND, "fallback_from": FALLBACK_FROM,
+           "live_variant": robot.ONE_VARIANT, "skipped": skipped,
            "variants": {v: {k: stat(xs) for k, xs in d.items()} for v, d in res.items()}}
     sel = {v: out["variants"][v]["select"]["hit"] for v in VARIANTS}
     best = max(sel, key=sel.get)
@@ -221,13 +229,14 @@ def main():
     gap = clean[top_clean]["clean"]["hit"] - clean[best]["clean"]["hit"]
     se = math.hypot(clean[top_clean]["clean"]["hit_se"], clean[best]["clean"]["hit_se"])
     out["chosen"] = best if gap <= 2 * se else None
-    out["leagues"] = {lg: stat(xs) for lg, xs in per_league[best].items()}
+    # по лиги - вариантът, който е на живо (bets/robot.py: ONE_VARIANT), за да съвпада със сайта
+    out["leagues"] = {lg: stat(xs) for lg, xs in per_league[robot.ONE_VARIANT].items()}
     OUT.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     for v in VARIANTS:
         for k in ("select", "clean"):
             s = out["variants"][v][k]
             print(f"{v:<3} {k:<6} {s['n']:>6} | познати {s['hit']:.1%} ± {s['hit_se']:.1%} | роботът каза {s['said']:.1%} | "
-                  f"в лигата изобщо {s['base']:.1%} | ср.к {s['odds']:.2f} | в 1.40-1.80 {s['in_band']:.0%} | "
+                  f"в лигата изобщо {s['base']:.1%} | ср.к {s['odds']:.2f} | в {BAND[0]:.2f}-{BAND[1]:.2f} {s['in_band']:.0%} | "
                   f"с коеф. от букмейкър {s['book_share']:.0%}" + (f", доход {s['roi']:+.1%} ± {s['roi_se']:.1%}" if s.get("roi") is not None else ""))
         print("    от какво:", out["variants"][v]["clean"]["kinds"])
     print(f"\nИзбор по протокола: {best} (най-много познати в избора); в чистата най-добрият е {top_clean}, "

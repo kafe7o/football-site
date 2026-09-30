@@ -147,8 +147,8 @@ def backtest_summary():
 def one_summary():
     """Едната прогноза назад (data/one_backtest.json): приетият вариант - избор, чиста проверка, по лиги."""
     ob = read_json("one_backtest.json", {})
-    v = ob.get("chosen")
-    if not v:
+    v = robot.ONE_VARIANT                    # на живо е този вариант - и числата назад са неговите
+    if v not in (ob.get("variants") or {}):
         return None
     keep = ("n", "hit", "hit_se", "said", "base", "odds", "roi", "roi_se", "n_book", "kinds")
     pick = lambda d: {k: d[k] for k in keep if d and k in d} if d else None
@@ -249,6 +249,8 @@ def build(conn, now=None, upcoming=None):
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
         "one_bt": one_summary(),
+        # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
+        "ranges": {"safe": list(robot.SAFE_RANGE), "risky_from": robot.RISKY_FROM},
         "bonus": bonus_data(now),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),
