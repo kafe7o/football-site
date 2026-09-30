@@ -110,7 +110,7 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
         sel, odds, why = None, None, "роботът няма собствена оценка за тези отбори (няма история) - показан е само пазарът"
     best = (pr or {}).get("best", {}).get(sel) if sel else None
     an, extras = match_analysis(ctx, fx, fitted, flags)
-    return {"basis": basis, "analysis": an, "extras": extras,
+    return {"basis": basis, "analysis": an, "extras": extras, "rule": robot.RULE,
             "probs": {"robot": {k: round(v, 4) for k, v in robot_p.items()},
                       "market": {k: round(v, 4) for k, v in (market or {}).items()}},
             "prices": pr,
@@ -153,7 +153,7 @@ def lock(conn, now=None):
             (fx["id"], fx["league"], fx["kickoff"], fx["home"], fx["away"], stamp, f["basis"],
              json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None,
              json.dumps({**f["picks"], "extras": f["extras"]}),
-             f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"]})))
+             f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE})))
         locked += 1
     conn.commit()
     log.info("Записани прогнози: %d (без цени и без модел: %d), денят свършва %s", locked, skipped,
@@ -176,6 +176,8 @@ def preview(conn, now=None, days=14):
             t = locked[fx["id"]]
             flags = json.loads(t["flags_json"] or "{}")
             why = flags.pop("why", None)
+            rule = robot.rule_of(flags, t["locked_at"])
+            flags.pop("rule", None)
             picks = json.loads(t["picks_json"])
             an, _ = match_analysis(ctx, fx, models[fx["league"]], flags)
             out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
@@ -183,7 +185,7 @@ def preview(conn, now=None, days=14):
                         "locked": t["locked_at"], "basis": t["basis"], "probs": json.loads(t["probs_json"]),
                         "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
                         "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
-                        "tip": t["tip"], "tip_odds": t["tip_odds"],
+                        "tip": t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
                         "tip_best": t["tip_best"], "why": why, "flags": flags})
             continue
         f = forecast(conn, fx, models[fx["league"]], dates, ctx)

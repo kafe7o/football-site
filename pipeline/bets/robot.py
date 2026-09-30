@@ -57,6 +57,14 @@ LABEL = {"1": "1", "X": "X", "2": "2", "1X": "1X", "X2": "X2", "12": "12", "O": 
 TOTO_BAND = (1.30, 1.55)
 TOTO_LEAGUES = frozenset({"N1", "AUT"})
 RULE = "likely"
+# Кога е сменено правилото (облакът тръгна с новия код). Съвет, записан по-рано, е по старото
+# market_likely - записът не се пипа, на сайта е отбелязан като такъв.
+RULE_CHANGED_AT = "2026-09-30T09:48:00+00:00"
+
+
+def rule_of(flags, locked_at):
+    """По кое правило е записан съветът: от записа, а за старите - по часа."""
+    return (flags or {}).get("rule") or (RULE if locked_at >= RULE_CHANGED_AT else "market_likely")
 
 
 def result_of(hg, ag):

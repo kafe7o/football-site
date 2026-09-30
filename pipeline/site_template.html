@@ -391,10 +391,17 @@ function matchCard(m) {
           ? `<span class="pk">${XK[k]}: <b>${x.pick === "O" ? "над" : "под"} ${x.line}</b> <span class="num">${pct(ch)}</span></span>`
           : `<span class="pk" title="Очакван брой по робота. Проверката назад не показа, че процентът му е по-точен от средното на лигата - затова процент няма.">${XK[k]}: очаквани <b class="num">${x.total.toFixed(1)}</b>${x.base != null ? ` <span class="muted">· в лигата над ${x.line}: ${pct(x.base)}</span>` : ""}</span>`; }).join("");
     let tip;
-    if (m.t) {
+    if (m.t && m.rl === "market_likely") {
+      // записан сутринта преди смяната на правилото (30.09) - по букмейкъра; записът не се пипа
+      const nt = ownTip(m);
+      tip = `<div class="tip none"><span>Съвет по старото правило: <b>${LABEL[m.t]}</b> @ <b class="num">${m.to.toFixed(2)}</b></span>
+        <span class="meta">Записан${m.lk ? " в " + fmtTime(m.lk) : ""} преди смяната на правилото - избран по процента на букмейкъра (${pct(mk[m.t])}), не по робота. По новото правило на робота тук: ${nt ? `<b>${LABEL[nt]}</b> @ ${o[nt].toFixed(2)} (${pct(r[nt])})` : "без съвет"}.</span></div>`;
+    } else if (m.t) {
       const bt = btTip(m.l);
+      const why = whyNot(m);
       tip = `<div class="tip"><span>Съвет: <b>${LABEL[m.t]}</b> @ <b class="num">${m.to.toFixed(2)}</b></span>
-        <span class="meta">шанс ${pct(r[m.t])} по робота (коефициентът не влиза в процента)${mk[m.t] != null ? ` · букмейкърът: ${pct(mk[m.t])}` : ""}${m.tb && m.tb > m.to + 0.005 ? ` · най-добра цена ${m.tb.toFixed(2)}` : ""}${bt ? ` · в тази лига съветите познават ${pct(bt.hit)} (назад, ${bt.n} мача)` : ""}</span></div>`;
+        <span class="meta">шанс ${pct(r[m.t])} по робота (коефициентът не влиза в процента)${mk[m.t] != null ? ` · букмейкърът: ${pct(mk[m.t])}` : ""}${m.tb && m.tb > m.to + 0.005 ? ` · най-добра цена ${m.tb.toFixed(2)}` : ""}${bt ? ` · в тази лига съветите познават ${pct(bt.hit)} (назад, ${bt.n} мача)` : ""}</span>
+        ${why ? `<span class="meta" style="flex-basis:100%">${esc(why)} Съветът е най-вероятният изход с шанс над 50% и коефициент поне 1.40.</span>` : ""}</div>`;
     } else {
       tip = `<div class="tip none">Без съвет - ${esc(m.w || "")}</div>`;
     }
@@ -403,6 +410,28 @@ function matchCard(m) {
   }
   return `<div class="m"><div class="top"><span class="time">${fmtTime(m.k)}</span>
     <span class="teams">${esc(m.h)} – ${esc(m.a)}</span><span class="flags">${flags}${state}</span></div>${body}</div>`;
+}
+
+// Правилото за съвета (bets/robot.py, RULE = "likely"): най-вероятният изход по робота с шанс поне 50%
+// и коефициент поне 1.40, без дерби и без фаворит 1.30-1.55 в тото лига.
+const SELS = ["1", "X", "2", "1X", "X2", "12", "O", "U"];
+function ownTip(m) {
+  if ((m.f || []).includes("derby")) return null;
+  const o = m.o || {}, toto = (m.f || []).includes("toto");
+  const c = SELS.filter(s => m.r[s] != null && o[s] >= 1.40 && m.r[s] >= 0.5 &&
+                             !(toto && (s === "1" || s === "2") && o[s] <= 1.55 && o[s] >= 1.30));
+  return c.sort((a, b) => m.r[b] - m.r[a])[0] || null;
+}
+function whyNot(m) {
+  // защо изборите над съвета не са съвет - за всеки различен от него
+  const o = m.o || {}, out = [];
+  Object.values(m.pk || {}).forEach(s => {
+    if (s === m.t) return;
+    const p = m.r[s];
+    const reason = p < 0.5 ? "шансът е под 50%" : !o[s] ? "няма коефициент" : o[s] < 1.40 ? `коефициентът ${o[s].toFixed(2)} е под 1.40` : "по-малък шанс от съвета";
+    out.push(`${LABEL[s]} (${pct(p)}) - ${reason}`);
+  });
+  return out.length ? `Защо не другите: ${out.join("; ")}.` : "";
 }
 
 function xSkill(kind) { return !!(XBT[kind] && XBT[kind].skill); }
@@ -617,7 +646,7 @@ function renderResults() {
       if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
       const mark = sel => sel ? (hit(sel, r.s) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) : "";
       const picks = Object.entries(r.pk || {}).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mark(sel)}</span>`).join("");
-      const tip = r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mark(r.t)}</span>` : `<span class="pk muted">без съвет${r.w ? " - " + esc(r.w) : ""}</span>`;
+      const tip = r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mark(r.t)}${r.rl === "market_likely" ? ` <span class="muted">(старото правило - по букмейкъра)</span>` : ""}</span>` : `<span class="pk muted">без съвет${r.w ? " - " + esc(r.w) : ""}</span>`;
       const xs = Object.entries(r.x || {}).map(([k, v]) => `<span class="pk">${XK[k]}: ${v[0] === "O" ? "над" : "под"} ${v[1]} ${v[2] == null ? `<span class="muted">(чака)</span>` : ((v[0] === "O" ? v[2] > v[1] : v[2] < v[1]) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) + ` <span class="muted">${v[2]}</span>`}</span>`).join("");
       out += `<div class="res"><span class="muted num">${fmtTime(r.k)}</span><span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
         <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}${xs}</div></div>`;

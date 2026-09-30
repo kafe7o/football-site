@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, season, tips
+from . import config, db, robot, season, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ def compact_forecast(m):
         "o": {k: round(v, 2) for k, v in avg.items()},
         "n": (m.get("prices") or {}).get("n"),
         "pk": m["picks"]["robot"], "t": m.get("tip"), "to": m.get("tip_odds"), "tb": m.get("tip_best"),
+        "rl": m.get("rule"),
         "w": m.get("why"), "f": [k for k, v in (m.get("flags") or {}).items() if v is True],
     })
     if r.get("xg_home") is not None:
@@ -95,6 +96,7 @@ def record(conn, now):
                     "mo": {mkt: avg.get(sel) for mkt, sel in mp.items()},
                     "pp": {mkt: short(probs["robot"].get(sel)) for mkt, sel in rp.items()},
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
+                    "rl": robot.rule_of(flags, t["locked_at"]), "lk": t["locked_at"],
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
                     # football-data 1-3 дни след мача; дотогава None
