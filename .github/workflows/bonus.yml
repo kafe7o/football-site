@@ -1,0 +1,63 @@
+# Бонус анализ час преди мачовете от топ 5 (Англия, Испания, Италия, Германия, Франция), 2026-10-01.
+#
+# Поръчва го часовото пускане (robot.yml -> run.py cloud -> bets/bonus.py: schedule) за всеки
+# начален час до 2 часа напред. Задачата изчаква до точно 60 минути преди мача, тегли пресните
+# коефициенти, сравнява със сутрешния запис и праща известие дали има промени. Резултатът е в
+# bonus/<начален час UTC>.json - всеки начален час има собствен файл, затова задачите не се сблъскват
+# и не пипат базата на робота (robot.db) и сайта (index.html) - тях ги пише само robot.yml.
+name: bonus
+
+on:
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: "Началният час на мачовете (UTC ISO, напр. 2026-10-10T14:00+00:00)"
+        required: true
+      test:
+        description: "Проба: без чакане, без известие, без запис"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  bonus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 160
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: Бонус анализ (чака до час преди мача)
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          FOOTBALL_DB: ${{ github.workspace }}/robot.db
+          FOOTBALL_SITE: ${{ github.workspace }}
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
+          PYTHONIOENCODING: utf-8
+        run: cd pipeline && python run.py bonus --slot "${{ inputs.slot }}" ${{ inputs.test && '--test' || '' }}
+
+      - name: Записване на бонус анализа
+        if: ${{ !inputs.test }}
+        run: |
+          git config user.name "football-bot"
+          git config user.email "football-bot@users.noreply.github.com"
+          git add bonus
+          git diff --staged --quiet && exit 0
+          git commit -m "Бонус анализ ${{ inputs.slot }}"
+          git reset -q --hard HEAD          # базата на робота е променена само тук - не се качва
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q origin main && git push && exit 0
+            sleep 15
+          done
+          exit 1

@@ -157,6 +157,10 @@ td .num, td.num { font-family: "IBM Plex Mono", monospace; }
 .pred .pv { font: 700 18px/1.2 "IBM Plex Sans", sans-serif; }
 .pred .pm { font-size: 12px; color: var(--muted); }
 .pred-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.bonus { margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }
+.bonus.changed { border-color: var(--sig); background: var(--sig-bg); }
+.bonus b.t { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 3px; }
+.bonus ul { margin: 2px 0 0; padding-left: 18px; }
 @media (max-width: 420px) { .preds { grid-template-columns: 1fr; } }
 /* анализът на мача */
 details.an { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px; }
@@ -257,6 +261,11 @@ const STAKE = 10;
 const TOP10 = ["E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1"];
 const XBT = DATA.extras_bt || {};
 const SB = DATA.signs_bt || {};
+// Бонус анализ час преди мачовете от топ 5 (bets/bonus.py): вграден при часовото обновяване, а за
+// мачовете в следващите часове страницата дотегля bonus/<час>.json веднага след като е готов.
+const BONUS = Object.assign({}, DATA.bonus || {});
+const TOP5 = ["E0", "SP1", "I1", "D1", "F1"];
+const slotName = iso => new Date(iso).toISOString().slice(0, 16).replace(":", "");
 // етикетите на всички избори - и линиите на головете, картоните и корнерите (като bets/robot.py: label)
 const LAB2 = {O15: "над 1.5", U15: "под 1.5", O35: "над 3.5", U35: "под 3.5", GG: "двата вкарват", NG: "не вкарват и двата"};
 function lab(sel) {
@@ -444,7 +453,7 @@ function matchCard(m) {
       tip = `<div class="tip none">Без прогноза на робота - ${esc(m.w || "")}</div>`;
     }
     body = probBar(r) + `<div class="sub">${sub.map(esc).join("<span aria-hidden='true'>·</span>")}</div>
-      <div class="picks">${picks}</div>${tip}${analysisBlock(m)}`;
+      <div class="picks">${picks}</div>${tip}${bonusBlock(m)}${analysisBlock(m)}`;
   }
   return `<div class="m"><div class="top"><span class="time">${fmtTime(m.k)}</span>
     <span class="teams">${esc(m.h)} – ${esc(m.a)}</span><span class="flags">${flags}${state}</span></div>${body}</div>`;
@@ -470,6 +479,36 @@ function whyNot(m) {
     out.push(`${LABEL[s]} (${pct(p)}) - ${reason}`);
   });
   return out.length ? `Защо не другите: ${out.join("; ")}.` : "";
+}
+
+function bonusBlock(m) {
+  const b = BONUS[m.i];
+  if (!TOP5.includes(m.l)) return "";
+  if (!b) {
+    const at = new Date(new Date(m.k).getTime() - 3600e3);
+    return `<div class="bonus"><b class="t">Бонус анализ</b>ще е в ${fmtTime(at.toISOString())} (час преди мача) - с известие дали има промени.</div>`;
+  }
+  const cur = [["rk", "рискова"], ["sf", "по-сигурна"]].filter(([k]) => b[k]).map(([k, n]) => `${n} <b>${lab(b[k][0])}</b> @${b[k][2].toFixed(2)} (${pct(b[k][1])})`).join(" · ");
+  return `<div class="bonus ${b.ch.length ? "changed" : ""}"><b class="t">Бонус анализ ${fmtTime(b.at)} (час преди)</b>
+    ${b.ch.length ? `<b>Промени спрямо сутринта:</b><ul>${b.ch.map(c => `<li>${esc(c)}</li>`).join("")}</ul>` : "Без промяна спрямо сутрешната прогноза."}
+    ${cur ? `<div>Сега: ${cur}</div>` : ""}</div>`;
+}
+
+async function fetchBonus() {
+  // мачовете от топ 5, започващи до 3 часа: дотегля готовите бонус анализи без да чака часовото обновяване
+  const now = Date.now();
+  const want = [...new Set(UP.filter(m => TOP5.includes(m.l) && !BONUS[m.i] && new Date(m.k) - now < 3 * 3600e3 && new Date(m.k) - now > -2 * 3600e3).map(m => slotName(m.k)))];
+  let got = 0;
+  for (const name of want) {
+    try {
+      const r = await fetch(`bonus/${name}.json?t=${now}`, {cache: "no-store"});
+      if (!r.ok) continue;
+      const d = await r.json();
+      d.matches.forEach(x => { BONUS[x.id] = {at: d.made_at, ch: x.changes, rk: x.new && x.new.risky ? [x.new.risky.sel, x.new.risky.p, x.new.risky.odds] : null,
+                                          sf: x.new && x.new.safer ? [x.new.safer.sel, x.new.safer.p, x.new.safer.odds] : null}; got++; });
+    } catch (e) { /* няма още файл - нищо */ }
+  }
+  if (got) renderForecasts();
 }
 
 function xSkill(kind) { return !!(XBT[kind] && XBT[kind].skill); }
@@ -733,8 +772,10 @@ function renderResults() {
       const tip = r.rk ? pm("rk", "Рискова") + pm("sf", "По-сигурна")
         : r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mark(r.t)} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : `<span class="pk muted">без прогноза${r.w ? " - " + esc(r.w) : ""}</span>`;
       const xs = Object.entries(r.x || {}).map(([k, v]) => `<span class="pk">${XK[k]}: ${v[0] === "O" ? "над" : "под"} ${v[1]} ${v[2] == null ? `<span class="muted">(чака)</span>` : ((v[0] === "O" ? v[2] > v[1] : v[2] < v[1]) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) + ` <span class="muted">${v[2]}</span>`}</span>`).join("");
+      const bo = BONUS[r.i];
+      const bon = bo ? `<span class="pk">Бонус: ${bo.ch.length ? `${bo.ch.length} промени` : "без промяна"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${hitAny(bo.sf[0], r.s, r.ct) == null ? "" : hitAny(bo.sf[0], r.s, r.ct) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`}` : ""}</span>` : "";
       out += `<div class="res"><span class="muted num">${fmtTime(r.k)}</span><span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
-        <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}${xs}</div></div>`;
+        <span class="sc">${r.s[0]}:${r.s[1]}</span><div class="rp">${tip}${picks}${xs}${bon}</div></div>`;
     });
     list.innerHTML = out;
     more.hidden = rows.length <= rs.shown;
@@ -885,6 +926,7 @@ function renderPro() {
 
 // ---------- старт ----------
 initForecasts();
+fetchBonus();
 initResults();
 initLeagues();
 renderPro();

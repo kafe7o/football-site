@@ -97,8 +97,8 @@ def record(conn, now):
         avg = ((json.loads(t["prices_json"]) or {}).get("avg") or {}) if t["prices_json"] else {}
         flags = json.loads(t["flags_json"] or "{}")
         rp, mp = picks["robot"], picks.get("market") or {}
-        out.append({"k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"], "a": t["away_src"] or t["away"],
-                    "b": t["basis"], "s": [t["hg"], t["ag"]],
+        out.append({"i": t["fixture_id"], "k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"],
+                    "a": t["away_src"] or t["away"], "b": t["basis"], "s": [t["hg"], t["ag"]],
                     "pk": rp, "mk": mp,
                     "po": {mkt: avg.get(sel) for mkt, sel in rp.items()},
                     "mo": {mkt: avg.get(sel) for mkt, sel in mp.items()},
@@ -193,6 +193,24 @@ def seasons(conn, now):
     return out
 
 
+def bonus_data(now):
+    """Бонус анализите (bonus/*.json от задачите час преди мача) - по мач, за последните KEEP_DAYS дни."""
+    folder = config.SITE_DIR / "bonus"
+    out = {}
+    if not folder.exists():
+        return out
+    since = (now - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%dT%H%M")
+    for path in sorted(folder.glob("*.json")):
+        if path.stem < since:
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for m in data.get("matches", []):
+            new = m.get("new") or {}
+            out[m["id"]] = {"at": data["made_at"], "ch": m["changes"],
+                            "rk": _pred(new.get("risky")), "sf": _pred(new.get("safer"))}
+    return out
+
+
 def build(conn, now=None, upcoming=None):
     now = now or datetime.now(timezone.utc)
     upcoming = upcoming if upcoming is not None else tips.preview(conn, now)
@@ -210,6 +228,7 @@ def build(conn, now=None, upcoming=None):
         "analysis": analysis_summary(),
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
+        "bonus": bonus_data(now),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),
         "url": config.SITE_URL,

@@ -5,6 +5,7 @@
     python run.py weekly     седмичният анализ - в облака всеки понеделник (archive.yml): архивът,
                              новите мачове, анализът по първенства, веднъж месечно роботът назад
     python run.py local      лаптопът (ръчно, когато работим): архивът и копие на сайта от облака
+    python run.py bonus --slot <UTC ISO>   бонус анализът час преди мачовете от топ 5 (bonus.yml)
     python run.py seed       строи базата на облака от архива (последните 3 сезона + текущия)
     python run.py site       само строи сайта от текущата база
     python run.py status     какво има в базата и колко кредита са останали
@@ -91,6 +92,9 @@ def cloud(log):
     upcoming = []
     ok.append(step(log, "6. Прогнозите напред", lambda: upcoming.extend(tips.preview(conn, now))))
     ok.append(step(log, "7. Сайт", site.build, conn, now, upcoming))
+    from bets import bonus
+    ok.append(step(log, "7а. Бонус анализи: поръчване за мачовете от топ 5 в следващите 2 часа",
+                   bonus.schedule, conn, now))
     ok += [step(log, "8. Известие сутрин", notify.morning, conn, upcoming, now),
            step(log, "9. Известие вечер", notify.evening, conn, now),
            step(log, "10. Известие за седмицата", notify.weekly, conn, now)]
@@ -224,7 +228,9 @@ def local(log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status"])
+    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus"])
+    parser.add_argument("--slot", default=None, help="за bonus: началният час на мачовете (UTC ISO)")
+    parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
     parser.add_argument("--target", default=None, help="за seed: къде да се запише базата на облака")
     parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
     parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")
@@ -237,6 +243,20 @@ def main():
         return local(log)
     if args.command == "weekly":
         return weekly(log, args.backtest, args.keep_local)
+    if args.command == "bonus":
+        import time
+        from bets import bonus
+        if not args.slot:
+            raise SystemExit("--slot е задължителен")
+        wait = 0 if args.test else bonus.wait_seconds(args.slot)
+        log.info("Бонус анализ за %s: чакане %d мин. до час преди мача", args.slot, wait // 60)
+        time.sleep(wait)
+        conn = db.init()
+        from datetime import timedelta as _td
+        out = bonus.run(conn, args.slot, send=not args.test, write=not args.test,
+                        horizon=_td(days=14) if args.test else _td(hours=30))
+        conn.close()
+        return 0 if out is not None else 1
     if args.command == "seed":
         from pathlib import Path
         seed(log, Path(args.target) if args.target else config.SITE_DIR / "robot.db")

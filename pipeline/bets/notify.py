@@ -155,6 +155,15 @@ def morning(conn, upcoming, now=None):
                              + (f", по-сигурна {robot.label(sf['sel'])}{odd(sf)} ({sf['p']:.0%})" if sf else ", по-сигурна няма (нищо в 1.40-1.80)"))
             if len(order) > TOP:
                 lines.append(f"... и още {len(order) - TOP} - на сайта.")
+            from .bonus import TOP5, LEAD
+            slots = {}
+            for m in today:
+                if m["league"] in TOP5:
+                    slots.setdefault(m["kickoff"], []).append(m)
+            if slots:
+                lines.append("Бонус анализ час преди мачовете от топ 5 (известие дали има промени): " + "; ".join(
+                    f"{local_time((datetime.fromisoformat(k) - LEAD).isoformat())} за {local_time(k)} ({len(v)} мача)"
+                    for k, v in sorted(slots.items())))
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

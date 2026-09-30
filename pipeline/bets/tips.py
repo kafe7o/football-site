@@ -164,7 +164,8 @@ def lock(conn, now=None):
             (fx["id"], fx["league"], fx["kickoff"], fx["home"], fx["away"], stamp, f["basis"],
              json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None,
              json.dumps({**f["picks"], "extras": f["extras"], "risky": f["risky"], "safer": f["safer"]}),
-             f["tip"], f["tip_odds"], f["tip_best"], json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_RANGES})))
+             f["tip"], f["tip_odds"], f["tip_best"],
+             json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_RANGES, "referee": referee_of(conn, fx)})))
         locked += 1
     conn.commit()
     log.info("Записани прогнози: %d (без цени и без модел: %d), денят свършва %s", locked, skipped,
@@ -189,6 +190,7 @@ def preview(conn, now=None, days=14):
             why = flags.pop("why", None)
             rule = robot.rule_of(flags, t["locked_at"])
             flags.pop("rule", None)
+            flags.pop("referee", None)
             picks = json.loads(t["picks_json"])
             an, _ = match_analysis(ctx, fx, models[fx["league"]], flags)
             out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
