@@ -79,6 +79,15 @@ def score(rows):
     """Рисковата и по-сигурната прогноза: познати, общо, доход в евро при STAKE (където има коефициент);
     и по пазари. Картоните/корнерите се броят, когато football-data донесе статистиката."""
     out = {}
+    done = []
+    for t in rows:
+        x = json.loads(t["picks_json"]).get("one")
+        if x:
+            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"])
+            if h is not None:
+                done.append((h, x.get("odds") if x.get("src") == "book" else None))
+    out["one"] = {"n": len(done), "hits": sum(h for h, _ in done),
+                  "money": sum(((o - 1) if h else -1) * STAKE for h, o in done if o), "n_money": sum(1 for _, o in done if o)}
     for kind in ("risky", "safer"):
         done = []
         for t in rows:
@@ -110,6 +119,10 @@ def score_text(s, label):
     if not s["markets"]:
         return f"{label}: няма уредени мачове."
     parts = []
+    one = s.get("one") or {}
+    if one.get("n"):
+        parts.append(f"{label}: ПРОГНОЗАТА на робота (една за мач) - {one['hits']} от {one['n']} ({one['hits'] / one['n']:.0%})"
+                     + (f"; при {STAKE} € (където има коефициент от букмейкър, {one['n_money']}): {one['money']:+.0f} €" if one["n_money"] else "") + ".")
     for kind, name in (("risky", "рисковите"), ("safer", "по-сигурните")):
         k = s.get(kind) or {}
         if k.get("n"):
@@ -140,19 +153,18 @@ def morning(conn, upcoming, now=None):
         yesterday = score(settled_between(conn, start_y, start_y + timedelta(days=1)))
         lines = []
         if today:
-            with_pred = [m for m in today if m.get("risky") or m.get("safer")]
+            with_pred = [m for m in today if m.get("one") or m.get("risky") or m.get("safer")]
             leagues = {m["league"] for m in today}
-            xs = sum(1 for m in with_pred if (m.get("risky") or {}).get("sel") == "X")
-            lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} "
-                         f"(рискова X в {xs}). Сигурна - коеф. 1.40-1.80, рискова - над 1.80; шансът е на робота.")
+            lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} - "
+                         f"ПО ЕДНА на мач (най-вероятното по робота с коеф. 1.40-1.80). Рисковата и по-сигурната - на сайта.")
             top10 = ("E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1")
             order = sorted(with_pred, key=lambda m: (m["league"] not in top10, m["kickoff"]))
             for m in order[:TOP]:
-                r, sf = m["risky"], m.get("safer")
-                odd = lambda x: f" @{x['odds']:.2f}" if x.get("odds") else ""
+                x = m.get("one") or m.get("safer") or m.get("risky")
+                odd = f" @{x['odds']:.2f}" if x.get("odds") else ""
                 lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
-                             f"рискова {robot.label(r['sel'])}{odd(r)} ({r['p']:.0%})"
-                             + (f", по-сигурна {robot.label(sf['sel'])}{odd(sf)} ({sf['p']:.0%})" if sf else ", по-сигурна няма (нищо в 1.40-1.80)"))
+                             f"{robot.label(x['sel'])}{odd} ({x['p']:.0%})"
+                             + (" - дерби, не за залог" if (m.get("flags") or {}).get("derby") else ""))
             if len(order) > TOP:
                 lines.append(f"... и още {len(order) - TOP} - на сайта.")
             from .bonus import TOP5, LEAD

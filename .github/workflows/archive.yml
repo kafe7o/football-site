@@ -56,7 +56,7 @@ jobs:
         run: |
           git config user.name "football-bot"
           git config user.email "football-bot@users.noreply.github.com"
-          git add pipeline/data/leagues.json pipeline/data/backtest.json pipeline/data/extras_backtest.json pipeline/data/signs_backtest.json
+          git add pipeline/data/leagues.json pipeline/data/backtest.json pipeline/data/extras_backtest.json pipeline/data/signs_backtest.json pipeline/data/one_backtest.json
           git diff --staged --quiet && exit 0
           git commit -m "Архивът: седмичен анализ"
           for i in 1 2 3; do

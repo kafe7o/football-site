@@ -59,6 +59,13 @@ def _pred(x):
 SELS = ("1", "X", "2", "1X", "X2", "12", "O", "U")
 
 
+def _one(x):
+    """Едната прогноза: [избор, шанс по робота, коефициент, откъде (book/robot), в 1.40-1.80?]."""
+    if not x:
+        return None
+    return [x["sel"], x["p"], x.get("odds"), x.get("src"), x.get("band", True)]
+
+
 def compact_forecast(m):
     """Един мач за таба с прогнозите - кратки ключове, за да е малък файлът."""
     out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
@@ -77,7 +84,7 @@ def compact_forecast(m):
         "n": (m.get("prices") or {}).get("n"),
         "pk": m["picks"]["robot"], "t": m.get("tip"), "to": m.get("tip_odds"), "tb": m.get("tip_best"),
         "rl": m.get("rule"),
-        "rk": _pred(m.get("risky")), "sf": _pred(m.get("safer")),
+        "rk": _pred(m.get("risky")), "sf": _pred(m.get("safer")), "one": _one(m.get("one")),
         "w": m.get("why"), "f": [k for k, v in (m.get("flags") or {}).items() if v is True],
     })
     if r.get("xg_home") is not None:
@@ -112,7 +119,7 @@ def record(conn, now):
                            if probs["robot"].get("xg_home") is not None else None),
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
                     "rl": robot.rule_of(flags, t["locked_at"]), "lk": t["locked_at"],
-                    "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer")),
+                    "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer")), "one": _one(picks.get("one")),
                     "ct": [t["cards"], t["corners"]],
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
@@ -135,6 +142,18 @@ def backtest_summary():
         keep[code] = {k: v for k, v in item.items() if v}
     return {"rule": rule, "start": bt.get("start"), "select_end": bt.get("select_end"),
             "generated": bt.get("generated"), "leagues": keep}
+
+
+def one_summary():
+    """Едната прогноза назад (data/one_backtest.json): приетият вариант - избор, чиста проверка, по лиги."""
+    ob = read_json("one_backtest.json", {})
+    v = ob.get("chosen")
+    if not v:
+        return None
+    keep = ("n", "hit", "hit_se", "said", "base", "odds", "roi", "roi_se", "n_book", "kinds")
+    pick = lambda d: {k: d[k] for k in keep if d and k in d} if d else None
+    return {"variant": v, "select": pick(ob["variants"][v]["select"]), "clean": pick(ob["variants"][v]["clean"]),
+            "leagues": {lg: {"n": d["n"], "hit": d["hit"]} for lg, d in (ob.get("leagues") or {}).items() if d}}
 
 
 def signs_summary():
@@ -206,7 +225,7 @@ def bonus_data(now):
         for m in data.get("matches", []):
             new = m.get("new") or {}
             out[m["id"]] = {"at": data["made_at"], "ch": m["changes"],
-                            "rk": _pred(new.get("risky")), "sf": _pred(new.get("safer"))}
+                            "rk": _pred(new.get("risky")), "sf": _pred(new.get("safer")), "one": _one(new.get("one"))}
     return out
 
 
@@ -228,6 +247,7 @@ def build(conn, now=None, upcoming=None):
         "analysis": analysis_summary(),
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
+        "one_bt": one_summary(),
         "bonus": bonus_data(now),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),

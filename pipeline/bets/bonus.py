@@ -139,7 +139,8 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
     if robot_p:
         new["risky"] = robot.risky_by_odds(robot_p, base, n_avg or m_avg)
         new["safer"] = robot.safe_by_odds(robot_p, n_avg or m_avg)
-        for kind, name in (("risky", "рисковата"), ("safer", "по-сигурната")):
+        new["one"] = robot.one_pick(robot_p, n_avg or m_avg, picks.get("extras"), fx["league"])
+        for kind, name in (("one", "прогнозата"), ("risky", "рисковата"), ("safer", "по-сигурната")):
             old, cur = picks.get(kind), new.get(kind)
             old_sel, cur_sel = (old or {}).get("sel"), (cur or {}).get("sel")
             if old_sel != cur_sel:
@@ -215,7 +216,7 @@ def notify_slot(out, prefix=""):
     for m in out["matches"]:
         head = f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})"
         cur = []
-        for kind, name in (("risky", "рискова"), ("safer", "по-сигурна")):
+        for kind, name in (("one", "ПРОГНОЗА"), ("risky", "рискова"), ("safer", "по-сигурна")):
             x = (m.get("new") or {}).get(kind)
             if x:
                 cur.append(f"{name} {robot.label(x['sel'])} @{x['odds']:.2f} ({pct(x['p'])})")

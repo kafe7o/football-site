@@ -293,3 +293,62 @@ def after_break(dates, day, min_gap=12, max_gap=25, within=4):
             return False
         start = p
     return False
+
+
+# ---------- ЕДНА прогноза за мач (от 2026-10-02) ----------
+# Професионалистът (01.10): „по една прогноза за всеки мач, която според него е най-адекватна - той сам
+# да определи точната прогноза; иначе при четири прогнози и 3 от 4 познати ние трябва да гадаем коя да
+# изберем; с точно една ще видим точно какъв процент държи този робот.“ Изборът е по неговите правила:
+# коефициент 1.40-1.80 и шанс по робота поне 50%, без тото фаворит; ако в мача няма такова събитие -
+# най-вероятното над 1.80. Кой вариант - research/one_pick_backtest.py (протоколът е в docstring-а му).
+# Назад (36 000 мача, 2023-2026; избор / чиста проверка):
+#   A  най-вероятното от всички събития      64.3% / 63.8% познати  <- прието (най-много познати в избора)
+#   A2 без картони и корнери                 64.3% / 64.0%
+#   B  само с коефициент от букмейкър        56.2% / 54.9%
+#   C  най-характерното за мача              58.3% / 57.7% (но +7 пункта над обичайното за лигата)
+# Роботът казва средно 66%, излиза 64% (изборът на най-вероятното от много събития надценява малко).
+# Същото събитие излиза в лигата изобщо в 63% от мачовете - роботът добавя около 1 пункт. Прогнозите
+# са предимно голове над/под (64%), двоен шанс (17%), двата вкарват (8%), 1/X/2 (6%), картони/корнери (5%).
+# Където има коефициент от букмейкър: доход -6.8% / -7.9% (губи колкото маржа).
+RULE_ONE = "one"
+ONE_VARIANT = "A"
+ONE_GOAL_SELS = ("1", "X", "2", "1X", "X2", "12", "O15", "U15", "O", "U", "O35", "U35", "GG", "NG")
+
+
+def one_events(p, extras=None):
+    """Шансът по робота за всички събития, от които се избира едната прогноза."""
+    g = goal_line_probs(p)
+    ev = {s: p[s] for s in ("1", "X", "2", "1X", "X2", "12")}
+    ev.update({"O15": g[1.5], "U15": 1 - g[1.5], "O": p.get("O", g[2.5]), "U": p.get("U", 1 - g[2.5]),
+               "O35": g[3.5], "U35": 1 - g[3.5], "GG": p.get("GG", g["GG"]), "NG": 1 - p.get("GG", g["GG"])})
+    for kind, letter in (("cards", "C"), ("corners", "K")):
+        x = (extras or {}).get(kind)
+        if x:
+            ev[f"{letter}O{x['line']}"] = x["over"]
+            ev[f"{letter}U{x['line']}"] = 1 - x["over"]
+    return ev
+
+
+def one_pick(p, avg, extras=None, league=None, variant=ONE_VARIANT):
+    """Едната прогноза: {sel, p, odds, src, band} или None (без очаквани голове - без прогноза)."""
+    if p.get("xg_home") is None:
+        return None
+    cands = []
+    for s, prob in one_events(p, extras).items():
+        if variant == "A2" and s[0] in "CK":
+            continue
+        book = s in SELECTIONS and bool((avg or {}).get(s))
+        if variant == "B" and not book:
+            continue
+        odds = round(avg[s], 2) if book else (round(1 / prob, 2) if prob > 0 else None)
+        if not odds:
+            continue
+        if league in TOTO_LEAGUES and s in ("1", "2") and book and TOTO_BAND[0] <= odds <= TOTO_BAND[1]:
+            continue
+        cands.append((s, prob, odds, "book" if book else "robot"))
+    band = [c for c in cands if SAFE_RANGE[0] <= c[2] <= SAFE_RANGE[1] and c[1] >= MIN_PROB]
+    pool, in_band = (band, True) if band else ([c for c in cands if c[2] > SAFE_RANGE[1]], False)
+    if not pool:
+        return None
+    s, prob, odds, src = max(pool, key=lambda c: c[1])
+    return {"sel": s, "p": round(prob, 4), "odds": odds, "src": src, "band": in_band}

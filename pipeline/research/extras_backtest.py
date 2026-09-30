@@ -37,6 +37,7 @@ from bets.leagues import FD                         # noqa: E402
 START = "2023-07-01"
 SELECT_END = "2025-07-01"
 OUT = ROOT / "data" / "extras_backtest.json"
+LAST_ROWS = None          # прогнозите мач по мач от последното пускане - ползва ги one_pick_backtest.py
 
 
 def months(first, last):
@@ -75,7 +76,8 @@ def run_league(code):
                     continue
                 total = r["h"] + r["a"]
                 base = float((totals > pr["line"]).mean())
-                out.append({"league": code, "kind": kind, "date": r["date"], "line": pr["line"],
+                out.append({"league": code, "kind": kind, "date": r["date"], "home": r["home_team"],
+                            "away": r["away_team"], "line": pr["line"],
                             "p": pr["over"], "base": base, "exp": pr["total"], "mean": league_mean,
                             "total": total, "over": int(total > pr["line"]), "pick": pr["pick"],
                             "ref": bool(r["referee"]) and factor != 1.0})
@@ -107,6 +109,8 @@ def main(codes=None):
     with Pool(4) as pool:
         parts = pool.map(run_league, codes)
     rows = [r for p in parts for r in p]
+    global LAST_ROWS
+    LAST_ROWS = rows
     out = {"generated": date.today().isoformat(), "start": START, "select_end": SELECT_END, "kinds": {}}
     for kind in extras.KINDS:
         ks = [r for r in rows if r["kind"] == kind]

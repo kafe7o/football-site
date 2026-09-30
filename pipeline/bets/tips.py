@@ -150,7 +150,7 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
              "after_break": LEAGUES[fx["league"]].has_history and robot.after_break(dates_cache[fx["league"]], day),
              "toto": fx["league"] in TOTO}
     an, extras = match_analysis(ctx, fx, fitted, flags)
-    risky = safer = None
+    risky = safer = one = None
     avg = (pr or {}).get("avg") or {}
     if basis == "model":
         # професионалистът (30.09 вечерта): без коефициенти и без фаворити; рискова (знак) и по-сигурна
@@ -158,16 +158,18 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
         base = ctx.base(fx["league"]) if ctx else robot.base_rates(conn, fx["league"])
         risky = robot.risky_by_odds(robot_p, base, avg)
         safer = robot.safe_by_odds(robot_p, avg)
-        sel = safer["sel"] if safer else None
-        odds = safer["odds"] if safer and safer["src"] == "book" else None
+        # професионалистът (01.10): ЕДНА прогноза за мача - нея мерим (главният съвет в tips.tip)
+        one = robot.one_pick(robot_p, avg, extras, fx["league"])
+        sel = one["sel"] if one else None
+        odds = one["odds"] if one and one["src"] == "book" else None
         why = ("дерби - професионалистът: избягвай за залог" if flags.get("derby")
-               else None if safer else "няма събитие с коефициент 1.40-1.80")
+               else None if one else "няма очаквани голове за тези отбори")
     else:
         # професионалистът: процентът да не идва от коефициентите - без модел прогноза на робота няма
         sel, odds, why = None, None, "роботът няма собствена оценка за тези отбори (няма история) - показан е само пазарът"
     best = (pr or {}).get("best", {}).get(sel) if sel else None
-    return {"basis": basis, "analysis": an, "extras": extras, "rule": robot.RULE_RANGES,
-            "risky": risky, "safer": safer,
+    return {"basis": basis, "analysis": an, "extras": extras, "rule": robot.RULE_ONE,
+            "risky": risky, "safer": safer, "one": one,
             "probs": {"robot": {k: round(v, 4) for k, v in robot_p.items()},
                       "market": {k: round(v, 4) for k, v in (market or {}).items()}},
             "prices": pr,
@@ -209,9 +211,9 @@ def lock(conn, now=None):
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (fx["id"], fx["league"], fx["kickoff"], fx["home"], fx["away"], stamp, f["basis"],
              json.dumps(f["probs"]), json.dumps(f["prices"]) if f["prices"] else None,
-             json.dumps({**f["picks"], "extras": f["extras"], "risky": f["risky"], "safer": f["safer"]}),
+             json.dumps({**f["picks"], "extras": f["extras"], "risky": f["risky"], "safer": f["safer"], "one": f["one"]}),
              f["tip"], f["tip_odds"], f["tip_best"],
-             json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_RANGES, "referee": referee_of(conn, fx)})))
+             json.dumps({**f["flags"], "why": f["why"], "rule": robot.RULE_ONE, "referee": referee_of(conn, fx)})))
         locked += 1
     conn.commit()
     log.info("Записани прогнози: %d (без цени и без модел: %d), денят свършва %s", locked, skipped,
@@ -262,7 +264,7 @@ def locked_entry(conn, ctx, fx, t, fitted):
             "locked": t["locked_at"], "basis": t["basis"], "probs": json.loads(t["probs_json"]),
             "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
             "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
-            "risky": picks.get("risky"), "safer": picks.get("safer"),
+            "risky": picks.get("risky"), "safer": picks.get("safer"), "one": picks.get("one"),
             "tip": t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
             "tip_best": t["tip_best"], "why": why, "flags": flags}
 
