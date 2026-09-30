@@ -97,6 +97,8 @@ def score(rows):
                 for t in tip_rows if t["tip_odds"])
     markets = {}
     for t in rows:
+        if t["basis"] != "model":      # без модел изборите са на букмейкъра - не се броят за робота
+            continue
         for mkt, sel in json.loads(t["picks_json"])["robot"].items():
             m = markets.setdefault(mkt, [0, 0])
             m[0] += robot.hit(sel, t["hg"], t["ag"])

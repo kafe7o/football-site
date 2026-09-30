@@ -412,7 +412,7 @@ function matchCard(m) {
     if (m.xg) sub.push(`очаквани голове ${m.xg[0].toFixed(1)} : ${m.xg[1].toFixed(1)}`);
     sub.push(m.b === "model" ? "процентите са на робота" : "роботът няма собствена оценка - процентите са на букмейкъра");
     const an = m.an || {};
-    const picks = Object.entries(m.pk || {}).map(([mkt, sel]) =>
+    const picks = m.b !== "model" ? "" : Object.entries(m.pk || {}).map(([mkt, sel]) =>
       `<span class="pk">${MKT[mkt]}: <b>${LABEL[sel]}</b> <span class="num">${pct(r[sel])}${o[sel] ? " @" + o[sel].toFixed(2) : ""}</span></span>`).join("") +
       ["cards", "corners"].filter(k => an[k]).map(k => { const x = an[k], ch = x.pick === "O" ? x.over : 1 - x.over;
         return x.skill
@@ -636,7 +636,9 @@ function money(rows) {
 }
 function hits(rows, who, mkt) {
   const key = who === "robot" ? "pk" : "mk";
-  const xs = rows.filter(r => r[key] && r[key][mkt]);
+  // без модел изборите „на робота“ са всъщност на букмейкъра - не се броят; и пазарът се сравнява
+  // на същите мачове (само тези, за които роботът има собствена оценка)
+  const xs = rows.filter(r => r[key] && r[key][mkt] && r.b === "model");
   if (!xs.length) return null;
   const h = xs.filter(r => hit(r[key][mkt], r.s)).length;
   return {n: xs.length, h, p: h / xs.length, se: Math.sqrt(h / xs.length * (1 - h / xs.length) / xs.length)};
@@ -724,7 +726,7 @@ function renderResults() {
       const d = fmtDate(r.k);
       if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
       const mark = sel => sel ? (hit(sel, r.s) ? `<span class="y">✓</span>` : `<span class="n">✗</span>`) : "";
-      const picks = Object.entries(r.pk || {}).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mark(sel)}</span>`).join("");
+      const picks = r.b === "model" ? Object.entries(r.pk || {}).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mark(sel)}</span>`).join("") : "";
       const pm = (key, name) => { const x = r[key]; if (!x) return ""; const h = hitAny(x[0], r.s, r.ct);
         return `<span class="pk"><b>${name}: ${lab(x[0])}</b> ${pct(x[1])}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${h == null ? `<span class="muted">(чака статистиката)</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`}</span>`; };
       const tip = r.rk ? pm("rk", "Рискова") + pm("sf", "По-сигурна")
