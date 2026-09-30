@@ -300,7 +300,7 @@ def settle(conn, now=None):
     for t in conn.execute(
             """SELECT t.fixture_id, t.league, t.kickoff, t.home, t.away, t.hg, t.ag, t.result_src, f.match_id
                  FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
-                WHERE t.kickoff < ? AND (t.hg IS NULL OR t.result_src = 'odds-api')""",
+                WHERE t.kickoff < ? AND (t.hg IS NULL OR t.result_src IN ('odds-api', 'espn'))""",
             ((now - FINISHED_AFTER).isoformat(),)).fetchall():
         m = None
         if t["match_id"]:

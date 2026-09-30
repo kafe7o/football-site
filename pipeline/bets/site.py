@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, robot, season, tips
+from . import config, db, live, robot, season, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -237,7 +237,7 @@ def build(conn, now=None, upcoming=None):
         "credits": db.get_meta(conn, "credits_remaining"),
         "leagues": {c: {"c": lg.country, "n": lg.name, "tier": lg.tier, "src": lg.source,
                         "rr": season.meetings(c) if lg.has_history else 0, "split": lg.split,
-                        "fast": bool(lg.sport)}      # бърз резултат (bets/live.py) - само с odds API
+                        "fast": bool(lg.sport) or c in live.ESPN}      # бърз резултат (bets/live.py): odds API или ESPN
                     for c, lg in LEAGUES.items()},
         "upcoming": [compact_forecast(m) for m in upcoming],
         "record": record(conn, now),
