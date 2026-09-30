@@ -66,7 +66,9 @@ def name(h, a):
 
 def settled_between(conn, start, end):
     out = []
-    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners
+                               FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
+                               LEFT JOIN match_stats s ON s.match_id = t.match_id
                               WHERE t.hg IS NOT NULL AND t.kickoff >= ? AND t.kickoff < ?""",
                           (start.isoformat(), end.isoformat())):
         out.append(t)
@@ -74,8 +76,22 @@ def settled_between(conn, start, end):
 
 
 def score(rows):
-    """Главният съвет: познати, общо, доход в евро при STAKE на съвет; и по пазари."""
-    tip_rows = [t for t in rows if t["tip"]]
+    """Рисковата и по-сигурната прогноза: познати, общо, доход в евро при STAKE (където има коефициент);
+    и по пазари. Картоните/корнерите се броят, когато football-data донесе статистиката."""
+    out = {}
+    for kind in ("risky", "safer"):
+        done = []
+        for t in rows:
+            x = json.loads(t["picks_json"]).get(kind)
+            if not x:
+                continue
+            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"])
+            if h is not None:
+                done.append((h, x.get("odds"), x["sel"]))
+        out[kind] = {"n": len(done), "hits": sum(h for h, _, _ in done),
+                     "money": sum(((o - 1) if h else -1) * STAKE for h, o, _ in done if o),
+                     "x": [h for h, _, s in done if s == "X"]}
+    tip_rows = [t for t in rows if t["tip"] and not json.loads(t["picks_json"]).get("safer")]
     hits = sum(robot.hit(t["tip"], t["hg"], t["ag"]) for t in tip_rows)
     money = sum(((t["tip_odds"] - 1) if robot.hit(t["tip"], t["hg"], t["ag"]) else -1) * STAKE
                 for t in tip_rows if t["tip_odds"])
@@ -85,15 +101,22 @@ def score(rows):
             m = markets.setdefault(mkt, [0, 0])
             m[0] += robot.hit(sel, t["hg"], t["ag"])
             m[1] += 1
-    return {"tips": len(tip_rows), "hits": hits, "money": money, "markets": markets}
+    return {"tips": len(tip_rows), "hits": hits, "money": money, "markets": markets, **out}
 
 
 def score_text(s, label):
     if not s["markets"]:
         return f"{label}: няма уредени мачове."
     parts = []
+    for kind, name in (("risky", "рисковите"), ("safer", "по-сигурните")):
+        k = s.get(kind) or {}
+        if k.get("n"):
+            x = k["x"]
+            parts.append(f"{label}: {name} - {k['hits']} от {k['n']} ({k['hits'] / k['n']:.0%})"
+                         + (f", от тях X: {sum(x)} от {len(x)}" if kind == "risky" and x else "")
+                         + (f"; при {STAKE} € на прогноза (където има коефициент): {k['money']:+.0f} €" if k["money"] else "") + ".")
     if s["tips"]:
-        parts.append(f"{label}: съветите - {s['hits']} от {s['tips']} ({s['hits'] / s['tips']:.0%}), "
+        parts.append(f"{label}: съветите по старото правило - {s['hits']} от {s['tips']} ({s['hits'] / s['tips']:.0%}), "
                      f"при {STAKE} € на съвет: {s['money']:+.0f} €.")
     names = {"1x2": "1/X/2", "dc": "двоен шанс", "ou": "над/под 2.5"}
     parts.append("По пазари: " + ", ".join(f"{names[k]} {v[0]}/{v[1]} ({v[0] / v[1]:.0%})"
@@ -115,16 +138,19 @@ def morning(conn, upcoming, now=None):
         yesterday = score(settled_between(conn, start_y, start_y + timedelta(days=1)))
         lines = []
         if today:
-            chance = lambda m: m["probs"]["robot"][m["tip"]]      # шансът на робота, не на коефициентите
-            with_tip = sorted((m for m in today if m.get("tip")), key=lambda m: -chance(m))
+            with_pred = [m for m in today if m.get("risky")]
             leagues = {m["league"] for m in today}
-            lines.append(f"{len(today)} мача в {len(leagues)} първенства, съвет с цена от 1.40 нагоре: {len(with_tip)}.")
-            if with_tip:
-                lines.append("Най-вероятните:")
-                for m in with_tip[:TOP]:
-                    p = chance(m)
-                    lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
-                                 f"{robot.LABEL[m['tip']]} @ {m['tip_odds']:.2f} ({p:.0%})")
+            xs = sum(1 for m in with_pred if m["risky"]["sel"] == "X")
+            lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} "
+                         f"(рискова X в {xs}). Без коефициенти и без фаворити.")
+            top10 = ("E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1")
+            order = sorted(with_pred, key=lambda m: (m["league"] not in top10, m["kickoff"]))
+            for m in order[:TOP]:
+                r, sf = m["risky"], m["safer"]
+                lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
+                             f"рискова {robot.label(r['sel'])} ({r['p']:.0%}), по-сигурна {robot.label(sf['sel'])} ({sf['p']:.0%})")
+            if len(order) > TOP:
+                lines.append(f"... и още {len(order) - TOP} - на сайта.")
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

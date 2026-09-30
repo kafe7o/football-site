@@ -51,6 +51,14 @@ class Context:
         self.now = now
         self.tables = {}
         self.extras = {}
+        self.bases = {}
+
+    def base(self, league):
+        """Колко често в лигата излизат 1, X и 2 (за рисковата прогноза)."""
+        if league not in self.bases:
+            from . import robot
+            self.bases[league] = robot.base_rates(self.conn, league)
+        return self.bases[league]
 
     def table(self, league):
         if league not in self.tables:

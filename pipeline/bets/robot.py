@@ -67,6 +67,92 @@ def rule_of(flags, locked_at):
     return (flags or {}).get("rule") or (RULE if locked_at >= RULE_CHANGED_AT else "market_likely")
 
 
+# ---------- рискова и по-сигурна прогноза (от 2026-09-30 вечерта) ----------
+# Професионалистът: „като дава прогнози, да не се съобразява с коефициенти и фаворити“; „да
+# използва и трите знака - странно е, че няма X“; „за всеки мач рискова прогноза (напр. X) и
+# по-сигурна (1X, под 2.5, над 3.5 картона - каквото вижда като събития в мача)“. Проверено назад
+# (research/signs_backtest.py, 36 000 мача, 2023-2026):
+#   рисковата „спрямо обичайното за лигата“: знаци 1 47% / X 13% / 2 40%; познава 46%
+#     (най-вероятният знак - 49%, но X почти никога); X познава 29.6% при ср. коеф. 3.27;
+#   по-сигурната - най-вероятното събитие: познава 80%; двоен шанс 27%, над 1.5 - 37%, под 3.5 - 36%.
+# Коефициентите не участват в избора - само се показват до него.
+RULE_SIGNS = "signs"
+GOAL_LINES = {"O15": ("O", 1.5), "U15": ("U", 1.5), "O": ("O", 2.5), "U": ("U", 2.5), "O35": ("O", 3.5), "U35": ("U", 3.5)}
+LABELS = {**LABEL, "O15": "над 1.5", "U15": "под 1.5", "O35": "над 3.5", "U35": "под 3.5",
+          "GG": "двата вкарват", "NG": "не вкарват и двата"}
+
+
+def label(sel):
+    """Етикет за всеки избор, и за картоните/корнерите: CO4.5 = картони над 4.5, KU9.5 = корнери под 9.5."""
+    if sel and sel[0] in "CK" and len(sel) > 2 and sel[1] in "OU":
+        return f"{'картони' if sel[0] == 'C' else 'корнери'} {'над' if sel[1] == 'O' else 'под'} {sel[2:]}"
+    return LABELS.get(sel, sel)
+
+
+def risky_sign(p, base):
+    """Рисковата прогноза: знакът, чийто шанс по робота е най-много НАД обичайния за лигата
+    (base = честотата на 1, X и 2 в лигата). Фаворитът не получава предимство само защото е фаворит."""
+    return max(("1", "X", "2"), key=lambda s: p[s] / base[s])
+
+
+def goal_line_probs(p):
+    """Шансът за над 1.5 / 2.5 / 3.5 и двата вкарват - от очакваните голове на робота."""
+    import numpy as np
+    from .model import score_grid
+    grid = score_grid(p["xg_home"], p["xg_away"])
+    k = np.arange(grid.shape[0])
+    total = k[:, None] + k[None, :]
+    return {1.5: float(grid[total >= 2].sum()), 2.5: float(grid[total >= 3].sum()),
+            3.5: float(grid[total >= 4].sum()), "GG": float(grid[1:, 1:].sum())}
+
+
+def safer_pick(p, sign, extras=None):
+    """По-сигурната прогноза: най-вероятното събитие измежду двойния шанс с рисковия знак, над/под
+    1.5/2.5/3.5 гола, двата вкарват да/не, картони и корнери над/под основната линия.
+    Връща (избор, шанс)."""
+    dc = {"1": "1X", "2": "X2", "X": max(("1X", "X2"), key=lambda s: p[s])}[sign]
+    cands = [(dc, p[dc])]
+    if p.get("xg_home") is not None:
+        g = goal_line_probs(p)
+        for line, code in ((1.5, "15"), (2.5, ""), (3.5, "35")):
+            over = g[line]
+            cands.append((("O" if over >= 0.5 else "U") + code, max(over, 1 - over)))
+        cands.append(("GG" if g["GG"] >= 0.5 else "NG", max(g["GG"], 1 - g["GG"])))
+    for kind, letter in (("cards", "C"), ("corners", "K")):
+        x = (extras or {}).get(kind)
+        if x:
+            cands.append((f"{letter}{x['pick']}{x['line']}", x["over"] if x["pick"] == "O" else 1 - x["over"]))
+    return max(cands, key=lambda c: c[1])
+
+
+def hit_any(sel, hg, ag, cards=None, corners=None):
+    """Излязъл ли е изборът - и за линиите на головете, картоните и корнерите. None - още няма данни."""
+    if sel in GOAL_LINES:
+        side, line = GOAL_LINES[sel]
+        return (hg + ag > line) == (side == "O")
+    if sel == "GG":
+        return hg > 0 and ag > 0
+    if sel == "NG":
+        return hg == 0 or ag == 0
+    if sel and sel[0] in "CK" and len(sel) > 2 and sel[1] in "OU":
+        total = cards if sel[0] == "C" else corners
+        if total is None:
+            return None
+        return (total > float(sel[2:])) == (sel[1] == "O")
+    return hit(sel, hg, ag)
+
+
+def base_rates(conn, league, years=4):
+    """Честотата на 1, X, 2 в лигата за последните години (за рисковата прогноза)."""
+    from datetime import date
+    since = f"{date.today().year - years}-{date.today().isoformat()[5:]}"
+    row = conn.execute("SELECT COUNT(*), AVG(fthg > ftag), AVG(fthg = ftag), AVG(fthg < ftag) FROM matches "
+                       "WHERE league = ? AND fthg IS NOT NULL AND date >= ?", (league, since)).fetchone()
+    if not row or row[0] < 150:
+        return {"1": 0.44, "X": 0.26, "2": 0.30}          # средното на всички 39 лиги от 2016
+    return {"1": row[1], "X": row[2], "2": row[3]}
+
+
 def result_of(hg, ag):
     return "1" if hg > ag else ("X" if hg == ag else "2")
 

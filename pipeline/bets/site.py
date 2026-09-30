@@ -49,6 +49,13 @@ def compact_analysis(a):
     return out
 
 
+def _pred(x):
+    """Рисковата/по-сигурната прогноза: [избор, шанс по робота, коефициент или None, обичайното за лигата]."""
+    if not x:
+        return None
+    return [x["sel"], x["p"], x.get("odds"), x.get("base")]
+
+
 def compact_forecast(m):
     """Един мач за таба с прогнозите - кратки ключове, за да е малък файлът."""
     out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
@@ -67,6 +74,7 @@ def compact_forecast(m):
         "n": (m.get("prices") or {}).get("n"),
         "pk": m["picks"]["robot"], "t": m.get("tip"), "to": m.get("tip_odds"), "tb": m.get("tip_best"),
         "rl": m.get("rule"),
+        "rk": _pred(m.get("risky")), "sf": _pred(m.get("safer")),
         "w": m.get("why"), "f": [k for k, v in (m.get("flags") or {}).items() if v is True],
     })
     if r.get("xg_home") is not None:
@@ -97,6 +105,8 @@ def record(conn, now):
                     "pp": {mkt: short(probs["robot"].get(sel)) for mkt, sel in rp.items()},
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
                     "rl": robot.rule_of(flags, t["locked_at"]), "lk": t["locked_at"],
+                    "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer")),
+                    "ct": [t["cards"], t["corners"]],
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
                     # football-data 1-3 дни след мача; дотогава None
@@ -126,6 +136,19 @@ def backtest_summary():
         keep[code] = {k: v for k, v in item.items() if v}
     return {"rule": rule, "start": bt.get("start"), "select_end": bt.get("select_end"),
             "generated": bt.get("generated"), "leagues": keep}
+
+
+def signs_summary():
+    """Рисковата и по-сигурната назад (data/signs_backtest.json): общо и по лиги."""
+    sb = read_json("signs_backtest.json", {})
+    lift = ((sb.get("results") or {}).get("lift")) or {}
+    keep = ("n", "hit", "roi", "roi_se", "odds")
+    pick = lambda d: {k: d[k] for k in keep if d and k in d} if d else None
+    return {"share": lift.get("share"), "by_sign": {k: pick(v) for k, v in (lift.get("by_sign") or {}).items()},
+            "risky": {k: pick(v) for k, v in (lift.get("risky") or {}).items()},
+            "safer": {k: pick(v) for k, v in (lift.get("safer") or {}).items()},
+            "safer_kinds": lift.get("safer_kinds"),
+            "leagues": {lg: {k: pick(v) for k, v in d.items()} for lg, d in (lift.get("leagues") or {}).items()}}
 
 
 def extras_summary():
@@ -186,6 +209,7 @@ def build(conn, now=None, upcoming=None):
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),
         "extras_bt": extras_summary(),
+        "signs_bt": signs_summary(),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),
         "url": config.SITE_URL,
