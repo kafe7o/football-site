@@ -565,6 +565,31 @@ async function fetchBonus() {
   if (got) { renderForecasts(); renderResults(); }
 }
 
+// Резултатите до минути след края (bets/live.py пише results/<ден>.json): страницата ги дотегля сама
+// всяка минута и мести мача от „Чакат резултат“ в „Мач по мач“, без да чака часовото обновяване.
+function toRecord(m, x) {
+  const an = m.an || {}, ex = {};
+  ["cards", "corners"].forEach(k => { if (an[k]) ex[k] = [an[k].pick, an[k].line, null, an[k].total]; });
+  return {i: m.i, k: m.k, l: m.l, h: m.h, a: m.a, b: m.b, s: x.s, pk: m.pk || {}, mk: {}, r: m.r || {}, o: m.o || {},
+          xg: m.xg || null, t: m.t, to: m.to, rl: m.rl, rk: m.rk, sf: m.sf, one: m.one, ct: [null, null], f: m.f || [],
+          w: m.w, x: ex, ref: an.referee ? an.referee.name : null, ya: [null, null], fast: x.at};
+}
+async function fetchResults() {
+  const due = PEND.filter(m => Date.now() - new Date(m.k).getTime() > 95 * 60e3);
+  if (!due.length) return;
+  let moved = 0;
+  for (const day of [...new Set(due.map(m => m.k.slice(0, 10)))]) {
+    try {
+      const r = await fetch(`results/${day}.json?t=${Date.now()}`, {cache: "no-store"});
+      if (!r.ok) continue;
+      const d = await r.json();
+      due.forEach(m => { const x = d[m.i]; if (!x || !PEND.includes(m)) return;
+        PEND.splice(PEND.indexOf(m), 1); REC.push(toRecord(m, x)); moved++; });
+    } catch (e) { /* файлът още го няма - следващата минута */ }
+  }
+  if (moved) { REC.sort((a, b) => b.k.localeCompare(a.k)); renderResults(); }
+}
+
 function xSkill(kind) { return !!(XBT[kind] && XBT[kind].skill); }
 
 function formChips(xs) {
@@ -809,6 +834,7 @@ function resultRow(r) {
     : `<span class="muted">${REF_LEAGUES.includes(r.l) ? "името още не е качено" : "няма данни - имената на съдиите идват само за Англия и Шотландия"}</span>`]);
   const bo = BONUS[r.i];
   if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.one ? ` · прогнозата ${lab(bo.one[0])} ${mk(hm(bo.one[0]))}` : ""}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${mk(hm(bo.rk[0]))}` : ""}`]);
+  if (r.fast) dd.push(["Резултатът", `<span class="muted small">от odds API в ${fmtTime(r.fast)}, минути след края; официалният от football-data го сверява до 1-3 дни</span>`]);
   if (r.w && !p1) dd.push(["Защо без прогноза", esc(r.w)]);
   const details = `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>`;
   const lost = mh === false ? `<div class="lost">${oneLine}${x12}${r.one ? "" : preds}</div>` : "";
@@ -822,7 +848,7 @@ function pendingBox() {
   if (!PEND.length) return "";
   const xs = PEND.slice().sort((a, b) => a.k.localeCompare(b.k));
   return `<details class="pend" id="rs-pend"><summary><span>Чакат резултат: <b>${xs.length}</b> ${xs.length === 1 ? "мач" : "мача"}</span><span class="arr" aria-hidden="true">▾</span></summary>
-    <div class="inner"><div class="muted small" style="margin:0 2px 6px">Мачът идва тук 10 мин. след началото. Резултатът обикновено идва няколко часа след края; за първенствата без odds API (напр. Английската национална лига) - когато football-data го качи, 1-3 дни.</div>
+    <div class="inner"><div class="muted small" style="margin:0 2px 6px">Мачът идва тук 10 мин. след началото и минава в „Мач по мач“ до няколко минути след края - страницата проверява всяка минута. За първенствата без бърз източник (Англия 5-то ниво, Шотландия 2-4, Румъния) - когато football-data качи резултата, 1-3 дни.</div>
     ${xs.map(m => `<div class="small muted" style="margin:10px 2px 3px">${flag(m.l)} ${esc(title(m.l))} · започна ${fmtDate(m.k)} ${fmtTime(m.k)}</div>` + matchCard(m)).join("")}</div></details>`;
 }
 
@@ -1065,7 +1091,9 @@ function renderPro() {
 // ---------- старт ----------
 initForecasts();
 fetchBonus();
+setInterval(fetchResults, 60e3);
 initResults();
+fetchResults();
 initLeagues();
 renderPro();
 const start = (location.hash || "").slice(1) || store("tab");

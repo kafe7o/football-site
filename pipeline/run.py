@@ -6,6 +6,7 @@
                              новите мачове, анализът по първенства, веднъж месечно роботът назад
     python run.py local      лаптопът (ръчно, когато работим): архивът и копие на сайта от облака
     python run.py bonus --slot <UTC ISO>   бонус анализът час преди мачовете от топ 5 (bonus.yml)
+    python run.py watch --seconds N       наблюдателят между часовите пускания: резултатите до минути след края
     python run.py seed       строи базата на облака от архива (последните 3 сезона + текущия)
     python run.py site       само строи сайта от текущата база
     python run.py status     какво има в базата и колко кредита са останали
@@ -230,7 +231,8 @@ def local(log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus"])
+    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus", "watch"])
+    parser.add_argument("--seconds", type=int, default=2900, help="за watch: колко секунди да наблюдава")
     parser.add_argument("--slot", default=None, help="за bonus: началният час на мачовете (UTC ISO)")
     parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
     parser.add_argument("--demo", action="store_true", help="за bonus: показ - без чакане и без запис, известие с „ПРОБА“")
@@ -261,6 +263,11 @@ def main():
                         prefix="ПРОБА - " if args.demo else "")
         conn.close()
         return 0 if out is not None else 1
+    if args.command == "watch":
+        # наблюдателят между две часови пускания: резултатите до минути след края (bets/live.py)
+        from bets import live
+        live.watch(args.seconds)
+        return 0
     if args.command == "seed":
         from pathlib import Path
         seed(log, Path(args.target) if args.target else config.SITE_DIR / "robot.db")

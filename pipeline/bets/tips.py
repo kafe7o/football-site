@@ -293,6 +293,9 @@ def settle(conn, now=None):
     now = now or datetime.now(timezone.utc)
     stamp = now.isoformat(timespec="seconds")
     done = corrected = 0
+    # 0. бързите резултати на наблюдателя (bets/live.py, results/*.json) - без кредити
+    from . import live
+    done += live.settle_from_files(conn, now)
     # 1. от историята - безплатно; презаписва и резултата от API, ако се различава
     for t in conn.execute(
             """SELECT t.fixture_id, t.league, t.kickoff, t.home, t.away, t.hg, t.ag, t.result_src, f.match_id

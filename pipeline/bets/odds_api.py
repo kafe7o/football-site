@@ -119,7 +119,7 @@ def finished(sport, days_from=3, cache_minutes=SCORES_CACHE_MINUTES):
             continue
         try:
             out.append({"id": event["id"], "home_team": home, "away_team": away,
-                        "commence_time": event.get("commence_time"),
+                        "commence_time": event.get("commence_time"), "last_update": event.get("last_update"),
                         "home": float(by_name[home]), "away": float(by_name[away])})
         except (TypeError, ValueError):
             log.warning("%s: нечислов резултат за %s", sport, event.get("id"))

@@ -60,17 +60,43 @@ jobs:
           git push
 
   next:
-    # Поръчва следващото пускане - и когато това е паднало, за да не спре веригата.
+    # Поръчва следващото пускане - и когато това е паднало, за да не спре веригата. Докато чака (~50 мин.),
+    # наблюдава мачовете, които свършват (bets/live.py): резултатът до минути след края, в results/.
     needs: update
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Изчакване и следващо пускане
+      - uses: actions/checkout@v4
+        with:
+          ref: main                     # последното от update - базата с днешните записи
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: Наблюдател на резултатите (до следващото пускане)
+        continue-on-error: true         # каквото и да стане тук, веригата продължава
         env:
-          GH_TOKEN: ${{ github.token }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FOOTBALL_DB: ${{ github.workspace }}/robot.db
+          FOOTBALL_SITE: ${{ github.workspace }}
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
+          PYTHONIOENCODING: utf-8
           WAIT_SECONDS: ${{ vars.CHAIN_WAIT_SECONDS || '3000' }}
         run: |
-          sleep "$WAIT_SECONDS"
+          git config user.name "football-bot"
+          git config user.email "football-bot@users.noreply.github.com"
+          cd pipeline && timeout $((WAIT_SECONDS + 300)) python run.py watch --seconds $((WAIT_SECONDS - 120))
+
+      - name: Следващо пускане
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           waiting=$(gh run list -R "${{ github.repository }}" -w robot.yml -L 20 \
                     --json status,databaseId -q "[.[] | select(.status==\"queued\" or .status==\"pending\" or .status==\"waiting\") | select(.databaseId != ${{ github.run_id }})] | length")
           if [ "${waiting:-0}" -eq 0 ]; then
