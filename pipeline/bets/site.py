@@ -56,6 +56,9 @@ def _pred(x):
     return [x["sel"], x["p"], x.get("odds"), x.get("base"), x.get("src")]
 
 
+SELS = ("1", "X", "2", "1X", "X2", "12", "O", "U")
+
+
 def compact_forecast(m):
     """Един мач за таба с прогнозите - кратки ключове, за да е малък файлът."""
     out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
@@ -102,9 +105,11 @@ def record(conn, now):
         out.append({"i": t["fixture_id"], "k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"],
                     "a": t["away_src"] or t["away"], "b": t["basis"], "s": [t["hg"], t["ag"]],
                     "pk": rp, "mk": mp,
-                    "po": {mkt: avg.get(sel) for mkt, sel in rp.items()},
-                    "mo": {mkt: avg.get(sel) for mkt, sel in mp.items()},
-                    "pp": {mkt: short(probs["robot"].get(sel)) for mkt, sel in rp.items()},
+                    # шансовете (на робота, а без модел - на букмейкъра) и средните коефициенти от записа
+                    "r": {k: short(probs["robot"].get(k)) for k in SELS if probs["robot"].get(k) is not None},
+                    "o": {k: round(v, 2) for k, v in avg.items() if k in SELS and v and v > 1.01},
+                    "xg": ([round(probs["robot"]["xg_home"], 2), round(probs["robot"]["xg_away"], 2)]
+                           if probs["robot"].get("xg_home") is not None else None),
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
                     "rl": robot.rule_of(flags, t["locked_at"]), "lk": t["locked_at"],
                     "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer")),
@@ -114,19 +119,6 @@ def record(conn, now):
                     # football-data 1-3 дни след мача; дотогава None
                     "x": {k: [v["pick"], v["line"], t[k], v.get("total")] for k, v in (picks.get("extras") or {}).items()},
                     "ref": t["referee"] or flags.get("referee"), "ya": [t["hy"], t["ay"]]})
-    return out
-
-
-def pending(conn, now):
-    """Записани, но още неуредени (започнали или чакат резултат) - с прогнозите, за списъка."""
-    out = []
-    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src FROM tips t
-                               LEFT JOIN fixtures f ON f.id = t.fixture_id
-                              WHERE t.hg IS NULL AND t.kickoff <= ? ORDER BY t.kickoff""", (now.isoformat(),)):
-        picks, flags = json.loads(t["picks_json"]), json.loads(t["flags_json"] or "{}")
-        out.append({"i": t["fixture_id"], "k": t["kickoff"], "l": t["league"], "h": t["home_src"] or t["home"],
-                    "a": t["away_src"] or t["away"], "t": t["tip"], "to": t["tip_odds"],
-                    "rl": robot.rule_of(flags, t["locked_at"]), "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer"))})
     return out
 
 
@@ -229,7 +221,8 @@ def build(conn, now=None, upcoming=None):
                     for c, lg in LEAGUES.items()},
         "upcoming": [compact_forecast(m) for m in upcoming],
         "record": record(conn, now),
-        "pending": pending(conn, now),
+        # започнали, без резултат - страницата ги мести в „Чакат резултат“ 10 мин. след началото
+        "pending": [compact_forecast(m) for m in tips.started(conn, now)],
         "first_tip": db.get_meta(conn, "first_tip"),
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),

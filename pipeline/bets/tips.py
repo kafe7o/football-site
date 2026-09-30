@@ -231,22 +231,7 @@ def preview(conn, now=None, days=14):
         if fx["league"] not in models:
             models[fx["league"]] = fitted_model(conn, fx["league"], now)
         if fx["id"] in locked:
-            t = locked[fx["id"]]
-            flags = json.loads(t["flags_json"] or "{}")
-            why = flags.pop("why", None)
-            rule = robot.rule_of(flags, t["locked_at"])
-            flags.pop("rule", None)
-            flags.pop("referee", None)
-            picks = json.loads(t["picks_json"])
-            an, _ = match_analysis(ctx, fx, models[fx["league"]], flags)
-            out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
-                        "away": fx["away"], "home_src": fx["home_src"], "away_src": fx["away_src"],
-                        "locked": t["locked_at"], "basis": t["basis"], "probs": json.loads(t["probs_json"]),
-                        "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
-                        "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
-                        "risky": picks.get("risky"), "safer": picks.get("safer"),
-                        "tip": t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
-                        "tip_best": t["tip_best"], "why": why, "flags": flags})
+            out.append(locked_entry(conn, ctx, fx, locked[fx["id"]], models[fx["league"]]))
             continue
         f = forecast(conn, fx, models[fx["league"]], dates, ctx)
         if f is None:
@@ -256,6 +241,47 @@ def preview(conn, now=None, days=14):
             continue
         out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
                     "away": fx["away"], "home_src": fx["home_src"], "away_src": fx["away_src"], "locked": None, **f})
+    return out
+
+
+def locked_entry(conn, ctx, fx, t, fitted):
+    """Записаната прогноза (ред от tips) във вида на preview. fx може да липсва - тогава без анализ."""
+    flags = json.loads(t["flags_json"] or "{}")
+    why = flags.pop("why", None)
+    rule = robot.rule_of(flags, t["locked_at"])
+    flags.pop("rule", None)
+    flags.pop("referee", None)
+    picks = json.loads(t["picks_json"])
+    an = None
+    if fx is not None:
+        if t["basis"] == "model":
+            fitted = own_or_pyramid(conn, fx, fitted)[1] or fitted     # новак - анализът от резервния модел
+        an, _ = match_analysis(ctx, fx, fitted, flags)
+    return {"id": t["fixture_id"], "league": t["league"], "kickoff": t["kickoff"], "home": t["home"],
+            "away": t["away"], "home_src": fx["home_src"] if fx else None, "away_src": fx["away_src"] if fx else None,
+            "locked": t["locked_at"], "basis": t["basis"], "probs": json.loads(t["probs_json"]),
+            "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
+            "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
+            "risky": picks.get("risky"), "safer": picks.get("safer"),
+            "tip": t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
+            "tip_best": t["tip_best"], "why": why, "flags": flags}
+
+
+def started(conn, now=None):
+    """Записаните прогнози за започнали мачове без резултат - „Чакат резултат“ на сайта, със
+    всичко, което мачът имаше в „Прогнози“ (собственикът, 2026-10-01)."""
+    now = now or datetime.now(timezone.utc)
+    ctx = analysis.Context(conn, now)
+    models, out = {}, []
+    for t in conn.execute("SELECT * FROM tips WHERE hg IS NULL AND kickoff <= ? ORDER BY kickoff",
+                          (now.isoformat(),)).fetchall():
+        fx = conn.execute("SELECT * FROM fixtures WHERE id = ?", (t["fixture_id"],)).fetchone()
+        if fx is None:
+            log.warning("Записана прогноза без мача в разписанието (без анализ): %s %s - %s",
+                        t["league"], t["home"], t["away"])
+        elif fx["league"] not in models:
+            models[fx["league"]] = fitted_model(conn, fx["league"], now)
+        out.append(locked_entry(conn, ctx, fx, t, models.get(t["league"])))
     return out
 
 

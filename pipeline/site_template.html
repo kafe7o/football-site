@@ -149,6 +149,14 @@ td .num, td.num { font-family: "IBM Plex Mono", monospace; }
 .dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 12.5px; margin-top: 6px; }
 .dl dt { color: var(--muted); } .dl dd { margin: 0; }
 @media (max-width: 560px) { .rs2 .lost, .rs2 details.an { margin-left: 0; } }
+.dl .alt { color: var(--muted); } .dl .won { font-weight: 700; text-decoration: underline; }
+/* „Чакат резултат“ - свито, броят и стрелката вдясно */
+details.pend { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 12px; }
+details.pend > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 13px; cursor: pointer; list-style: none; font-size: 14px; }
+details.pend > summary::-webkit-details-marker { display: none; }
+details.pend > summary .arr { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; background: var(--chip); font-size: 15px; transition: transform .15s; }
+details.pend[open] > summary .arr { transform: rotate(180deg); }
+details.pend > .inner { padding: 0 10px 10px; }
 .res .sc { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
 .res .rp { grid-column: 2 / 4; display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; }
 .y { color: var(--ok); font-weight: 600; } .n { color: var(--bad); font-weight: 600; }
@@ -372,16 +380,33 @@ tabs.forEach(t => t.addEventListener("click", () => selectTab(t.id)));
 })();
 
 // ======================= ПРОГНОЗИ =======================
-const UP = DATA.upcoming || [];
+// Започналият мач стои тук до 10 мин. след началото и после минава в „Резултати“ -> „Чакат резултат“
+// (собственикът, 2026-10-01). По часовника на телефона - не по часа на обновяването; проверка всяка минута.
+const LIVE_AFTER = 10 * 60e3;
+const SETTLED = new Set((DATA.record || []).map(r => r.i));
+const ALL = (DATA.pending || []).concat(DATA.upcoming || []).filter(m => !SETTLED.has(m.i));
+const isPending = m => new Date(m.k).getTime() + LIVE_AFTER <= Date.now();
+const UP = ALL.filter(m => !isPending(m));
+const PEND = ALL.filter(m => isPending(m) && m.lk);       // само записаните - те са честният запис
 const fc = {day: null, q: "", league: "", tip: false, sort: "time"};
 function btTip(code) { const b = BT[code]; return b ? b[`tip:${RULE}:all`] : null; }
 
 function initForecasts() {
+  drawDays();
+  document.getElementById("fc-q").oninput = e => { fc.q = e.target.value.trim().toLowerCase(); renderForecasts(); };
+  document.getElementById("fc-league").onchange = e => { fc.league = e.target.value; renderForecasts(); };
+  document.getElementById("fc-sort").onchange = e => { fc.sort = e.target.value; renderForecasts(); };
+  document.getElementById("fc-tip").onchange = e => { fc.tip = e.target.checked; renderForecasts(); };
+  fillLeagues();
+  renderForecasts();
+}
+
+function drawDays() {
   const days = {};
   UP.forEach(m => { const k = dayKey(m.k); days[k] = (days[k] || 0) + 1; });
   const keys = Object.keys(days).sort();
   const today = dayKey(new Date().toISOString());
-  fc.day = keys.includes(today) ? today : keys[0];
+  if (!keys.includes(fc.day)) fc.day = keys.includes(today) ? today : keys[0];
   const tomorrow = dayKey(new Date(Date.now() + 864e5).toISOString());
   const box = document.getElementById("fc-days");
   box.innerHTML = keys.map(k => {
@@ -391,13 +416,15 @@ function initForecasts() {
   }).join("") || "";
   box.onclick = e => { const b = e.target.closest("button"); if (!b) return; fc.day = b.dataset.d;
     box.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); fillLeagues(); renderForecasts(); };
-  document.getElementById("fc-q").oninput = e => { fc.q = e.target.value.trim().toLowerCase(); renderForecasts(); };
-  document.getElementById("fc-league").onchange = e => { fc.league = e.target.value; renderForecasts(); };
-  document.getElementById("fc-sort").onchange = e => { fc.sort = e.target.value; renderForecasts(); };
-  document.getElementById("fc-tip").onchange = e => { fc.tip = e.target.checked; renderForecasts(); };
-  fillLeagues();
-  renderForecasts();
 }
+
+// всяка минута: мачовете, започнали преди 10 мин., минават от „Прогнози“ в „Чакат резултат“
+setInterval(() => {
+  const moved = UP.filter(isPending);
+  if (!moved.length) return;
+  moved.forEach(m => { UP.splice(UP.indexOf(m), 1); if (m.lk) PEND.push(m); });
+  drawDays(); fillLeagues(); renderForecasts(); renderResults();
+}, 60e3);
 
 function fillLeagues() {
   const cnt = {};
@@ -497,6 +524,7 @@ function bonusBlock(m) {
   const b = BONUS[m.i];
   if (!TOP5.includes(m.l)) return "";
   if (!b) {
+    if (new Date(m.k).getTime() <= Date.now()) return "";
     const at = new Date(new Date(m.k).getTime() - 3600e3);
     return `<div class="bonus"><b class="t">Бонус анализ</b>ще е в ${fmtTime(at.toISOString())} (час преди мача) - с известие дали има промени.</div>`;
   }
@@ -509,7 +537,7 @@ function bonusBlock(m) {
 async function fetchBonus() {
   // мачовете от топ 5, започващи до 3 часа: дотегля готовите бонус анализи без да чака часовото обновяване
   const now = Date.now();
-  const want = [...new Set(UP.filter(m => TOP5.includes(m.l) && !BONUS[m.i] && new Date(m.k) - now < 3 * 3600e3 && new Date(m.k) - now > -2 * 3600e3).map(m => slotName(m.k)))];
+  const want = [...new Set(ALL.filter(m => TOP5.includes(m.l) && !BONUS[m.i] && new Date(m.k) - now < 3 * 3600e3 && new Date(m.k) - now > -2 * 3600e3).map(m => slotName(m.k)))];
   let got = 0;
   for (const name of want) {
     try {
@@ -520,7 +548,7 @@ async function fetchBonus() {
                                           sf: x.new && x.new.safer ? [x.new.safer.sel, x.new.safer.p, x.new.safer.odds] : null}; got++; });
     } catch (e) { /* няма още файл - нищо */ }
   }
-  if (got) renderForecasts();
+  if (got) { renderForecasts(); renderResults(); }
 }
 
 function xSkill(kind) { return !!(XBT[kind] && XBT[kind].skill); }
@@ -709,38 +737,67 @@ function initResults() {
 }
 
 // Един мач в „Резултати“: до резултата ✓/✗ на прогнозата за залог (по-сигурната; без нея - рисковата;
-// по старите правила - съветът). При ✓ - само падащото меню; при ✗ - отдолу какво е заложено и излязло,
-// и менюто. В менюто: рисковата и по-сигурната, пазарите, картоните и корнерите, съдията, бонусът.
-function resultRow(r, waiting) {
-  const hm = (sel) => waiting || !r.s ? null : hitAny(sel, r.s, r.ct);
+// по старите правила - съветът). При ✓ - само „Подробно“; при ✗ - отдолу прогнозите и 1/X/2 с ✓/✗, и
+// „Подробно“: шансовете за 1/X/2 и кое излезе, двоен шанс, над/под, очаквани голове, картони, корнери,
+// съдията, бонусът. Където източникът няма данни (картони, съдии) - пише го, вместо да мълчи.
+function resultRow(r) {
+  const hm = sel => hitAny(sel, r.s, r.ct);
   const mk = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
   const main = r.sf ? ["По-сигурна", r.sf] : r.rk ? ["Рискова", r.rk] : r.t ? ["Съвет", [r.t, null, r.to]] : null;
   const mh = main ? hm(main[1][0]) : null;
-  const big = waiting ? `<span class="big w" title="Чака резултат">…</span>`
-    : !main ? `<span class="big w" title="Без прогноза на робота">–</span>`
+  const big = !main ? `<span class="big w" title="Без прогноза на робота">–</span>`
     : mh == null ? `<span class="big w" title="Чака статистиката">…</span>`
     : mh ? `<span class="big y" title="${esc(main[0])}: излезе">✓</span>` : `<span class="big n" title="${esc(main[0])}: не излезе">✗</span>`;
-  const predLine = (name, x) => x ? `<span class="pk"><b>${name}: ${lab(x[0])}</b>${x[1] != null ? " " + pct(x[1]) : ""}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${waiting ? "" : mk(hm(x[0]))}</span>` : "";
-  const old = !r.rk && r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${waiting ? "" : mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
+  const R = r.r || {}, O = r.o || {}, own = r.b === "model";
+  const predLine = (name, x) => x ? `<span class="pk"><b>${name}: ${lab(x[0])}</b>${x[1] != null ? " " + pct(x[1]) : ""}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${mk(hm(x[0]))}</span>` : "";
+  const old = !r.rk && r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
+  const p1 = (r.pk || {})["1x2"];
+  const x12 = p1 ? `<span class="pk">1/X/2: <b>${LABEL[p1]}</b>${R[p1] != null ? " " + pct(R[p1]) : ""}${O[p1] ? ` @${O[p1].toFixed(2)}` : ""} ${mk(hit(p1, r.s))}</span>` : "";
   const preds = predLine("Рискова", r.rk) + predLine("По-сигурна", r.sf) + old;
-  // подробностите
+  const res = r.s[0] > r.s[1] ? "1" : r.s[0] === r.s[1] ? "X" : "2";
   const dd = [];
   if (preds) dd.push(["Прогнози", preds]);
-  if (!waiting && r.b === "model" && r.pk) dd.push(["По пазари", Object.entries(r.pk).map(([k, sel]) => `<span class="pk">${MKT[k]}: ${LABEL[sel]} ${mk(hit(sel, r.s))}</span>`).join(" ")]);
-  Object.entries(r.x || {}).forEach(([k, v]) => {
-    const h = v[2] == null ? null : (v[0] === "O" ? v[2] > v[1] : v[2] < v[1]);
-    dd.push([XK[k], `${v[3] != null ? `очаквани ${(+v[3]).toFixed(1)} · ` : ""}изборът ${v[0] === "O" ? "над" : "под"} ${v[1]} ${waiting ? "" : mk(h)}${v[2] != null ? ` · станаха <b>${v[2]}</b>` : ""}`]);
+  if (R["1"] != null) dd.push(["1 / X / 2", ["1", "X", "2"].map(k => `<span class="${k === res ? "won" : "alt"}">${k} ${pct(R[k])}${O[k] ? ` @${O[k].toFixed(2)}` : ""}</span>`).join(" · ") +
+    ` · излезе <b>${res}</b>${p1 ? ` · изборът ${LABEL[p1]} ${mk(hit(p1, r.s))}` : ""}`]);
+  const one = (name, key) => { const sel = (r.pk || {})[key]; if (!sel) return;
+    dd.push([name, `<b>${LABEL[sel]}</b>${R[sel] != null ? " " + pct(R[sel]) : ""}${O[sel] ? ` @${O[sel].toFixed(2)}` : ""} ${mk(hit(sel, r.s))}${key === "ou" ? ` · голове ${r.s[0] + r.s[1]}` : ""}`]); };
+  one("Двоен шанс", "dc");
+  one("Над/под 2.5", "ou");
+  if (R["1"] != null) dd.push(["", `<span class="muted small">${own ? "шансовете са на робота; коефициентите - средните на букмейкърите при записа" : "роботът нямаше собствена оценка за тези отбори - шансовете са на букмейкъра"}</span>`]);
+  if (r.xg) dd.push(["Очаквани голове", `${r.xg[0].toFixed(1)} : ${r.xg[1].toFixed(1)} · станаха <b>${r.s[0]} : ${r.s[1]}</b>`]);
+  const hasStats = r.ct && (r.ct[0] != null || r.ct[1] != null);
+  ["cards", "corners"].forEach((k, i) => {
+    const v = (r.x || {})[k];
+    if (v) {
+      const h = v[2] == null ? null : (v[0] === "O" ? v[2] > v[1] : v[2] < v[1]);
+      dd.push([XK[k], `${v[3] != null ? `очаквани ${(+v[3]).toFixed(1)} · ` : ""}изборът ${v[0] === "O" ? "над" : "под"} ${v[1]} ${mk(h)}${v[2] != null ? ` · станаха <b>${v[2]}</b>` : " · броят идва от football-data 1-3 дни след мача"}`]);
+    } else if (r.ct && r.ct[i] != null) {
+      dd.push([XK[k], `станаха <b>${r.ct[i]}</b> ${XU[k]}`]);
+    } else {
+      dd.push([XK[k], `<span class="muted">${hasStats ? "няма ги в данните за този мач"
+        : L[r.l] && L[r.l].src === "fd" ? "броят идва от football-data 1-3 дни след мача"
+        : "няма данни за това първенство (картони и корнери дава само football-data за 22 първенства)"}</span>`]);
+    }
   });
-  if (!waiting && !r.x && r.ct && r.ct[0] != null) dd.push(["Картони / корнери", `станаха ${r.ct[0]} жълти${r.ct[1] != null ? `, ${r.ct[1]} корнера` : ""}`]);
-  if (r.ref) dd.push(["Съдия", `${esc(r.ref)}${r.ya && r.ya[0] != null ? ` · в мача ${r.ya[0] + r.ya[1]} жълти (${r.ya[0]}-${r.ya[1]})` : ""}`]);
+  dd.push(["Съдия", r.ref ? `${esc(r.ref)}${r.ya && r.ya[0] != null ? ` · в мача ${r.ya[0] + r.ya[1]} жълти (${r.ya[0]}-${r.ya[1]})` : ""}`
+    : `<span class="muted">${REF_LEAGUES.includes(r.l) ? "името още не е качено" : "няма данни - имената на съдиите идват само за Англия и Шотландия"}</span>`]);
   const bo = BONUS[r.i];
-  if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${waiting ? "" : mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${waiting ? "" : mk(hm(bo.rk[0]))}` : ""}`]);
+  if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${mk(hm(bo.rk[0]))}` : ""}`]);
   if (r.w && !main) dd.push(["Защо без прогноза", esc(r.w)]);
-  const details = dd.length ? `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>` : "";
-  const lost = !waiting && main && mh === false ? `<div class="lost">${preds}</div>` : "";
+  const details = `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>`;
+  const lost = main && mh === false ? `<div class="lost">${preds}${x12}</div>` : "";
   return `<div class="rs2"><div class="top"><span class="muted num">${fmtTime(r.k)}</span>
       <span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span></span>
-      <span class="sc">${waiting || !r.s ? "–:–" : r.s[0] + ":" + r.s[1]}</span>${big}</div>${lost}${details}</div>`;
+      <span class="sc">${r.s[0]}:${r.s[1]}</span>${big}</div>${lost}${details}</div>`;
+}
+
+// „Чакат резултат“: свито; вдясно стрелка. Вътре - всеки мач с всичко, което имаше в „Прогнози“.
+function pendingBox() {
+  if (!PEND.length) return "";
+  const xs = PEND.slice().sort((a, b) => a.k.localeCompare(b.k));
+  return `<details class="pend" id="rs-pend"><summary><span>Чакат резултат: <b>${xs.length}</b> ${xs.length === 1 ? "мач" : "мача"}</span><span class="arr" aria-hidden="true">▾</span></summary>
+    <div class="inner"><div class="muted small" style="margin:0 2px 6px">Мачът идва тук 10 мин. след началото. Резултатът обикновено идва няколко часа след края; за първенствата без odds API (напр. Английската национална лига) - когато football-data го качи, 1-3 дни.</div>
+    ${xs.map(m => `<div class="small muted" style="margin:10px 2px 3px">${flag(m.l)} ${esc(title(m.l))} · започна ${fmtDate(m.k)} ${fmtTime(m.k)}</div>` + matchCard(m)).join("")}</div></details>`;
 }
 
 function renderResults() {
@@ -750,18 +807,18 @@ function renderResults() {
   if (rs.filter === "break") rows = rows.filter(r => (r.f || []).includes("after_break"));
   if (rs.filter === "derby") rows = rows.filter(r => (r.f || []).includes("derby"));
   const el = document.getElementById("rs-body");
-  const pend = DATA.pending || [];
   let html = "";
   if (!REC.length) {
     html += `<div class="note">Записът на живо ${DATA.first_tip ? "започна на " + fmtDate(DATA.first_tip) : "започва с първите мачове"}.
       Тук ще се трупа всяка прогноза, записана преди мача, и дали е излязла - по лиги и по пазари.
       Докато се натрупа, в таба <b>Лиги</b> е проверката назад във времето (симулация на същия робот за 2023-2026).</div>`;
   }
-  if (pend.length) html += `<div class="note">Чакат резултат: <b>${pend.length}</b> мача.</div>`;
+  html += pendingBox();
+  const keepOpen = () => { const pd = document.getElementById("rs-pend");
+    if (pd) { pd.open = !!rs.pendOpen; pd.ontoggle = () => { rs.pendOpen = pd.open; }; } };
   if (!rows.length) {
-    const pend = DATA.pending || [];
-    el.innerHTML = html + (REC.length ? `<div class="empty">Няма уредени мачове за този период.</div>` : "") +
-      (pend.length ? `<h2>Чакат резултат</h2><div class="tbl-wrap">${pend.map(p => resultRow(p, true)).join("")}</div>` : "");
+    el.innerHTML = html + (REC.length ? `<div class="empty">Няма уредени мачове за този период.</div>` : "");
+    keepOpen();
     return;
   }
   const mo = money(rows.filter(r => !r.sf));
@@ -809,28 +866,19 @@ function renderResults() {
   // мач по мач
   html += `<h2>Мач по мач</h2><div class="tbl-wrap" id="rs-list"></div><button class="more" id="rs-more" type="button">Покажи още</button>`;
   el.innerHTML = html;
+  keepOpen();
   el.querySelectorAll("#rs-tbl th[data-sort]").forEach(th => th.onclick = () => {
     const k = th.dataset.sort; rs.sortDir = rs.sortKey === k ? -rs.sortDir : -1; rs.sortKey = k; renderResults(); });
   const list = document.getElementById("rs-list"), more = document.getElementById("rs-more");
   const draw = () => {
     let last = "", out = "";
-    // чакащите резултат - най-горе, с прогнозите си
-    const pend = (DATA.pending || []).slice().sort((a, b) => b.k.localeCompare(a.k));
-    if (pend.length && rs.filter === "all") {
-      out += `<div class="day-h" style="padding:0 12px">Чакат резултат</div>` + pend.map(p => resultRow(p, true)).join("");
-    }
-    if (rows.length) {
-      rows.slice(0, rs.shown).forEach(r => {
-        const d = fmtDate(r.k);
-        if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
-        out += resultRow(r, false);
-      });
-      list.innerHTML = out;
-      more.hidden = rows.length <= rs.shown;
-      return;
-    }
+    rows.slice(0, rs.shown).forEach(r => {
+      const d = fmtDate(r.k);
+      if (d !== last) { out += `<div class="day-h" style="padding:0 12px">${d}</div>`; last = d; }
+      out += resultRow(r);
+    });
     list.innerHTML = out;
-    more.hidden = true;
+    more.hidden = rows.length <= rs.shown;
   };
   more.onclick = () => { rs.shown += 60; draw(); };
   draw();
