@@ -168,7 +168,7 @@ def pull_data():
     if not (SITE_DIR / ".git").exists():
         raise RuntimeError(f"{SITE_DIR} не е git хранилище - пусни веднъж publish.run()")
     git("fetch", "-q", "origin", "main", token=token)
-    git("checkout", "origin/main", "--", "index.html", "robot.db", "pipeline/data")
+    git("checkout", "origin/main", "--", ".")          # всичко - и results/, и bonus/
     # анализите се смятат в облака (седмичният анализ) - местното копие ги взима оттам
     import shutil
     for name in ("leagues.json", "backtest.json", "extras_backtest.json", "signs_backtest.json", "one_backtest.json"):
