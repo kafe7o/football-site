@@ -124,7 +124,8 @@ def record(conn, now):
                                FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
                                LEFT JOIN match_stats s ON s.match_id = t.match_id
                                LEFT JOIN matches mm ON mm.id = t.match_id
-                              WHERE t.kickoff >= ? AND t.hg IS NOT NULL ORDER BY t.kickoff""", (since,)):
+                              WHERE t.kickoff >= ? AND t.hg IS NOT NULL AND t.basis = 'model'
+                              ORDER BY t.kickoff""", (since,)):
         probs, picks = json.loads(t["probs_json"]), json.loads(t["picks_json"])
         avg = ((json.loads(t["prices_json"]) or {}).get("avg") or {}) if t["prices_json"] else {}
         flags = json.loads(t["flags_json"] or "{}")
@@ -266,7 +267,8 @@ def build(conn, now=None, upcoming=None):
         "upcoming": [compact_forecast(m) for m in upcoming],
         "record": record(conn, now),
         # започнали, без резултат - страницата ги мести в „Чакат резултат“ 10 мин. след началото
-        "pending": [compact_forecast(m) for m in tips.started(conn, now)],
+        # собственикът (02.10): в резултатите - само мачовете с прогноза на робота (без оценка - само в „Прогнози“)
+        "pending": [compact_forecast(m) for m in tips.started(conn, now) if m.get("basis") == "model"],
         "first_tip": db.get_meta(conn, "first_tip"),
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),

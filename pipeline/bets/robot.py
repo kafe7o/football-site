@@ -62,6 +62,10 @@ RULE = "likely"
 RULE_CHANGED_AT = "2026-09-30T09:48:00+00:00"
 
 
+# правилата, при които главният съвет беше 1/X/2, двоен шанс или над/под 2.5 (до 30.09)
+OLD_RULES = ("market_likely", "likely")
+
+
 def rule_of(flags, locked_at):
     """По кое правило е записан съветът: от записа, а за старите - по часа."""
     return (flags or {}).get("rule") or (RULE if locked_at >= RULE_CHANGED_AT else "market_likely")

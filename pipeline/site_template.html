@@ -413,7 +413,9 @@ const SETTLED = new Set((DATA.record || []).map(r => r.i));
 const ALL = (DATA.pending || []).concat(DATA.upcoming || []).filter(m => !SETTLED.has(m.i));
 const isPending = m => new Date(m.k).getTime() + LIVE_AFTER <= Date.now();
 const UP = ALL.filter(m => !isPending(m));
-const PEND = ALL.filter(m => isPending(m) && m.lk);       // само записаните - те са честният запис
+// само записаните (честният запис) и само с прогноза на робота - без собствена оценка мачът е само в „Прогнози“
+const PEND = ALL.filter(m => isPending(m) && m.lk && m.b === "model");
+const OLD_RULES = ["market_likely", "likely"];     // главният съвет до 30.09 (1/X/2, двоен шанс, над/под 2.5)
 const fc = {day: null, q: "", league: "", tip: false, sort: "time"};
 function btTip(code) { const b = BT[code]; return b ? b[`tip:${RULE}:all`] : null; }
 
@@ -513,7 +515,7 @@ function matchCard(m) {
     const one = m.one ? `<div class="one"><span class="ol">Прогнозата на робота - една за мача</span><b class="ov">${esc(labT(m.one[0], m))}</b>
         <span class="om">шанс ${pct(m.one[1])} по робота · коеф. ${m.one[2] ? m.one[2].toFixed(2) : "–"}${m.one[3] === "robot" ? " (по робота - от букмейкърите няма коефициент)" : ""}${m.one[4] === false ? ` · в мача няма събитие с коефициент ${SAFE_TXT} - това е най-вероятното ${RISKY_TXT} нагоре (рисково)` : ""}</span>
         ${oneBack() ? `<span class="om">${oneBack()}</span>` : ""}</div>` : "";
-    if (m.rk || m.sf) {
+    if (m.one || m.rk || m.sf) {
       const odd = x => x[2] ? ` · коеф. ${x[2].toFixed(2)}${x[4] === "robot" ? " (по робота - букмейкърите още нямат)" : ""}` : "";
       tip = `${one}${one ? `<div class="others">Другите прогнози (за сведение - мери се само горната)</div>` : ""}<div class="preds">
         ${m.rk ? `<div class="pred risky"><span class="pl">Рискова прогноза (${RISKY_TXT})</span><b class="pv">${lab(m.rk[0])}</b>
@@ -522,12 +524,12 @@ function matchCard(m) {
           <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div>`
           : `<div class="pred safe"><span class="pl">По-сигурна прогноза (${SAFE_TXT})</span><span class="pm">няма събитие с коефициент ${SAFE_TXT}</span></div>`}</div>
         ${(m.f || []).includes("derby") ? `<div class="pred-note"><b>Дерби</b> - професионалистът: избягвай за залог.</div>` : ""}`;
-    } else if (m.t && m.rl === "market_likely") {
+    } else if (m.t && m.rl === "market_likely" && !m.one) {
       // записан сутринта преди смяната на правилото (30.09) - по букмейкъра; записът не се пипа
       const nt = ownTip(m);
       tip = `<div class="tip none"><span>Съвет по старото правило: <b>${LABEL[m.t]}</b> @ <b class="num">${m.to.toFixed(2)}</b></span>
         <span class="meta">Записан${m.lk ? " в " + fmtTime(m.lk) : ""} преди смяната на правилото - избран по процента на букмейкъра (${pct(mk[m.t])}), не по робота. По новото правило на робота тук: ${nt ? `<b>${LABEL[nt]}</b> @ ${o[nt].toFixed(2)} (${pct(r[nt])})` : "без съвет"}.</span></div>`;
-    } else if (m.t) {
+    } else if (m.t && OLD_RULES.includes(m.rl)) {
       const bt = btTip(m.l);
       const why = whyNot(m);
       tip = `<div class="tip"><span>Съвет: <b>${LABEL[m.t]}</b> @ <b class="num">${m.to.toFixed(2)}</b></span>
@@ -849,7 +851,7 @@ function resultRow(r) {
   const chip1 = r.one && p1 ? `<span class="chip1" title="Прогнозата 1/X/2">1/X/2 ${LABEL[p1]} ${mk(hit(p1, r.s))}</span>` : "<span></span>";
   const oneLine = r.one ? `<span class="pk"><b>Прогнозата: ${esc(labT(r.one[0], r))}</b> ${pct(r.one[1])}${r.one[2] ? ` @${r.one[2].toFixed(2)}` : ""} ${mk(hm(r.one[0]))}</span>` : "";
   const predLine = (name, x) => x ? `<span class="pk"><b>${name}: ${lab(x[0])}</b>${x[1] != null ? " " + pct(x[1]) : ""}${x[2] ? ` @${x[2].toFixed(2)}` : ""} ${mk(hm(x[0]))}</span>` : "";
-  const old = !r.rk && r.t ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
+  const old = r.t && OLD_RULES.includes(r.rl) ? `<span class="pk"><b>Съвет ${LABEL[r.t]}</b> @${(r.to || 0).toFixed(2)} ${mk(hm(r.t))} <span class="muted">(${r.rl === "market_likely" ? "старото правило - по букмейкъра" : "правилото до 30.09"})</span></span>` : "";
   const x12 = p1 ? `<span class="pk">1/X/2: <b>${LABEL[p1]}</b>${R[p1] != null ? " " + pct(R[p1]) : ""}${O[p1] ? ` @${O[p1].toFixed(2)}` : ""} ${mk(hit(p1, r.s))}</span>` : "";
   const preds = predLine("Рискова", r.rk) + predLine("По-сигурна", r.sf) + old;
   const res = r.s[0] > r.s[1] ? "1" : r.s[0] === r.s[1] ? "X" : "2";
@@ -924,8 +926,8 @@ function renderResults() {
     keepOpen();
     return;
   }
-  const mo = money(rows.filter(r => !r.sf));
-  const tipRows = rows.filter(r => r.t && !r.sf);
+  const mo = money(rows.filter(r => OLD_RULES.includes(r.rl)));
+  const tipRows = rows.filter(r => r.t && OLD_RULES.includes(r.rl));
   const th = tipRows.filter(r => hit(r.t, r.s)).length;
   const predTile = (key, name) => {
     const xs = rows.filter(r => r[key]).map(r => ({h: hitAny(r[key][0], r.s, r.ct, r.cs), o: r[key][2], s: r[key][0]})).filter(x => x.h != null);

@@ -79,6 +79,7 @@ def settled_between(conn, start, end):
 def score(rows):
     """Рисковата и по-сигурната прогноза: познати, общо, доход в евро при STAKE (където има коефициент);
     и по пазари. Картоните/корнерите се броят, когато football-data донесе статистиката."""
+    rows = [t for t in rows if t["basis"] == "model"]       # само прогнозите на робота (собственикът, 02.10)
     out = {}
     done = []
     for t in rows:
@@ -101,7 +102,8 @@ def score(rows):
         out[kind] = {"n": len(done), "hits": sum(h for h, _, _ in done),
                      "money": sum(((o - 1) if h else -1) * STAKE for h, o, _ in done if o),
                      "x": [h for h, _, s in done if s == "X"]}
-    tip_rows = [t for t in rows if t["tip"] and not json.loads(t["picks_json"]).get("safer")]
+    tip_rows = [t for t in rows if t["tip"]
+                and robot.rule_of(json.loads(t["flags_json"] or "{}"), t["locked_at"]) in robot.OLD_RULES]
     hits = sum(robot.hit(t["tip"], t["hg"], t["ag"]) for t in tip_rows)
     money = sum(((t["tip_odds"] - 1) if robot.hit(t["tip"], t["hg"], t["ag"]) else -1) * STAKE
                 for t in tip_rows if t["tip_odds"])
@@ -207,7 +209,7 @@ def evening(conn, now=None):
         if not rows:
             return False
         s = score(rows)
-        waiting = conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND kickoff >= ? AND kickoff < ?",
+        waiting = conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND basis = 'model' AND kickoff >= ? AND kickoff < ?",
                                (start.isoformat(), now.isoformat())).fetchone()[0]
         text = score_text(s, "Днес") + (f"\nЧакат резултат: {waiting}." if waiting else "")
         return send(f"Резултати {local.strftime('%d.%m')}", text, tags="bar_chart")
