@@ -119,7 +119,7 @@ def base_rates(conn):
 
 def choose(variant, cands, base):
     """cands: [(събитие, шанс, коефициент, от букмейкър?, обичайно в лигата)] -> едно събитие."""
-    pool = [c for c in cands if variant != "A2" or c[0][0] not in "CK"]
+    pool = [c for c in cands if variant != "A2" or c[0][0] not in "CK"]          # A2 - без картони и корнери
     if variant == "B":
         pool = [c for c in pool if c[3]]
     band = [c for c in pool if BAND[0] <= c[2] <= BAND[1] and c[1] >= MIN_PROB]
@@ -153,6 +153,10 @@ def stat(items):
 
 
 def kind_of(sel):
+    if sel in robot.HANDICAPS:
+        return "хендикап"
+    if sel in robot.CORNER_SIDES:
+        return "повече корнери"
     if sel[0] in "CK":
         return "картони" if sel[0] == "C" else "корнери"
     return {"1": "1/X/2", "X": "1/X/2", "2": "1/X/2", "1X": "двоен шанс", "X2": "двоен шанс", "12": "двоен шанс",
@@ -162,6 +166,8 @@ def kind_of(sel):
 def main():
     conn = db.init()
     base = base_rates(conn)
+    from research.handicap_corners_backtest import bases as hc_bases
+    hbase = hc_bases(conn)
     # картони и корнери назад - същият walk-forward като research/extras_backtest.py (в седмичния
     # анализ те току-що са сметнати там - не се смятат втори път)
     ex_rows = extras_backtest.LAST_ROWS
@@ -192,6 +198,7 @@ def main():
         st = stats.get(key)
         cards = st[0] + st[1] if st and st[0] is not None and st[1] is not None else None
         corners = st[2] + st[3] if st and st[2] is not None and st[3] is not None else None
+        corner_split = (st[2], st[3]) if corners is not None else None
         b = base[r["league"]]
         cands = []
         for s, prob in goal_events(p).items():
@@ -208,12 +215,21 @@ def main():
                     prob = x["p"] if side == "O" else 1 - x["p"]
                     bs = x["base"] if side == "O" else 1 - x["base"]
                     cands.append((f"{letter}{side}{x['line']}", prob, 1 / prob if prob > 0 else 99.0, False, bs))
+        if robot.ONE_EXTRA:
+            # хендикапите и кой изпълнява повече корнери (от 01.10, research/handicap_corners_backtest.py)
+            for s, prob in robot.handicap_probs(p).items():
+                cands.append((s, prob, 1 / prob if prob > 0 else 99.0, False, hbase.get(r["league"], {}).get(s, prob)))
+            x = ex.get(key, {}).get("corners")
+            if x and x.get("he") is not None and corner_split:
+                cs_ = robot.corner_sides(x["he"], x["ae"])
+                for s in ("KH", "KA"):
+                    cands.append((s, cs_[s], 1 / cs_[s] if cs_[s] > 0 else 99.0, False, hbase.get(r["league"], {}).get(s, cs_[s])))
         period = "select" if r["date"] < SELECT_END else "clean"
         for v in VARIANTS:
             c, in_band = choose(v, cands, b)
             if c is None:
                 continue
-            ok = happened(c[0], r["hg"], r["ag"], cards, corners)
+            ok = robot.hit_any(c[0], r["hg"], r["ag"], cards, corners, corner_split)
             if ok is None:
                 continue
             item = {"hit": ok, "p": c[1], "odds": c[2], "book": c[3], "base": c[4], "band": in_band, "kind": kind_of(c[0])}

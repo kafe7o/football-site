@@ -171,7 +171,8 @@ def pull_data():
     git("checkout", "origin/main", "--", ".")          # всичко - и results/, и bonus/
     # анализите се смятат в облака (седмичният анализ) - местното копие ги взима оттам
     import shutil
-    for name in ("leagues.json", "backtest.json", "extras_backtest.json", "signs_backtest.json", "one_backtest.json"):
+    for name in ("leagues.json", "backtest.json", "extras_backtest.json", "signs_backtest.json", "one_backtest.json",
+                 "handicap_corners.json"):
         src = SITE_DIR / "pipeline" / "data" / name
         if src.exists():
             shutil.copy2(src, config.DATA_DIR / name)

@@ -77,7 +77,7 @@ def run_league(code):
                 total = r["h"] + r["a"]
                 base = float((totals > pr["line"]).mean())
                 out.append({"league": code, "kind": kind, "date": r["date"], "home": r["home_team"],
-                            "away": r["away_team"], "line": pr["line"],
+                            "away": r["away_team"], "line": pr["line"], "he": pr["home"], "ae": pr["away"],
                             "p": pr["over"], "base": base, "exp": pr["total"], "mean": league_mean,
                             "total": total, "over": int(total > pr["line"]), "pick": pr["pick"],
                             "ref": bool(r["referee"]) and factor != 1.0})

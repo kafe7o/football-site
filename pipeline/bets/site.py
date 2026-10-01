@@ -95,12 +95,32 @@ def compact_forecast(m):
     return out
 
 
+def _corner_sides(picks):
+    c = (picks.get("extras") or {}).get("corners") or {}
+    if c.get("home") is None or c.get("away") is None:
+        return None
+    return {k: short(v) for k, v in robot.corner_sides(c["home"], c["away"]).items()}
+
+
+def hc_summary():
+    """Хендикапът и повече корнери назад (data/handicap_corners.json) - за сайта."""
+    d = read_json("handicap_corners.json", {})
+    if not d:
+        return None
+    big = ((d.get("handicap") or {}).get("big_favourite") or {}).get("clean") or {}
+    cor = (d.get("corners") or {}).get("clean") or {}
+    return {"fav_by_2": big.get("fav_by_2"), "said": big.get("said"), "n_fav": big.get("n"),
+            "k_hit": cor.get("hit_pick"), "k_fav": (cor.get("favourite") or {}).get("hit_pick"),
+            "k_bal": (cor.get("balanced") or {}).get("hit_pick"), "k_draw": cor.get("draw_rate"),
+            "skill": d.get("show_percent")}
+
+
 def record(conn, now):
     """Уредените прогнози от последните KEEP_DAYS дни - за таба с резултатите."""
     since = (now - timedelta(days=KEEP_DAYS)).isoformat()
     out = []
     for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners,
-                                     s.hy AS hy, s.ay AS ay, mm.referee AS referee
+                                     s.hy AS hy, s.ay AS ay, s.hc AS hc, s.ac AS ac, mm.referee AS referee
                                FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
                                LEFT JOIN match_stats s ON s.match_id = t.match_id
                                LEFT JOIN matches mm ON mm.id = t.match_id
@@ -125,7 +145,11 @@ def record(conn, now):
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
                     # football-data 1-3 дни след мача; дотогава None
                     "x": {k: [v["pick"], v["line"], t[k], v.get("total")] for k, v in (picks.get("extras") or {}).items()},
-                    "ref": t["referee"] or flags.get("referee"), "ya": [t["hy"], t["ay"]]})
+                    "ref": t["referee"] or flags.get("referee"), "ya": [t["hy"], t["ay"]], "cs": [t["hc"], t["ac"]],
+                    # хендикапът и повече корнери - по записа преди мача
+                    "hp": ({k: short(v) for k, v in robot.handicap_probs(probs["robot"]).items()}
+                           if t["basis"] == "model" and probs["robot"].get("xg_home") is not None else None),
+                    "kp": _corner_sides(picks)})
     return out
 
 
@@ -249,6 +273,7 @@ def build(conn, now=None, upcoming=None):
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
         "one_bt": one_summary(),
+        "hc_bt": hc_summary(),
         # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
         "ranges": {"safe": list(robot.SAFE_RANGE), "risky_from": robot.RISKY_FROM},
         "bonus": bonus_data(now),

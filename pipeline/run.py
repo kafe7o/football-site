@@ -147,7 +147,8 @@ def weekly(log, backtest=False, keep_local=False):
     същите като заключените в bets/robot.py, идва известие и собственикът решава.
     """
     from bets import archive
-    from research import extras_backtest, league_analysis, one_pick_backtest, robot_backtest, signs_backtest
+    from research import (extras_backtest, handicap_corners_backtest, league_analysis, one_pick_backtest,
+                          robot_backtest, signs_backtest)
     path = config.DB_PATH
     if not keep_local:
         archive.pull_db(path)      # без архива - нищо; грешката спира всичко и нищо не се качва
@@ -171,6 +172,8 @@ def weekly(log, backtest=False, keep_local=False):
                                                              lambda: out.update(sb=signs_backtest.main()))))
         steps.append(("едната прогноза назад", step(log, "4в. Едната прогноза назад (веднъж месечно)",
                                                     lambda: out.update(ob=one_pick_backtest.main()))))
+        steps.append(("хендикапът и корнерите назад", step(log, "4г. Хендикап и повече корнери назад (веднъж месечно)",
+                                                           lambda: out.update(hc=handicap_corners_backtest.main()))))
     if steps[0][1] and not keep_local:
         steps.append(("качването на архива", step(log, "5. Качване на архива", archive.push_db, path)))
     failed = [name for name, good in steps if not good]

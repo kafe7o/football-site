@@ -66,7 +66,8 @@ def name(h, a):
 
 def settled_between(conn, start, end):
     out = []
-    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners
+    for t in conn.execute("""SELECT t.*, f.home_src, f.away_src, s.hy + s.ay AS cards, s.hc + s.ac AS corners,
+                                     s.hc AS hc, s.ac AS ac
                                FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id
                                LEFT JOIN match_stats s ON s.match_id = t.match_id
                               WHERE t.hg IS NOT NULL AND t.kickoff >= ? AND t.kickoff < ?""",
@@ -83,7 +84,7 @@ def score(rows):
     for t in rows:
         x = json.loads(t["picks_json"]).get("one")
         if x:
-            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"])
+            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"], (t["hc"], t["ac"]))
             if h is not None:
                 done.append((h, x.get("odds") if x.get("src") == "book" else None))
     out["one"] = {"n": len(done), "hits": sum(h for h, _ in done),
@@ -94,7 +95,7 @@ def score(rows):
             x = json.loads(t["picks_json"]).get(kind)
             if not x:
                 continue
-            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"])
+            h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"], (t["hc"], t["ac"]))
             if h is not None:
                 done.append((h, x.get("odds"), x["sel"]))
         out[kind] = {"n": len(done), "hits": sum(h for h, _, _ in done),
@@ -164,7 +165,7 @@ def morning(conn, upcoming, now=None):
                 x = m.get("one") or m.get("safer") or m.get("risky")
                 odd = f" @{x['odds']:.2f}" if x.get("odds") else ""
                 lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
-                             f"{robot.label(x['sel'])}{odd} ({x['p']:.0%})"
+                             f"{robot.label(x['sel']).replace('домакинът', m.get('home_src') or m['home']).replace('гостът', m.get('away_src') or m['away'])}{odd} ({x['p']:.0%})"
                              + (" - дерби, не за залог" if (m.get("flags") or {}).get("derby") else ""))
             if len(order) > TOP:
                 lines.append(f"... и още {len(order) - TOP} - на сайта.")

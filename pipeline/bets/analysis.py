@@ -226,10 +226,15 @@ def goals_detail(lam_h, lam_a):
     k = np.arange(grid.shape[0])
     total = k[:, None] + k[None, :]
     flat = sorted(((float(grid[i, j]), i, j) for i in range(6) for j in range(6)), reverse=True)[:3]
+    diff = k[:, None] - k[None, :]
     return {"scores": [[i, j, round(p, 4)] for p, i, j in flat],
             "o15": round(float(grid[total >= 2].sum()), 4), "o25": round(float(grid[total >= 3].sum()), 4),
             "o35": round(float(grid[total >= 4].sum()), 4), "btts": round(float(grid[1:, 1:].sum()), 4),
-            "nil": round(float(grid[0, 0]), 4)}
+            "nil": round(float(grid[0, 0]), 4),
+            # хендикап (професионалистът, 01.10): победа с 2+ и с 3+ гола разлика за всяка страна
+            "hcp": {"H1": round(float(grid[diff >= 2].sum()), 4), "H2": round(float(grid[diff <= -2].sum()), 4),
+                    "H1_2": round(float(grid[diff >= 3].sum()), 4), "H2_2": round(float(grid[diff <= -3].sum()), 4)},
+            "win": [round(float(grid[diff > 0].sum()), 4), round(float(grid[diff < 0].sum()), 4)]}
 
 
 def form_text(form):
@@ -276,6 +281,9 @@ def build(ctx, fx, fitted, names, referee=None):
         pr = extras.predict(fm, k, home, away, factor)
         if pr:
             pr["skill"] = extras.skill(kind)
+            if kind == "corners":
+                from . import robot
+                pr["more"] = {k: round(v, 4) for k, v in robot.corner_sides(pr["home"], pr["away"]).items()}
             pr["base"], pr["base_n"] = extras.base_rate(conn, league, kind, pr["line"], before)
             if kind == "cards" and referee:
                 pr["referee"] = {"name": referee, "avg": round(ref_avg, 2) if ref_avg else None, "n": ref_n}
@@ -300,6 +308,17 @@ def text(a, home, hn, an, flags):
                      f"({pct(best[2])}), после " + ", ".join(f"{s[0]}:{s[1]} ({pct(s[2])})" for s in g["scores"][1:]) + ".")
         lines.append(f"Голове: над 1.5 - {pct(g['o15'])}, над 2.5 - {pct(g['o25'])}, над 3.5 - {pct(g['o35'])}; "
                      f"двата вкарват - {pct(g['btts'])}.")
+    if g and g.get("hcp"):
+        # хендикап (професионалистът): при голям фаворит - ще спечели ли с 2+ гола разлика
+        fav_home = g["win"][0] >= g["win"][1]
+        fav, fp = (hn, g["win"][0]) if fav_home else (an, g["win"][1])
+        h2, h3 = (g["hcp"]["H1"], g["hcp"]["H1_2"]) if fav_home else (g["hcp"]["H2"], g["hcp"]["H2_2"])
+        if fp >= 0.6:
+            lines.append(f"Голям фаворит е {fav} (печели с {pct(fp)}). С 2+ гола разлика (хендикап "
+                         f"{'0:1' if fav_home else '1:0'}) - {pct(h2)}, с 3+ - {pct(h3)}.")
+        else:
+            lines.append(f"Победа с 2+ гола разлика: {hn} {pct(g['hcp']['H1'])}, {an} {pct(g['hcp']['H2'])} - "
+                         f"няма голям фаворит.")
     rc = a.get("recent") or {}
     rh, ra = rc.get("h"), rc.get("a")
     if rh and ra and rh.get("cards") is not None and ra.get("cards") is not None:
@@ -345,6 +364,11 @@ def text(a, home, hn, an, flags):
         ref_txt = (f" Съдия {ref['name']} - средно {ref['avg']:.1f} жълти в {ref['n']} мача за 2 години."
                    if ref and ref.get("avg") else (f" Съдия {ref['name']}." if ref else ""))
         head = f"{name}: очаквани {c['total']:.1f}{' ' + unit if unit else ''} ({hn} {c['home']:.1f}, {an} {c['away']:.1f})"
+        if kind == "corners" and c.get("more"):
+            mo = c["more"]
+            close = abs(mo["KH"] - mo["KA"]) < 0.15
+            lines.append(f"Кой изпълнява повече корнери: {hn} {pct(mo['KH'])}, равен брой {pct(mo['KD'])}, {an} {pct(mo['KA'])}"
+                         + (" - равен мач, тук роботът почти не различава отборите." if close else "."))
         if c.get("skill"):
             side = "над" if c["pick"] == "O" else "под"
             chance = c["over"] if c["pick"] == "O" else 1 - c["over"]

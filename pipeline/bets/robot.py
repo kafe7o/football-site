@@ -79,7 +79,14 @@ def rule_of(flags, locked_at):
 RULE_SIGNS = "signs"
 GOAL_LINES = {"O15": ("O", 1.5), "U15": ("U", 1.5), "O": ("O", 2.5), "U": ("U", 2.5), "O35": ("O", 3.5), "U35": ("U", 3.5)}
 LABELS = {**LABEL, "O15": "над 1.5", "U15": "под 1.5", "O35": "над 3.5", "U35": "под 3.5",
-          "GG": "двата вкарват", "NG": "не вкарват и двата"}
+          "GG": "двата вкарват", "NG": "не вкарват и двата",
+          # професионалистът (01.10): хендикап при голям фаворит и кой изпълнява повече корнери
+          "H1": "1 с хендикап 0:1 (домакинът с 2+ гола разлика)", "H2": "2 с хендикап 1:0 (гостът с 2+ гола разлика)",
+          "H1_2": "1 с хендикап 0:2 (домакинът с 3+ гола разлика)", "H2_2": "2 с хендикап 2:0 (гостът с 3+ гола разлика)",
+          "KH": "повече корнери - домакинът", "KD": "равен брой корнери", "KA": "повече корнери - гостът"}
+# хендикапите: (страна, поне толкова гола разлика)
+HANDICAPS = {"H1": (1, 2), "H2": (-1, 2), "H1_2": (1, 3), "H2_2": (-1, 3)}
+CORNER_SIDES = ("KH", "KD", "KA")
 
 
 def label(sel):
@@ -106,6 +113,24 @@ def goal_line_probs(p):
             3.5: float(grid[total >= 4].sum()), "GG": float(grid[1:, 1:].sum())}
 
 
+def handicap_probs(p):
+    """Шансът по робота за победа с 2+ и 3+ гола разлика на всяка страна - от очакваните голове."""
+    import numpy as np
+    from .model import score_grid
+    grid = score_grid(p["xg_home"], p["xg_away"])
+    k = np.arange(grid.shape[0])
+    diff = k[:, None] - k[None, :]
+    return {code: float(grid[side * diff >= n].sum()) for code, (side, n) in HANDICAPS.items()}
+
+
+def corner_sides(home, away, top=40):
+    """Кой изпълнява повече корнери: шансът за домакина, равно и госта (Poisson за очакваните на всеки отбор)."""
+    import numpy as np
+    from scipy.stats import poisson
+    joint = np.outer(poisson.pmf(np.arange(top), home), poisson.pmf(np.arange(top), away))
+    return {"KH": float(np.tril(joint, -1).sum()), "KD": float(np.trace(joint)), "KA": float(np.triu(joint, 1).sum())}
+
+
 def safer_pick(p, sign, extras=None):
     """По-сигурната прогноза: най-вероятното събитие измежду двойния шанс с рисковия знак, над/под
     1.5/2.5/3.5 гола, двата вкарват да/не, картони и корнери над/под основната линия.
@@ -125,8 +150,17 @@ def safer_pick(p, sign, extras=None):
     return max(cands, key=lambda c: c[1])
 
 
-def hit_any(sel, hg, ag, cards=None, corners=None):
-    """Излязъл ли е изборът - и за линиите на головете, картоните и корнерите. None - още няма данни."""
+def hit_any(sel, hg, ag, cards=None, corners=None, corner_split=None):
+    """Излязъл ли е изборът - и за линиите на головете, картоните, корнерите, хендикапа и кой изпълнява
+    повече корнери (corner_split = (на домакина, на госта)). None - още няма данни."""
+    if sel in HANDICAPS:
+        side, n = HANDICAPS[sel]
+        return side * (hg - ag) >= n
+    if sel in CORNER_SIDES:
+        if not corner_split or corner_split[0] is None or corner_split[1] is None:
+            return None
+        h, a = corner_split
+        return {"KH": h > a, "KD": h == a, "KA": h < a}[sel]
     if sel in GOAL_LINES:
         side, line = GOAL_LINES[sel]
         return (hg + ag > line) == (side == "O")
@@ -320,6 +354,9 @@ def after_break(dates, day, min_gap=12, max_gap=25, within=4):
 # ср. к 1.77, доход -7.3% / -8.4%; прогнозите - голове 43%, двоен шанс 18%, двата вкарват 15%, 1/X/2 11%, картони 10%.
 RULE_ONE = "one"
 ONE_VARIANT = "A"
+# хендикапите и кой изпълнява повече корнери - в кандидатите (research/handicap_corners_backtest.py,
+# 01.10: умение и в двата периода; едната прогноза с тях 56.9% / 56.6% срещу 56.7% / 56.8% - приета)
+ONE_EXTRA = True
 ONE_GOAL_SELS = ("1", "X", "2", "1X", "X2", "12", "O15", "U15", "O", "U", "O35", "U35", "GG", "NG")
 
 
@@ -334,6 +371,12 @@ def one_events(p, extras=None):
         if x:
             ev[f"{letter}O{x['line']}"] = x["over"]
             ev[f"{letter}U{x['line']}"] = 1 - x["over"]
+    if ONE_EXTRA:
+        ev.update(handicap_probs(p))
+        c = (extras or {}).get("corners")
+        if c and c.get("home") is not None and c.get("away") is not None:
+            sides = corner_sides(c["home"], c["away"])
+            ev.update({"KH": sides["KH"], "KA": sides["KA"]})
     return ev
 
 

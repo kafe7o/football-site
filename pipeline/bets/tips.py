@@ -126,7 +126,7 @@ def match_analysis(ctx, fx, fitted, flags):
         return None, {}
     names = (fx["home_src"] or fx["home"], fx["away_src"] or fx["away"])
     an = analysis.build(ctx, {**dict(fx), "flags": flags}, fitted, names, referee_of(ctx.conn, fx))
-    extras = {k: {x: an[k][x] for x in ("pick", "line", "over", "total")} for k in ("cards", "corners")
+    extras = {k: {x: an[k][x] for x in ("pick", "line", "over", "total", "home", "away")} for k in ("cards", "corners")
               if an and an.get(k)}
     return an, extras
 
