@@ -218,9 +218,19 @@ def price(sel, p, avg):
     return (round(1 / p[sel], 2), "robot") if p.get(sel) else (None, None)
 
 
-def risky_by_odds(p, base, avg):
-    """Рисковата: знакът 1, X или 2 с коефициент от 2.50 нагоре, най-много над обичайното за лигата."""
-    cands = [s for s in ("1", "X", "2") if (price(s, p, avg)[0] or 0) >= RISKY_FROM]
+# Кои знаци позволява всяка прогноза (професионалистът, 02.10: „няма как сигурна 1X, рискова 2 - противоречи си;
+# може сигурна 1X, рискова чисто 1“). Голове, картони, корнери - не ограничават (None).
+ALLOWS = {"1": {"1"}, "X": {"X"}, "2": {"2"}, "1X": {"1", "X"}, "X2": {"X", "2"}, "12": {"1", "2"},
+          "H1": {"1"}, "H1_2": {"1"}, "H2": {"2"}, "H2_2": {"2"}}
+
+
+def risky_by_odds(p, base, avg, against=()):
+    """Рисковата: знакът 1, X или 2 с коефициент от 2.50 нагоре, най-много над обичайното за лигата - само
+    измежду знаците, които по-сигурната и едната прогноза (against) позволяват. Ако няма такъв - None."""
+    allowed = {"1", "X", "2"}
+    for sel in against:
+        allowed &= ALLOWS.get(sel, {"1", "X", "2"})
+    cands = [s for s in ("1", "X", "2") if s in allowed and (price(s, p, avg)[0] or 0) >= RISKY_FROM]
     if not cands:
         return None
     s = max(cands, key=lambda k: p[k] / base[k])
