@@ -519,7 +519,7 @@ function matchCard(m) {
       const odd = x => x[2] ? ` · коеф. ${x[2].toFixed(2)}${x[4] === "robot" ? " (по робота - букмейкърите още нямат)" : ""}` : "";
       tip = `${one}${one ? `<div class="others">Другите прогнози (за сведение - мери се само горната)</div>` : ""}<div class="preds">
         ${m.rk ? `<div class="pred risky"><span class="pl">Рискова прогноза (${RISKY_TXT})</span><b class="pv">${lab(m.rk[0])}</b>
-          <span class="pm">шанс ${pct(m.rk[1])} по робота${m.rk[3] ? ` · обикновено в лигата ${pct(m.rk[3])}` : ""}${odd(m.rk)}</span></div>` : `<div class="pred risky"><span class="pl">Рискова прогноза (${RISKY_TXT})</span><span class="pm">няма знак ${RISKY_TXT} нагоре, който да не противоречи на по-сигурната (професионалистът: сигурна 1X - рискова само 1 или X)</span></div>`}
+          <span class="pm">шанс ${pct(m.rk[1])} по робота${m.rk[3] ? ` · обикновено в лигата ${pct(m.rk[3])}` : ""}${odd(m.rk)}</span></div>` : ""}
         ${m.sf ? `<div class="pred safe"><span class="pl">По-сигурна прогноза (${SAFE_TXT})</span><b class="pv">${lab(m.sf[0])}</b>
           <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div>`
           : `<div class="pred safe"><span class="pl">По-сигурна прогноза (${SAFE_TXT})</span><span class="pm">няма събитие с коефициент ${SAFE_TXT}</span></div>`}</div>

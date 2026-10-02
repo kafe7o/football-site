@@ -160,7 +160,8 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
         # професионалистът (01.10): ЕДНА прогноза за мача - нея мерим (главният съвет в tips.tip)
         one = robot.one_pick(robot_p, avg, extras, fx["league"])
         # професионалистът (02.10): рисковата не противоречи на по-сигурната и на едната прогноза
-        risky = robot.risky_by_odds(robot_p, base, avg, [x["sel"] for x in (safer, one) if x])
+        risky = robot.risky_by_odds(robot_p, base, avg,
+                                    [x["sel"] for x in (safer, one) if x] if robot.RISKY_CONSISTENT else ())
         sel = one["sel"] if one else None
         odds = one["odds"] if one and one["src"] == "book" else None
         why = ("дерби - професионалистът: избягвай за залог" if flags.get("derby")
