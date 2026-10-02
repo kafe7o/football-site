@@ -298,6 +298,9 @@ const RG = DATA.ranges || {safe: [1.4, null], floor: 1.4, risky: "under50"};
 const rangeTxt = r => r[1] ? `${r[0].toFixed(2)}-${r[1].toFixed(2)}` : `от ${r[0].toFixed(2)}`;
 const SAFE_TXT = rangeTxt(RG.safe), ONE_TXT = rangeTxt(RG.one || [RG.floor || 1.4, null]);
 const RISKY_TXT = RG.risky === "under50" ? "знак 1 или 2 под 50%" : `от ${(RG.risky_from || 2.5).toFixed(2)}`;
+// границите, по които е ЗАПИСАН мачът: 01.10 07:00 - 03.10 07:00 - 1.50-1.80 и рискова от 2.50 (записът не се пипа)
+const OLD_FROM = "2026-10-01T04:00", NEW_FROM = "2026-10-03T04:00";
+const rulesOf = m => m.lk && m.lk >= OLD_FROM && m.lk < NEW_FROM ? {safe: "1.50-1.80", risky: "от 2.50"} : {safe: SAFE_TXT, risky: RISKY_TXT};
 const oneBack = () => ONEBT && ONEBT.clean ? `назад такива прогнози излизат ${pct(ONEBT.clean.hit)} (чиста проверка, ${ONEBT.clean.n} мача; роботът казваше средно ${pct(ONEBT.clean.said)})` : "";
 // Бонус анализ час преди мачовете от топ 5 (bets/bonus.py): вграден при часовото обновяване, а за
 // мачовете в следващите часове страницата дотегля bonus/<час>.json веднага след като е готов.
@@ -523,11 +526,11 @@ function matchCard(m) {
     if (m.one || m.rk || m.sf) {
       const odd = x => x[2] ? ` · коеф. ${x[2].toFixed(2)}${x[4] === "robot" ? " (по робота - букмейкърите още нямат)" : ""}` : "";
       tip = `${one}${one ? `<div class="others">Другите прогнози (за сведение - мери се само горната)</div>` : ""}<div class="preds">
-        ${m.rk ? `<div class="pred risky"><span class="pl">Рискова прогноза (${RISKY_TXT})</span><b class="pv">${esc(labT(m.rk[0], m))}${m.rk[0] === "1" || m.rk[0] === "2" ? ` <span class="muted small">(${esc(m.rk[0] === "1" ? m.h : m.a)})</span>` : ""}</b>
+        ${m.rk ? `<div class="pred risky"><span class="pl">Рискова прогноза (${rulesOf(m).risky})</span><b class="pv">${esc(labT(m.rk[0], m))}${m.rk[0] === "1" || m.rk[0] === "2" ? ` <span class="muted small">(${esc(m.rk[0] === "1" ? m.h : m.a)})</span>` : ""}</b>
           <span class="pm">шанс ${pct(m.rk[1])} по робота${m.rk[3] ? ` · обикновено в лигата ${pct(m.rk[3])}` : ""}${odd(m.rk)}</span></div>` : (RG.risky === "under50" && !m.lk || (m.lk && m.lk >= "2026-10-03") ? `<div class="pred risky"><span class="pl">Рискова прогноза</span><span class="pm">няма - ясен фаворит (над 50% по робота); фаворитът не е риск</span></div>` : "")}
-        ${m.sf ? `<div class="pred safe"><span class="pl">По-сигурна прогноза (${SAFE_TXT})</span><b class="pv">${lab(m.sf[0])}</b>
+        ${m.sf ? `<div class="pred safe"><span class="pl">По-сигурна прогноза (${rulesOf(m).safe})</span><b class="pv">${lab(m.sf[0])}</b>
           <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div>`
-          : `<div class="pred safe"><span class="pl">По-сигурна прогноза (${SAFE_TXT})</span><span class="pm">няма събитие с коефициент ${SAFE_TXT}</span></div>`}</div>
+          : `<div class="pred safe"><span class="pl">По-сигурна прогноза (${rulesOf(m).safe})</span><span class="pm">няма събитие с коефициент ${rulesOf(m).safe}</span></div>`}</div>
         ${(m.f || []).includes("derby") ? `<div class="pred-note"><b>Дерби</b> - професионалистът: избягвай за залог.</div>` : ""}`;
     } else if (m.t && m.rl === "market_likely" && !m.one) {
       // записан сутринта преди смяната на правилото (30.09) - по букмейкъра; записът не се пипа
