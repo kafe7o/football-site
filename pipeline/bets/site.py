@@ -279,7 +279,8 @@ def build(conn, now=None, upcoming=None):
         "one_bt": one_summary(),
         "hc_bt": hc_summary(),
         # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
-        "ranges": {"safe": list(robot.SAFE_RANGE), "floor": robot.FLOOR, "risky": robot.RISKY_RULE},
+        "ranges": {"safe": list(robot.SAFE_RANGE), "one": list(robot.ONE_RANGE), "floor": robot.FLOOR,
+                   "risky": robot.RISKY_RULE},
         "bonus": bonus_data(now),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),

@@ -214,7 +214,11 @@ RULE_RANGES = "ranges"
 #   (единият над 50%) - рискова няма (R1; R2 с по-слабия отбор: -10.7% / -11.8% - отхвърлено): 41.0% / 42.1%
 #   познати, ср. к 2.33, в 56% от мачовете, доход -7.5% / -6.6%; никога X (досега: X в 74%, 26.6% познати)
 FLOOR = 1.40                                          # нищо под 1.40
-SAFE_RANGE = (FLOOR, None)                            # без горна граница
+# зелената (по-сигурна) - до 1.80 (собственикът, 02.10: „тези в зелено трябва да са до 1.80 таван“ - професионалистът
+# на 30.09: „сигурната между 1.40 и 1.80“). Назад: в 87% от мачовете, 60.0% / 59.0% познати, ср. к 1.59, доход
+# -5.0% / -7.4% (без таван: 98%, 58.0% / 57.1%, -5.4% / -7.5%). Рамката (едната прогноза) - от 1.40 без таван.
+SAFE_RANGE = (FLOOR, 1.80)
+ONE_RANGE = (FLOOR, None)
 ONE_FALLBACK_FROM = FLOOR
 RISKY_RULE = "under50"
 RANGES_CHANGED_AT = "2026-10-03T04:00:00+00:00"       # първият запис по тези правила (03.10, 07:00)
@@ -239,8 +243,18 @@ ALLOWS = {"1": {"1"}, "X": {"X"}, "2": {"2"}, "1X": {"1", "X"}, "X2": {"X", "2"}
 RISKY_CONSISTENT = False
 
 
+def in_range(odds, rng):
+    return odds is not None and odds >= rng[0] and (rng[1] is None or odds <= rng[1])
+
+
 def in_safe(odds):
-    return odds is not None and odds >= SAFE_RANGE[0] and (SAFE_RANGE[1] is None or odds <= SAFE_RANGE[1])
+    """В границите на зелената (по-сигурната)."""
+    return in_range(odds, SAFE_RANGE)
+
+
+def in_one(odds):
+    """В границите на рамката (едната прогноза)."""
+    return in_range(odds, ONE_RANGE)
 
 
 def risky_sign(p, avg):
@@ -443,7 +457,7 @@ def one_pick(p, avg, extras=None, league=None, variant=ONE_VARIANT):
         if league in TOTO_LEAGUES and s in ("1", "2") and book and TOTO_BAND[0] <= odds <= TOTO_BAND[1]:
             continue
         cands.append((s, prob, odds, "book" if book else "robot"))
-    band = [c for c in cands if in_safe(c[2]) and c[1] >= MIN_PROB]
+    band = [c for c in cands if in_one(c[2]) and c[1] >= MIN_PROB]
     # ако няма събитие с шанс 50%+ от 1.40 нагоре - най-вероятното от 1.40 нагоре
     pool, in_band = (band, True) if band else ([c for c in cands if c[2] >= ONE_FALLBACK_FROM], False)
     if not pool:

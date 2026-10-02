@@ -75,7 +75,7 @@ SELECT_END = "2025-07-01"
 BASE_BEFORE, BASE_YEARS = "2023-07-01", 4
 # границите - тези на робота (bets/robot.py): от 2026-10-01 1.50-1.80, резерва от 2.50 нагоре
 # (професионалистът: „нищо под 1.50“, „рисковата от 2.50“); при първото пускане бяха 1.40-1.80 / над 1.80
-BAND = robot.SAFE_RANGE                   # от 03.10: (1.40, без горна граница)
+BAND = robot.ONE_RANGE                    # от 03.10: (1.40, без горна граница)
 FALLBACK_FROM = robot.ONE_FALLBACK_FROM
 MIN_PROB = 0.50
 TOTO_LEAGUES, TOTO_BAND = robot.TOTO_LEAGUES, robot.TOTO_BAND
@@ -122,7 +122,7 @@ def choose(variant, cands, base):
     pool = [c for c in cands if variant != "A2" or c[0][0] not in "CK"]          # A2 - без картони и корнери
     if variant == "B":
         pool = [c for c in pool if c[3]]
-    band = [c for c in pool if robot.in_safe(c[2]) and c[1] >= MIN_PROB]
+    band = [c for c in pool if robot.in_one(c[2]) and c[1] >= MIN_PROB]
     if band:
         if variant == "C":
             return max(band, key=lambda c: c[1] - c[4]), True

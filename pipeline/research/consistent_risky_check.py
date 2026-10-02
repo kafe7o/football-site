@@ -45,7 +45,7 @@ def one_simple(p, avg):
         book = s in robot.SELECTIONS and bool(avg.get(s))
         odds = avg[s] if book else (1 / prob if prob > 0 else 99.0)
         cands.append((s, prob, odds))
-    band = [c for c in cands if robot.in_safe(c[2]) and c[1] >= 0.5]
+    band = [c for c in cands if robot.in_one(c[2]) and c[1] >= 0.5]
     pool = band or [c for c in cands if c[2] >= robot.ONE_FALLBACK_FROM]
     return max(pool, key=lambda c: c[1])[0] if pool else None
 
