@@ -56,7 +56,7 @@ OUT = ROOT / "data" / "handicap_corners.json"
 SELECT_END = "2025-07-01"
 BASE_BEFORE, BASE_YEARS = "2023-07-01", 4
 HCP = {"H1": (1, 2), "H2": (-1, 2), "H1_2": (1, 3), "H2_2": (-1, 3)}     # (страна, поне толкова гола разлика)
-BAND, FALLBACK = robot.SAFE_RANGE, robot.RISKY_FROM
+BAND, FALLBACK = robot.SAFE_RANGE, robot.ONE_FALLBACK_FROM
 
 
 def hcp_probs(lh, la):
@@ -199,7 +199,7 @@ def main():
             for c in ("KH", "KA"):
                 plus.append((c, cp[c], 1 / cp[c] if cp[c] > 0 else 99.0, lambda c=c, res=res: c == res))
         for name, pool in (("A", cands), ("A+", plus)):
-            band = [c for c in pool if BAND[0] <= c[2] <= BAND[1] and c[1] >= 0.5]
+            band = [c for c in pool if robot.in_safe(c[2]) and c[1] >= 0.5]
             pick = max(band, key=lambda c: c[1]) if band else max([c for c in pool if c[2] >= FALLBACK], key=lambda c: c[1], default=None)
             if pick:
                 h = pick[3]()

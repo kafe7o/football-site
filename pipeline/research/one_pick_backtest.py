@@ -75,8 +75,8 @@ SELECT_END = "2025-07-01"
 BASE_BEFORE, BASE_YEARS = "2023-07-01", 4
 # границите - тези на робота (bets/robot.py): от 2026-10-01 1.50-1.80, резерва от 2.50 нагоре
 # (професионалистът: „нищо под 1.50“, „рисковата от 2.50“); при първото пускане бяха 1.40-1.80 / над 1.80
-BAND = robot.SAFE_RANGE
-FALLBACK_FROM = robot.RISKY_FROM
+BAND = robot.SAFE_RANGE                   # от 03.10: (1.40, без горна граница)
+FALLBACK_FROM = robot.ONE_FALLBACK_FROM
 MIN_PROB = 0.50
 TOTO_LEAGUES, TOTO_BAND = robot.TOTO_LEAGUES, robot.TOTO_BAND
 VARIANTS = ("A", "A2", "B", "C")
@@ -122,7 +122,7 @@ def choose(variant, cands, base):
     pool = [c for c in cands if variant != "A2" or c[0][0] not in "CK"]          # A2 - без картони и корнери
     if variant == "B":
         pool = [c for c in pool if c[3]]
-    band = [c for c in pool if BAND[0] <= c[2] <= BAND[1] and c[1] >= MIN_PROB]
+    band = [c for c in pool if robot.in_safe(c[2]) and c[1] >= MIN_PROB]
     if band:
         if variant == "C":
             return max(band, key=lambda c: c[1] - c[4]), True
@@ -252,7 +252,7 @@ def main():
         for k in ("select", "clean"):
             s = out["variants"][v][k]
             print(f"{v:<3} {k:<6} {s['n']:>6} | познати {s['hit']:.1%} ± {s['hit_se']:.1%} | роботът каза {s['said']:.1%} | "
-                  f"в лигата изобщо {s['base']:.1%} | ср.к {s['odds']:.2f} | в {BAND[0]:.2f}-{BAND[1]:.2f} {s['in_band']:.0%} | "
+                  f"в лигата изобщо {s['base']:.1%} | ср.к {s['odds']:.2f} | в границите {s['in_band']:.0%} | "
                   f"с коеф. от букмейкър {s['book_share']:.0%}" + (f", доход {s['roi']:+.1%} ± {s['roi_se']:.1%}" if s.get("roi") is not None else ""))
         print("    от какво:", out["variants"][v]["clean"]["kinds"])
     print(f"\nИзбор по протокола: {best} (най-много познати в избора); в чистата най-добрият е {top_clean}, "

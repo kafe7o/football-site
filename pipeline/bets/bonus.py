@@ -139,9 +139,10 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
     if robot_p:
         new["safer"] = robot.safe_by_odds(robot_p, n_avg or m_avg)
         new["one"] = robot.one_pick(robot_p, n_avg or m_avg, picks.get("extras"), fx["league"])
-        new["risky"] = robot.risky_by_odds(robot_p, base, n_avg or m_avg,
-                                           [x["sel"] for x in (new["safer"], new["one"]) if x]
-                                           if robot.RISKY_CONSISTENT else ())
+        new["risky"] = (robot.risky_sign(robot_p, n_avg or m_avg) if robot.RISKY_RULE == "under50" else
+                        robot.risky_by_odds(robot_p, base, n_avg or m_avg,
+                                            [x["sel"] for x in (new["safer"], new["one"]) if x]
+                                            if robot.RISKY_CONSISTENT else ()))
         for kind, name in (("one", "прогнозата"), ("risky", "рисковата"), ("safer", "по-сигурната")):
             old, cur = picks.get(kind), new.get(kind)
             old_sel, cur_sel = (old or {}).get("sel"), (cur or {}).get("sel")

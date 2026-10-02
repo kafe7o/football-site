@@ -159,8 +159,8 @@ def morning(conn, upcoming, now=None):
             with_pred = [m for m in today if m.get("one") or m.get("risky") or m.get("safer")]
             leagues = {m["league"] for m in today}
             lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} - "
-                         f"ПО ЕДНА на мач (най-вероятното по робота с коеф. {robot.SAFE_RANGE[0]:.2f}-{robot.SAFE_RANGE[1]:.2f}). "
-                         f"Рисковата (от {robot.RISKY_FROM:.2f}) и по-сигурната - на сайта.")
+                         f"ПО ЕДНА на мач (най-вероятното по робота, коеф. от {robot.FLOOR:.2f}). "
+                         f"Рисковата (знак 1 или 2 под 50%) и по-сигурната - на сайта.")
             top10 = ("E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1")
             order = sorted(with_pred, key=lambda m: (m["league"] not in top10, m["kickoff"]))
             for m in order[:TOP]:

@@ -205,9 +205,21 @@ RULE_RANGES = "ranges"
 # нагоре“ („не може да е 1.48“); „сигурната между 1.40 и 1.80, до 1.80 всичко е сигурно, над 1.80 - рисково“.
 # Сечението: нищо под 1.50; по-сигурна (и едната прогноза) 1.50-1.80; рисковата прогноза - от 2.50;
 # 1.80-2.50 е „рисково“, но прогноза там не се дава. Цената - research/master_ranges_check.py.
-SAFE_RANGE = (1.50, 1.80)
+# СМЕНЕНО ОТНОВО 2026-10-02 (професионалистът: „да не слагаме ограничения в коефициентите, само да ги разделя на
+# сигурна и рискова, обаче поне от 1.40 нагоре цялостно - да не ми дава 1.20 „много сигурни“, а после рискова на 1.50“;
+# „рисковата да не е само X - не искам 15 хикса, нека да познава знаци“). research/master_split_check.py:
+#   по-сигурна от 1.40 (без горна граница), шанс 50%+: 57.9% / 57.0% познати, в 98% от мачовете, доход -5.4% / -7.6%
+#   едната прогноза от 1.40: 63.9% / 63.7% (при 1.50-1.80 беше 56.8%), доход -6.7% / -7.7%
+#   рискова = знак 1 или 2, който роботът дава ПОД 50% (наистина рисков), по-вероятният от двата; при ясен фаворит
+#   (единият над 50%) - рискова няма (R1; R2 с по-слабия отбор: -10.7% / -11.8% - отхвърлено): 41.0% / 42.1%
+#   познати, ср. к 2.33, в 56% от мачовете, доход -7.5% / -6.6%; никога X (досега: X в 74%, 26.6% познати)
+FLOOR = 1.40                                          # нищо под 1.40
+SAFE_RANGE = (FLOOR, None)                            # без горна граница
+ONE_FALLBACK_FROM = FLOOR
+RISKY_RULE = "under50"
+RANGES_CHANGED_AT = "2026-10-03T04:00:00+00:00"       # първият запис по тези правила (03.10, 07:00)
+# старите граници (01.10-02.10) - за проверките назад: 1.50-1.80 и рискова от 2.50
 RISKY_FROM = 2.50
-RANGES_CHANGED_AT = "2026-10-01T04:00:00+00:00"       # първият запис по новите граници (01.10, 07:00)
 SAFE_CANDIDATES = ["1", "2", "1X", "X2", "12", "O", "U"]
 
 
@@ -225,6 +237,23 @@ ALLOWS = {"1": {"1"}, "X": {"X"}, "2": {"2"}, "1X": {"1", "X"}, "X2": {"X", "2"}
 # ИЗКЛЮЧЕНО 2026-10-02 (собственикът, след справката research/before_after_risky.py: „да върнем стария модел“) -
 # рисковата пак се избира както до 02.10, без ограничението. Кодът остава, за да се включи с True.
 RISKY_CONSISTENT = False
+
+
+def in_safe(odds):
+    return odds is not None and odds >= SAFE_RANGE[0] and (SAFE_RANGE[1] is None or odds <= SAFE_RANGE[1])
+
+
+def risky_sign(p, avg):
+    """Рисковата (от 03.10): знак 1 или 2, който роботът дава под 50%, по-вероятният от двата; коефициент от 1.40.
+    При ясен фаворит (единият отбор над 50%) - None: за него рисков знак няма."""
+    under = [s for s in ("1", "2") if p.get(s) is not None and p[s] < 0.5]
+    if len(under) != 2:
+        return None
+    s = max(under, key=lambda k: p[k])
+    o, src = price(s, p, avg)
+    if not o or o < FLOOR:
+        return None
+    return {"sel": s, "p": round(p[s], 4), "odds": o, "src": src}
 
 
 def risky_by_odds(p, base, avg, against=()):
@@ -249,7 +278,7 @@ def safe_by_odds(p, avg):
     cands = []
     for s in SAFE_CANDIDATES:
         o, src = price(s, p, avg)
-        if o and SAFE_RANGE[0] <= o <= SAFE_RANGE[1] and p.get(s, 0) >= MIN_PROB:
+        if o and in_safe(o) and p.get(s, 0) >= MIN_PROB:
             cands.append((s, p[s], o, src))
     if not cands:
         return None
@@ -414,9 +443,9 @@ def one_pick(p, avg, extras=None, league=None, variant=ONE_VARIANT):
         if league in TOTO_LEAGUES and s in ("1", "2") and book and TOTO_BAND[0] <= odds <= TOTO_BAND[1]:
             continue
         cands.append((s, prob, odds, "book" if book else "robot"))
-    band = [c for c in cands if SAFE_RANGE[0] <= c[2] <= SAFE_RANGE[1] and c[1] >= MIN_PROB]
-    # ако в мача няма събитие в границите - най-вероятното от 2.50 нагоре (рисковото по професионалиста)
-    pool, in_band = (band, True) if band else ([c for c in cands if c[2] >= RISKY_FROM], False)
+    band = [c for c in cands if in_safe(c[2]) and c[1] >= MIN_PROB]
+    # ако няма събитие с шанс 50%+ от 1.40 нагоре - най-вероятното от 1.40 нагоре
+    pool, in_band = (band, True) if band else ([c for c in cands if c[2] >= ONE_FALLBACK_FROM], False)
     if not pool:
         return None
     s, prob, odds, src = max(pool, key=lambda c: c[1])
