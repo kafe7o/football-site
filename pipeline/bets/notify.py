@@ -79,7 +79,7 @@ def settled_between(conn, start, end):
 def score(rows):
     """Рисковата и по-сигурната прогноза: познати, общо, доход в евро при STAKE (където има коефициент);
     и по пазари. Картоните/корнерите се броят, когато football-data донесе статистиката."""
-    rows = [t for t in rows if t["basis"] == "model"]       # само прогнозите на робота (собственикът, 02.10)
+    rows = [t for t in rows if t["basis"] == "model" or t["tip"]]    # само мачовете с прогноза на робота (02.10)
     out = {}
     done = []
     for t in rows:
@@ -209,7 +209,7 @@ def evening(conn, now=None):
         if not rows:
             return False
         s = score(rows)
-        waiting = conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND basis = 'model' AND kickoff >= ? AND kickoff < ?",
+        waiting = conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND (basis = 'model' OR tip IS NOT NULL) AND kickoff >= ? AND kickoff < ?",
                                (start.isoformat(), now.isoformat())).fetchone()[0]
         text = score_text(s, "Днес") + (f"\nЧакат резултат: {waiting}." if waiting else "")
         return send(f"Резултати {local.strftime('%d.%m')}", text, tags="bar_chart")
