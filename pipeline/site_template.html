@@ -177,6 +177,13 @@ details.pend > .inner { padding: 0 10px 10px; }
 .pred .pv { font: 700 18px/1.2 "IBM Plex Sans", sans-serif; }
 .pred .pm { font-size: 12px; color: var(--muted); }
 .pred-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+/* колонки */
+.col { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.col .leg { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 10px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; align-items: baseline; }
+.col .leg:last-of-type { border-bottom: 0; }
+.col .sum { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.col .sum b { color: var(--ink); }
+.col.won { border-color: var(--ok); } .col.lost { opacity: .85; }
 /* едната прогноза на робота - главната */
 .one { margin-top: 8px; border: 2px solid var(--home); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
 .one .ol { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--home); font-weight: 700; }
@@ -244,6 +251,7 @@ footer { margin-top: 30px; font-size: 12px; color: var(--muted); }
   <div class="tabs" role="tablist">
     <button role="tab" id="t-fc" aria-controls="p-fc" aria-selected="true">Прогнози</button>
     <button role="tab" id="t-rs" aria-controls="p-rs" aria-selected="false">Резултати</button>
+    <button role="tab" id="t-cl" aria-controls="p-cl" aria-selected="false">Колонки</button>
     <button role="tab" id="t-lg" aria-controls="p-lg" aria-selected="false">Лиги</button>
     <button role="tab" id="t-pr" aria-controls="p-pr" aria-selected="false">Професионалист</button>
   </div>
@@ -267,6 +275,10 @@ footer { margin-top: 30px; font-size: 12px; color: var(--muted); }
     <div class="chips" id="rs-period"></div>
     <div class="chips" id="rs-filter"></div>
     <div id="rs-body"></div>
+  </section>
+
+  <section role="tabpanel" id="p-cl" aria-labelledby="t-cl" hidden>
+    <div id="cl-body"></div>
   </section>
 
   <section role="tabpanel" id="p-lg" aria-labelledby="t-lg" hidden>
@@ -1151,11 +1163,54 @@ function renderPro() {
       ${t.status ? `<p class="pro-status">${esc(t.status)}</p>` : ""}</div>`).join("") : `<div class="empty">Още няма съвети.</div>`);
 }
 
+// ======================= КОЛОНКИ =======================
+// bets/columns.py: колонката е няколко мача, от които ТРЯБВА да излязат всичките. Записаните сутринта не се менят;
+// предварителните за следващите дни се смятат наново на всяко пускане.
+function colCard(c, rec) {
+  const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
+  const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
+  const head = !rec ? "" : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>` : `<span class="muted">чака мачовете</span>`;
+  return `<div class="col ${state}">${head ? `<div class="small" style="margin-bottom:4px"><b>Колонка ${c.idx || ""}</b> ${head}</div>` : ""}
+    ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
+      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)}</span><br>
+      <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}</span></span>
+      <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
+    <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b></span>
+      <span>Шанс: роботът казва <b>${pct(c.claimed)}</b>, реално около <b>${pct(c.honest)}</b></span>
+      <span>От 1 € се връщат средно <b>${c.return.toFixed(2)} €</b>${c.book ? "" : " (част от коефициентите са по робота)"}</span></div></div>`;
+}
+
+function renderColumns() {
+  const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
+  const bt = C.bt, pr = C.params || {};
+  const dayLbl = d => new Date(d + "T12:00:00").toLocaleDateString("bg-BG", {weekday: "long", day: "2-digit", month: "2-digit"});
+  let html = `<div class="note">Колонката е няколко мача, от които <b>трябва да излязат всичките</b>. Правило (по майстора, проверено назад):
+    само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b> (да не падат заедно),
+    без дерби. ${bt && bt.clean ? `<br><span class="muted small">Назад (${bt.clean.days + (bt.select ? bt.select.days : 0)} дни): колонка от 3 минава в <b>${pct(bt.clean.pass)}</b> от случаите (роботът казва ${pct(bt.clean.claimed)}) и връща средно <b>${bt.clean.book_return != null ? bt.clean.book_return.toFixed(2) : "0.8"} €</b> от 1 € - тоест губи около 20%. Маржът на букмейкъра се умножава на всеки мач: колонките губят повече от единичните прогнози.</span>` : ""}</div>`;
+  const todayCols = rec.columns.filter(c => c.day === C.today);
+  html += `<h2>Днес - ${esc(dayLbl(C.today))}</h2>`;
+  if (todayCols.length) html += `<p class="small muted" style="margin:0 0 8px">Записани сутринта в 07:00 - не се променят.</p>` + todayCols.map(c => colCard(c, true)).join("");
+  else if ((C.preview || {})[C.today]) html += `<p class="small muted" style="margin:0 0 8px">Още не е записано (записът е в 07:00) - предварително.</p>` + C.preview[C.today].map(c => colCard(c, false)).join("");
+  else html += `<div class="empty">Днес няма достатъчно различни мачове с прогноза на робота за колонка от ${pr.size || 3} (от различни първенства).</div>`;
+  const next = Object.entries(C.preview || {}).filter(([d]) => d !== C.today);
+  next.forEach(([d, cols]) => {
+    html += `<h2>${esc(dayLbl(d))} <span class="muted small">- предварително, обновява се всеки час</span></h2>` +
+      (cols.length ? cols.map(c => colCard(c, false)).join("") : `<div class="empty">За този ден още няма достатъчно мачове с прогноза.</div>`);
+  });
+  const past = rec.columns.filter(c => c.day !== C.today);
+  html += `<h2>Минали колонки</h2>` + (rec.n ? `<div class="note">Записани и уредени: <b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}); роботът е казвал средно ${pct(rec.claimed)}.
+    <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки.</span></div>` : `<div class="empty">Още няма уредени колонки - записът започва от днес.</div>`);
+  let last = "";
+  past.forEach(c => { if (c.day !== last) { html += `<div class="day-h">${esc(dayLbl(c.day))}</div>`; last = c.day; } html += colCard(c, true); });
+  el.innerHTML = html;
+}
+
 // ---------- старт ----------
 initForecasts();
 fetchBonus();
 setInterval(fetchResults, 60e3);
 initResults();
+renderColumns();
 fetchResults();
 initLeagues();
 renderPro();

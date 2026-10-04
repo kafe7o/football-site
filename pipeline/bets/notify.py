@@ -180,6 +180,12 @@ def morning(conn, upcoming, now=None):
                 lines.append("Бонус анализ час преди мачовете от топ 5 (известие дали има промени): " + "; ".join(
                     f"{local_time((datetime.fromisoformat(k) - LEAD).isoformat())} за {local_time(k)} ({len(v)} мача)"
                     for k, v in sorted(slots.items())))
+            from . import columns
+            cols = [r for r in columns.record(conn, days=1)["columns"] if r["day"] == columns.day_of(now.isoformat())]
+            if cols:
+                lines.append("Колонки за деня (по една от първенство; не са сигурни - губят средно ~20% от 1 €): " + "; ".join(
+                    f"{i + 1}) " + " + ".join(f"{name(l['home'], l['away'])} {robot.label(l['sel'])}" for l in c["legs"])
+                    + f" [коеф. {c['odds']:.2f}, шанс ~{c['honest']:.0%}]" for i, c in enumerate(cols)))
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

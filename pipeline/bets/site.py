@@ -154,6 +154,20 @@ def record(conn, now):
     return out
 
 
+def columns_data(conn, upcoming, now):
+    """Таб „Колонки“: записаните сутринта (днес и по-рано) и предварителните за следващите дни."""
+    from . import columns
+    rec = columns.record(conn)
+    today = columns.day_of(now.isoformat())
+    live = [m for m in upcoming if m.get("basis") == "model"]
+    # предварителни: следващите дни; а ако за днес още няма запис (преди 07:00) - и днес
+    has_today = conn.execute("SELECT 1 FROM columns WHERE day = ?", (today,)).fetchone() is not None
+    prev = columns.for_days(live, skip_day=today if has_today else None, days=3)
+    return {"today": today, "record": rec, "preview": prev,
+            "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION},
+            "bt": read_json("columns_backtest.json", {}).get("p0.65_n3_league")}
+
+
 def backtest_summary():
     """От data/backtest.json - само нужното за сайта."""
     bt = read_json("backtest.json", {})
@@ -277,6 +291,7 @@ def build(conn, now=None, upcoming=None):
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
         "one_bt": one_summary(),
+        "columns": columns_data(conn, upcoming, now),
         "hc_bt": hc_summary(),
         # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
         "ranges": {"safe": list(robot.SAFE_RANGE), "one": list(robot.ONE_RANGE), "floor": robot.FLOOR,

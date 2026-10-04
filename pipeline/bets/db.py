@@ -92,6 +92,17 @@ CREATE TABLE IF NOT EXISTS tips (
 );
 CREATE INDEX IF NOT EXISTS idx_tips_kickoff ON tips(kickoff);
 
+-- колонките на деня (bets/columns.py): записват се сутринта и не се променят; idx 0 - маркер „денят е обработен“
+CREATE TABLE IF NOT EXISTS columns (
+    day          TEXT NOT NULL,
+    idx          INTEGER NOT NULL,
+    legs_json    TEXT NOT NULL,
+    summary_json TEXT NOT NULL,
+    locked_at    TEXT NOT NULL,
+    passed       INTEGER,                 -- NULL - още не е ясно; 1 - всичките излязоха; 0 - поне един не
+    PRIMARY KEY (day, idx)
+);
+
 CREATE TABLE IF NOT EXISTS backtest_tips (
     league      TEXT NOT NULL,
     date        TEXT NOT NULL,
