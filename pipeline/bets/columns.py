@@ -156,12 +156,18 @@ def sync_manual(conn):
     added = 0
     for i, m in enumerate(json.loads(path.read_text(encoding="utf-8"))):
         idx = 100 + i
-        if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = ?", (m["day"], idx)).fetchone():
-            continue
-        s = {**summary(m["legs"]), "manual": True, "name": m.get("name")}
-        conn.execute("INSERT INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
-                     (m["day"], idx, json.dumps(m["legs"], ensure_ascii=False), json.dumps(s), m["placed_at"]))
-        added += 1
+        s = {**summary(m["legs"]), "manual": True, "name": m.get("name"), "note": m.get("note")}
+        legs = json.dumps(m["legs"], ensure_ascii=False)
+        row = conn.execute("SELECT legs_json FROM columns WHERE day = ? AND idx = ?", (m["day"], idx)).fetchone()
+        if row is None:
+            conn.execute("INSERT INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
+                         (m["day"], idx, legs, json.dumps(s), m["placed_at"]))
+            added += 1
+        elif row["legs_json"] != legs:
+            # ръчният запис се допълва от собственика (не е автоматична колонка) - уреждането започва наново
+            conn.execute("UPDATE columns SET legs_json = ?, summary_json = ?, passed = NULL WHERE day = ? AND idx = ?",
+                         (legs, json.dumps(s), m["day"], idx))
+            added += 1
     conn.commit()
     return added
 

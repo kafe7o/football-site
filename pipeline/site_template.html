@@ -1173,8 +1173,9 @@ function colCard(c, rec) {
   return `<div class="col ${state}">${head ? `<div class="small" style="margin-bottom:4px"><b>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + (c.idx || "")}</b> ${head}</div>` : ""}
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
       <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)}</span><br>
-      <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}</span></span>
+      <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
       <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
+    ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
     <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b></span>
       <span>Шанс: роботът казва <b>${pct(c.claimed)}</b>, реално около <b>${pct(c.honest)}</b></span>
       <span>От 1 € се връщат средно <b>${c.return.toFixed(2)} €</b>${c.book ? "" : " (част от коефициентите са по робота)"}</span></div></div>`;
