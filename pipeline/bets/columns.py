@@ -126,8 +126,10 @@ def lock(conn, now=None):
     if conn.execute("SELECT 1 FROM columns WHERE day = ?", (day,)).fetchone():
         return 0
     start, end = day_bounds(day)
+    # само мачовете, които още не са започнали - ако първото пускане закъснее, колонката не бива да се избира, когато
+    # част от мачовете вече са свършили
     rows = conn.execute("SELECT * FROM tips WHERE kickoff >= ? AND kickoff < ? AND basis = 'model'",
-                        (start.isoformat(), end.isoformat())).fetchall()
+                        (max(start, now).isoformat(), end.isoformat())).fetchall()
     if not rows:
         return 0
     matches = []
