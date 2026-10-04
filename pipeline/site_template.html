@@ -1170,7 +1170,7 @@ function colCard(c, rec) {
   const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
   const head = !rec ? "" : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>` : `<span class="muted">чака мачовете</span>`;
-  return `<div class="col ${state}">${head ? `<div class="small" style="margin-bottom:4px"><b>Колонка ${c.idx || ""}</b> ${head}</div>` : ""}
+  return `<div class="col ${state}">${head ? `<div class="small" style="margin-bottom:4px"><b>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + (c.idx || "")}</b> ${head}</div>` : ""}
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
       <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)}</span><br>
       <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}</span></span>
@@ -1187,7 +1187,7 @@ function renderColumns() {
   let html = `<div class="note">Колонката е няколко мача, от които <b>трябва да излязат всичките</b>. Правило (по майстора, проверено назад):
     само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b> (да не падат заедно),
     без дерби. ${bt && bt.clean ? `<br><span class="muted small">Назад (${bt.clean.days + (bt.select ? bt.select.days : 0)} дни): колонка от 3 минава в <b>${pct(bt.clean.pass)}</b> от случаите (роботът казва ${pct(bt.clean.claimed)}) и връща средно <b>${bt.clean.book_return != null ? bt.clean.book_return.toFixed(2) : "0.8"} €</b> от 1 € - тоест губи около 20%. Маржът на букмейкъра се умножава на всеки мач: колонките губят повече от единичните прогнози.</span>` : ""}</div>`;
-  const todayCols = rec.columns.filter(c => c.day === C.today);
+  const todayCols = rec.columns.filter(c => c.day === C.today).sort((a, b) => (a.manual ? 1 : 0) - (b.manual ? 1 : 0) || a.idx - b.idx);
   html += `<h2>Днес - ${esc(dayLbl(C.today))}</h2>`;
   if (todayCols.length) html += `<p class="small muted" style="margin:0 0 8px">Записани сутринта в 07:00 - не се променят.</p>` + todayCols.map(c => colCard(c, true)).join("");
   else if ((C.preview || {})[C.today]) html += `<p class="small muted" style="margin:0 0 8px">Още не е записано (записът е в 07:00) - предварително.</p>` + C.preview[C.today].map(c => colCard(c, false)).join("");

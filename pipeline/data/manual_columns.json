@@ -1,0 +1,31 @@
+[
+ {
+  "day": "2026-10-04",
+  "name": "Играна от собственика",
+  "placed_at": "2026-10-04T12:35:00+00:00",
+  "legs": [
+   {
+    "id": "f42371061db78b72824e768318c7e80b",
+    "league": "SP2",
+    "home": "Las Palmas",
+    "away": "Valladolid",
+    "kickoff": "2026-10-04T16:30+00:00",
+    "sel": "O15",
+    "p": 0.7021,
+    "odds": 1.42,
+    "src": "robot"
+   },
+   {
+    "id": "fd73ff6279d08f38434fb0c4fca0f065",
+    "league": "ARG",
+    "home": "Argentinos Jrs",
+    "away": "Tigre",
+    "kickoff": "2026-10-04T22:15+00:00",
+    "sel": "U",
+    "p": 0.7269,
+    "odds": 1.5,
+    "src": "book"
+   }
+  ]
+ }
+]

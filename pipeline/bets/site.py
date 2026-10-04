@@ -161,7 +161,7 @@ def columns_data(conn, upcoming, now):
     today = columns.day_of(now.isoformat())
     live = [m for m in upcoming if m.get("basis") == "model"]
     # предварителни: следващите дни; а ако за днес още няма запис (преди 07:00) - и днес
-    has_today = conn.execute("SELECT 1 FROM columns WHERE day = ?", (today,)).fetchone() is not None
+    has_today = conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (today,)).fetchone() is not None
     prev = columns.for_days(live, skip_day=today if has_today else None, days=3)
     return {"today": today, "record": rec, "preview": prev,
             "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION},

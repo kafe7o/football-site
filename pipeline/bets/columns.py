@@ -22,7 +22,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import robot
+from . import config, robot
 
 SOFIA = ZoneInfo("Europe/Sofia")
 MIN_P = 0.65          # шанс по робота за мач в колонка
@@ -123,7 +123,7 @@ def lock(conn, now=None):
     """Сутринта: записва колонките на деня от записаните прогнози (tips). Веднъж на ден; не се променят."""
     now = now or datetime.now(timezone.utc)
     day = day_of(now.isoformat())
-    if conn.execute("SELECT 1 FROM columns WHERE day = ?", (day,)).fetchone():
+    if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (day,)).fetchone():
         return 0
     start, end = day_bounds(day)
     # само мачовете, които още не са започнали - ако първото пускане закъснее, колонката не бива да се избира, когато
@@ -145,6 +145,25 @@ def lock(conn, now=None):
                  (day, now.isoformat(timespec="seconds")))        # маркер „денят е обработен“ (дори без колонки)
     conn.commit()
     return len(cols)
+
+
+def sync_manual(conn):
+    """Ръчно записаните колонки на собственика (data/manual_columns.json) - в таблицата с белег manual. Веднъж;
+    не се броят в мерките на автоматичните колонки."""
+    path = config.DATA_DIR / "manual_columns.json"
+    if not path.exists():
+        return 0
+    added = 0
+    for i, m in enumerate(json.loads(path.read_text(encoding="utf-8"))):
+        idx = 100 + i
+        if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = ?", (m["day"], idx)).fetchone():
+            continue
+        s = {**summary(m["legs"]), "manual": True, "name": m.get("name")}
+        conn.execute("INSERT INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
+                     (m["day"], idx, json.dumps(m["legs"], ensure_ascii=False), json.dumps(s), m["placed_at"]))
+        added += 1
+    conn.commit()
+    return added
 
 
 def settle(conn):
@@ -178,7 +197,7 @@ def record(conn, days=30):
             leg["hit"] = None if not t or t["hg"] is None else bool(robot.hit_any(leg["sel"], t["hg"], t["ag"]))
             leg["score"] = None if not t or t["hg"] is None else [t["hg"], t["ag"]]
         out.append({"day": r["day"], "idx": r["idx"], "legs": legs, "passed": r["passed"], **s})
-        if r["passed"] is not None:
+        if r["passed"] is not None and not s.get("manual"):
             total += 1
             passed += r["passed"]
             claimed += s.get("claimed", 0)
