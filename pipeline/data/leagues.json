@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-30",
+ "generated": "2026-10-05",
  "band": [
   1.3,
   1.55
@@ -524,16 +524,6 @@
      "home_win": 0.5
     },
     {
-     "name": "M Oliver",
-     "n": 54,
-     "yellows": 3.44,
-     "reds": 0.13,
-     "fouls": 23.2,
-     "goals": 2.65,
-     "o45": 0.259,
-     "home_win": 0.37
-    },
-    {
      "name": "C Pawson",
      "n": 42,
      "yellows": 3.43,
@@ -542,6 +532,16 @@
      "goals": 2.76,
      "o45": 0.262,
      "home_win": 0.333
+    },
+    {
+     "name": "M Oliver",
+     "n": 53,
+     "yellows": 3.38,
+     "reds": 0.13,
+     "fouls": 23.1,
+     "goals": 2.62,
+     "o45": 0.245,
+     "home_win": 0.358
     },
     {
      "name": "A Taylor",
@@ -964,16 +964,6 @@
      "home_win": 0.5
     },
     {
-     "name": "T Robinson",
-     "n": 19,
-     "yellows": 4.58,
-     "reds": 0.11,
-     "fouls": 24.9,
-     "goals": 2.32,
-     "o45": 0.526,
-     "home_win": 0.368
-    },
-    {
      "name": "R Ricardo",
      "n": 28,
      "yellows": 4.54,
@@ -984,44 +974,64 @@
      "home_win": 0.357
     },
     {
+     "name": "T Robinson",
+     "n": 18,
+     "yellows": 4.5,
+     "reds": 0.11,
+     "fouls": 24.8,
+     "goals": 2.22,
+     "o45": 0.5,
+     "home_win": 0.389
+    },
+    {
      "name": "L Doughty",
-     "n": 31,
-     "yellows": 4.42,
+     "n": 30,
+     "yellows": 4.4,
      "reds": 0.13,
      "fouls": 22.2,
-     "goals": 2.58,
-     "o45": 0.452,
-     "home_win": 0.355
+     "goals": 2.63,
+     "o45": 0.433,
+     "home_win": 0.333
     },
     {
      "name": "A Backhouse",
-     "n": 43,
-     "yellows": 4.21,
+     "n": 42,
+     "yellows": 4.24,
      "reds": 0.05,
      "fouls": 21.1,
-     "goals": 2.74,
-     "o45": 0.442,
-     "home_win": 0.558
+     "goals": 2.81,
+     "o45": 0.452,
+     "home_win": 0.571
     },
     {
      "name": "T Kirk",
-     "n": 29,
+     "n": 28,
      "yellows": 4.21,
-     "reds": 0.03,
-     "fouls": 21.9,
-     "goals": 2.69,
-     "o45": 0.345,
-     "home_win": 0.31
+     "reds": 0.04,
+     "fouls": 21.8,
+     "goals": 2.64,
+     "o45": 0.357,
+     "home_win": 0.321
     },
     {
      "name": "S Martin",
-     "n": 47,
-     "yellows": 4.17,
+     "n": 46,
+     "yellows": 4.13,
      "reds": 0.04,
-     "fouls": 23.6,
-     "goals": 2.6,
-     "o45": 0.426,
-     "home_win": 0.319
+     "fouls": 23.4,
+     "goals": 2.61,
+     "o45": 0.413,
+     "home_win": 0.326
+    },
+    {
+     "name": "R Madley",
+     "n": 31,
+     "yellows": 3.87,
+     "reds": 0.19,
+     "fouls": 21.7,
+     "goals": 2.19,
+     "o45": 0.452,
+     "home_win": 0.419
     },
     {
      "name": "B Toner",
@@ -1042,16 +1052,6 @@
      "goals": 2.3,
      "o45": 0.4,
      "home_win": 0.7
-    },
-    {
-     "name": "R Madley",
-     "n": 32,
-     "yellows": 3.78,
-     "reds": 0.19,
-     "fouls": 21.7,
-     "goals": 2.16,
-     "o45": 0.438,
-     "home_win": 0.438
     },
     {
      "name": "M Donohue",
@@ -1094,16 +1094,6 @@
      "home_win": 0.391
     },
     {
-     "name": "J Bell",
-     "n": 37,
-     "yellows": 3.65,
-     "reds": 0.11,
-     "fouls": 21.6,
-     "goals": 2.68,
-     "o45": 0.27,
-     "home_win": 0.486
-    },
-    {
      "name": "M Salisbury",
      "n": 11,
      "yellows": 3.64,
@@ -1125,13 +1115,13 @@
     },
     {
      "name": "T Nield",
-     "n": 46,
-     "yellows": 3.61,
+     "n": 45,
+     "yellows": 3.62,
      "reds": 0.07,
      "fouls": 23.3,
-     "goals": 2.76,
-     "o45": 0.326,
-     "home_win": 0.457
+     "goals": 2.67,
+     "o45": 0.333,
+     "home_win": 0.444
     },
     {
      "name": "J Linington",
@@ -1142,6 +1132,16 @@
      "goals": 2.6,
      "o45": 0.257,
      "home_win": 0.486
+    },
+    {
+     "name": "J Bell",
+     "n": 36,
+     "yellows": 3.58,
+     "reds": 0.08,
+     "fouls": 21.5,
+     "goals": 2.64,
+     "o45": 0.25,
+     "home_win": 0.5
     },
     {
      "name": "L Smith",
@@ -1185,23 +1185,13 @@
     },
     {
      "name": "J Busby",
-     "n": 46,
-     "yellows": 3.37,
+     "n": 45,
+     "yellows": 3.36,
      "reds": 0.09,
      "fouls": 21.2,
-     "goals": 2.7,
-     "o45": 0.283,
-     "home_win": 0.348
-    },
-    {
-     "name": "G Ward",
-     "n": 47,
-     "yellows": 3.32,
-     "reds": 0.15,
-     "fouls": 20.7,
-     "goals": 2.64,
-     "o45": 0.298,
-     "home_win": 0.511
+     "goals": 2.69,
+     "o45": 0.289,
+     "home_win": 0.333
     },
     {
      "name": "T Bramall",
@@ -1212,6 +1202,16 @@
      "goals": 2.38,
      "o45": 0.154,
      "home_win": 0.615
+    },
+    {
+     "name": "G Ward",
+     "n": 46,
+     "yellows": 3.3,
+     "reds": 0.15,
+     "fouls": 20.6,
+     "goals": 2.67,
+     "o45": 0.304,
+     "home_win": 0.5
     },
     {
      "name": "T Harrington",
@@ -1225,13 +1225,13 @@
     },
     {
      "name": "D Whitestone",
-     "n": 41,
-     "yellows": 3.27,
+     "n": 40,
+     "yellows": 3.25,
      "reds": 0.07,
-     "fouls": 23.5,
-     "goals": 2.41,
-     "o45": 0.195,
-     "home_win": 0.293
+     "fouls": 23.4,
+     "goals": 2.42,
+     "o45": 0.2,
+     "home_win": 0.275
     },
     {
      "name": "A Davies",
@@ -1254,6 +1254,16 @@
      "home_win": 0.5
     },
     {
+     "name": "A Kitchen",
+     "n": 51,
+     "yellows": 2.88,
+     "reds": 0.08,
+     "fouls": 22.8,
+     "goals": 2.49,
+     "o45": 0.157,
+     "home_win": 0.451
+    },
+    {
      "name": "P Tierney",
      "n": 8,
      "yellows": 2.88,
@@ -1264,24 +1274,14 @@
      "home_win": 0.375
     },
     {
-     "name": "A Kitchen",
-     "n": 52,
-     "yellows": 2.87,
-     "reds": 0.08,
-     "fouls": 22.8,
-     "goals": 2.5,
-     "o45": 0.154,
-     "home_win": 0.462
-    },
-    {
      "name": "D Webb",
-     "n": 51,
-     "yellows": 2.71,
+     "n": 50,
+     "yellows": 2.7,
      "reds": 0.04,
-     "fouls": 20.5,
-     "goals": 2.61,
-     "o45": 0.098,
-     "home_win": 0.412
+     "fouls": 20.6,
+     "goals": 2.64,
+     "o45": 0.1,
+     "home_win": 0.42
     },
     {
      "name": "B Speedie",
@@ -1323,32 +1323,32 @@
      "away": 0.3164
     },
     "current": {
-     "n": 87,
-     "avg": 2.885,
-     "over25": 0.5402,
+     "n": 90,
+     "avg": 2.878,
+     "over25": 0.5333,
      "cards": 3.7,
-     "cards_o45": 0.3103,
-     "corners": 10.63,
-     "corners_o95": 0.5632,
-     "btts": 0.5977,
-     "nil": 0.092,
-     "home": 0.3448,
+     "cards_o45": 0.3111,
+     "corners": 10.72,
+     "corners_o95": 0.5778,
+     "btts": 0.6,
+     "nil": 0.0889,
+     "home": 0.3333,
      "draw": 0.3333,
-     "away": 0.3218
+     "away": 0.3333
     },
     "all": {
-     "n": 7663,
+     "n": 7666,
      "avg": 2.609,
-     "over25": 0.4903,
+     "over25": 0.4902,
      "cards": 3.3,
-     "cards_o45": 0.2496,
+     "cards_o45": 0.2497,
      "corners": 10.5,
-     "corners_o95": 0.5893,
-     "btts": 0.5174,
+     "corners_o95": 0.5895,
+     "btts": 0.5175,
      "nil": 0.0744,
-     "home": 0.4293,
-     "draw": 0.2594,
-     "away": 0.3112
+     "home": 0.4292,
+     "draw": 0.2595,
+     "away": 0.3114
     }
    },
    "goals_by_season": {
@@ -1549,18 +1549,18 @@
      "away": 0.288
     },
     "2026/2027": {
-     "n": 87,
-     "avg": 2.885,
-     "over25": 0.5402,
+     "n": 90,
+     "avg": 2.878,
+     "over25": 0.5333,
      "cards": 3.7,
-     "cards_o45": 0.3103,
-     "corners": 10.63,
-     "corners_o95": 0.5632,
-     "btts": 0.5977,
-     "nil": 0.092,
-     "home": 0.3448,
+     "cards_o45": 0.3111,
+     "corners": 10.72,
+     "corners_o95": 0.5778,
+     "btts": 0.6,
+     "nil": 0.0889,
+     "home": 0.3333,
      "draw": 0.3333,
-     "away": 0.3218
+     "away": 0.3333
     }
    },
    "toto": {
@@ -1600,26 +1600,26 @@
     "confirmed": false
    },
    "favourites": {
-    "n": 7662,
+    "n": 7665,
     "fav_expected": 0.4724,
-    "fav_actual": 0.4816,
-    "diff": 0.0092,
+    "fav_actual": 0.4817,
+    "diff": 0.0093,
     "se": 0.0056,
-    "t": 1.64,
-    "roi": -0.0282,
+    "t": 1.66,
+    "roi": -0.0281,
     "draw_expected": 0.2658,
     "draw_actual": 0.2595
    },
    "after_break": {
     "after": null,
     "other": {
-     "n": 7650,
+     "n": 7653,
      "fav_expected": 0.4724,
      "fav_actual": 0.482,
-     "diff": 0.0096,
+     "diff": 0.0097,
      "se": 0.0056,
-     "t": 1.71,
-     "roi": -0.0276,
+     "t": 1.72,
+     "roi": -0.0275,
      "draw_expected": 0.2658,
      "draw_actual": 0.2591
     },
@@ -1680,16 +1680,6 @@
      "home_win": 0.462
     },
     {
-     "name": "M Corlett",
-     "n": 31,
-     "yellows": 4.68,
-     "reds": 0.13,
-     "fouls": 24.3,
-     "goals": 3.23,
-     "o45": 0.516,
-     "home_win": 0.387
-    },
-    {
      "name": "S Allison",
      "n": 8,
      "yellows": 4.62,
@@ -1710,6 +1700,16 @@
      "home_win": 0.417
     },
     {
+     "name": "M Corlett",
+     "n": 30,
+     "yellows": 4.57,
+     "reds": 0.13,
+     "fouls": 24.4,
+     "goals": 3.13,
+     "o45": 0.5,
+     "home_win": 0.4
+    },
+    {
      "name": "J Oldham",
      "n": 10,
      "yellows": 4.5,
@@ -1721,13 +1721,13 @@
     },
     {
      "name": "R Ricardo",
-     "n": 15,
-     "yellows": 4.47,
-     "reds": 0.2,
+     "n": 14,
+     "yellows": 4.43,
+     "reds": 0.14,
      "fouls": 21.7,
-     "goals": 2.93,
-     "o45": 0.533,
-     "home_win": 0.4
+     "goals": 3.07,
+     "o45": 0.5,
+     "home_win": 0.429
     },
     {
      "name": "S Jackson",
@@ -1750,16 +1750,6 @@
      "home_win": 0.462
     },
     {
-     "name": "C Breakspear",
-     "n": 19,
-     "yellows": 4.26,
-     "reds": 0.21,
-     "fouls": 25.1,
-     "goals": 3.58,
-     "o45": 0.474,
-     "home_win": 0.316
-    },
-    {
      "name": "L Doughty",
      "n": 10,
      "yellows": 4.1,
@@ -1777,6 +1767,16 @@
      "fouls": 25.8,
      "goals": 2.42,
      "o45": 0.333,
+     "home_win": 0.333
+    },
+    {
+     "name": "C Breakspear",
+     "n": 18,
+     "yellows": 4.0,
+     "reds": 0.22,
+     "fouls": 25.1,
+     "goals": 3.67,
+     "o45": 0.444,
      "home_win": 0.333
     },
     {
@@ -1850,16 +1850,6 @@
      "home_win": 0.375
     },
     {
-     "name": "B Toner",
-     "n": 20,
-     "yellows": 3.75,
-     "reds": 0.3,
-     "fouls": 25.5,
-     "goals": 2.35,
-     "o45": 0.35,
-     "home_win": 0.55
-    },
-    {
      "name": "A Young",
      "n": 12,
      "yellows": 3.75,
@@ -1880,6 +1870,16 @@
      "home_win": 0.531
     },
     {
+     "name": "B Toner",
+     "n": 19,
+     "yellows": 3.68,
+     "reds": 0.32,
+     "fouls": 25.8,
+     "goals": 2.42,
+     "o45": 0.316,
+     "home_win": 0.526
+    },
+    {
      "name": "A Bannister",
      "n": 9,
      "yellows": 3.67,
@@ -1891,13 +1891,13 @@
     },
     {
      "name": "D Rock",
-     "n": 35,
-     "yellows": 3.63,
+     "n": 34,
+     "yellows": 3.65,
      "reds": 0.03,
-     "fouls": 22.3,
-     "goals": 2.31,
-     "o45": 0.286,
-     "home_win": 0.429
+     "fouls": 22.1,
+     "goals": 2.24,
+     "o45": 0.294,
+     "home_win": 0.412
     },
     {
      "name": "A Herczeg",
@@ -1911,13 +1911,13 @@
     },
     {
      "name": "S Oldham",
-     "n": 32,
-     "yellows": 3.56,
+     "n": 33,
+     "yellows": 3.58,
      "reds": 0.06,
-     "fouls": 21.0,
-     "goals": 2.59,
-     "o45": 0.344,
-     "home_win": 0.469
+     "fouls": 21.2,
+     "goals": 2.58,
+     "o45": 0.333,
+     "home_win": 0.455
     },
     {
      "name": "T Parsons",
@@ -1930,16 +1930,6 @@
      "home_win": 0.441
     },
     {
-     "name": "D Drysdale",
-     "n": 28,
-     "yellows": 3.54,
-     "reds": 0.18,
-     "fouls": 21.8,
-     "goals": 2.32,
-     "o45": 0.214,
-     "home_win": 0.286
-    },
-    {
      "name": "E Duckworth",
      "n": 29,
      "yellows": 3.52,
@@ -1948,6 +1938,16 @@
      "goals": 3.28,
      "o45": 0.241,
      "home_win": 0.621
+    },
+    {
+     "name": "P Howard",
+     "n": 22,
+     "yellows": 3.5,
+     "reds": 0.09,
+     "fouls": 22.8,
+     "goals": 2.59,
+     "o45": 0.227,
+     "home_win": 0.227
     },
     {
      "name": "J Durkin",
@@ -1980,14 +1980,14 @@
      "home_win": 0.655
     },
     {
-     "name": "P Howard",
-     "n": 21,
-     "yellows": 3.43,
-     "reds": 0.1,
-     "fouls": 22.4,
-     "goals": 2.62,
-     "o45": 0.19,
-     "home_win": 0.238
+     "name": "D Drysdale",
+     "n": 27,
+     "yellows": 3.48,
+     "reds": 0.19,
+     "fouls": 21.7,
+     "goals": 2.37,
+     "o45": 0.185,
+     "home_win": 0.296
     },
     {
      "name": "B Speedie",
@@ -2010,16 +2010,6 @@
      "home_win": 0.69
     },
     {
-     "name": "A Chilowicz",
-     "n": 31,
-     "yellows": 3.35,
-     "reds": 0.16,
-     "fouls": 23.2,
-     "goals": 3.0,
-     "o45": 0.29,
-     "home_win": 0.548
-    },
-    {
      "name": "S Martin",
      "n": 9,
      "yellows": 3.33,
@@ -2038,6 +2028,16 @@
      "goals": 1.56,
      "o45": 0.222,
      "home_win": 0.333
+    },
+    {
+     "name": "A Chilowicz",
+     "n": 30,
+     "yellows": 3.33,
+     "reds": 0.17,
+     "fouls": 23.0,
+     "goals": 2.97,
+     "o45": 0.3,
+     "home_win": 0.533
     },
     {
      "name": "A Humphries",
@@ -2061,33 +2061,23 @@
     },
     {
      "name": "N Hair",
-     "n": 15,
-     "yellows": 3.2,
-     "reds": 0.13,
-     "fouls": 24.3,
-     "goals": 2.67,
-     "o45": 0.133,
-     "home_win": 0.467
-    },
-    {
-     "name": "W Finnie",
-     "n": 22,
-     "yellows": 3.05,
-     "reds": 0.14,
-     "fouls": 22.4,
-     "goals": 2.73,
-     "o45": 0.273,
-     "home_win": 0.5
+     "n": 16,
+     "yellows": 3.12,
+     "reds": 0.12,
+     "fouls": 24.0,
+     "goals": 2.75,
+     "o45": 0.125,
+     "home_win": 0.438
     },
     {
      "name": "R Joyce",
-     "n": 26,
-     "yellows": 3.04,
+     "n": 25,
+     "yellows": 3.0,
      "reds": 0.04,
-     "fouls": 22.3,
-     "goals": 2.58,
-     "o45": 0.192,
-     "home_win": 0.423
+     "fouls": 22.4,
+     "goals": 2.52,
+     "o45": 0.2,
+     "home_win": 0.44
     },
     {
      "name": "A Byrne",
@@ -2098,6 +2088,16 @@
      "goals": 1.88,
      "o45": 0.125,
      "home_win": 0.5
+    },
+    {
+     "name": "W Finnie",
+     "n": 21,
+     "yellows": 2.95,
+     "reds": 0.14,
+     "fouls": 22.2,
+     "goals": 2.81,
+     "o45": 0.238,
+     "home_win": 0.476
     },
     {
      "name": "M Russell",
@@ -2169,32 +2169,32 @@
      "away": 0.3128
     },
     "current": {
-     "n": 94,
-     "avg": 2.553,
-     "over25": 0.4574,
-     "cards": 3.86,
-     "cards_o45": 0.4043,
-     "corners": 10.01,
-     "corners_o95": 0.6064,
-     "btts": 0.5426,
-     "nil": 0.0851,
-     "home": 0.5,
-     "draw": 0.3617,
-     "away": 0.1383
+     "n": 102,
+     "avg": 2.529,
+     "over25": 0.451,
+     "cards": 3.91,
+     "cards_o45": 0.4118,
+     "corners": 10.11,
+     "corners_o95": 0.6176,
+     "btts": 0.5294,
+     "nil": 0.0882,
+     "home": 0.5196,
+     "draw": 0.3431,
+     "away": 0.1373
     },
     "all": {
-     "n": 7710,
+     "n": 7718,
      "avg": 2.539,
-     "over25": 0.4694,
+     "over25": 0.4693,
      "cards": 3.22,
-     "cards_o45": 0.2348,
+     "cards_o45": 0.235,
      "corners": 10.26,
-     "corners_o95": 0.561,
-     "btts": 0.5136,
-     "nil": 0.0817,
-     "home": 0.4188,
-     "draw": 0.2715,
-     "away": 0.3097
+     "corners_o95": 0.5612,
+     "btts": 0.5135,
+     "nil": 0.0818,
+     "home": 0.4192,
+     "draw": 0.2713,
+     "away": 0.3095
     }
    },
    "goals_by_season": {
@@ -2395,18 +2395,18 @@
      "away": 0.3315
     },
     "2026/2027": {
-     "n": 94,
-     "avg": 2.553,
-     "over25": 0.4574,
-     "cards": 3.86,
-     "cards_o45": 0.4043,
-     "corners": 10.01,
-     "corners_o95": 0.6064,
-     "btts": 0.5426,
-     "nil": 0.0851,
-     "home": 0.5,
-     "draw": 0.3617,
-     "away": 0.1383
+     "n": 102,
+     "avg": 2.529,
+     "over25": 0.451,
+     "cards": 3.91,
+     "cards_o45": 0.4118,
+     "corners": 10.11,
+     "corners_o95": 0.6176,
+     "btts": 0.5294,
+     "nil": 0.0882,
+     "home": 0.5196,
+     "draw": 0.3431,
+     "away": 0.1373
     }
    },
    "toto": {
@@ -2446,15 +2446,15 @@
     "confirmed": false
    },
    "favourites": {
-    "n": 7705,
-    "fav_expected": 0.4578,
-    "fav_actual": 0.4548,
-    "diff": -0.0031,
+    "n": 7713,
+    "fav_expected": 0.4579,
+    "fav_actual": 0.4549,
+    "diff": -0.0029,
     "se": 0.0056,
-    "t": -0.55,
-    "roi": -0.056,
+    "t": -0.52,
+    "roi": -0.0557,
     "draw_expected": 0.2711,
-    "draw_actual": 0.2711
+    "draw_actual": 0.271
    },
    "after_break": {
     "after": {
@@ -2469,15 +2469,15 @@
      "draw_actual": 0.2759
     },
     "other": {
-     "n": 7618,
+     "n": 7626,
      "fav_expected": 0.4579,
-     "fav_actual": 0.4547,
-     "diff": -0.0032,
+     "fav_actual": 0.4549,
+     "diff": -0.0031,
      "se": 0.0056,
-     "t": -0.57,
-     "roi": -0.0562,
+     "t": -0.54,
+     "roi": -0.0559,
      "draw_expected": 0.2711,
-     "draw_actual": 0.2711
+     "draw_actual": 0.2709
     },
     "goals_after": {
      "n": 88,
@@ -2511,13 +2511,13 @@
     },
     {
      "name": "Z Kennard-Kettle",
-     "n": 19,
-     "yellows": 5.0,
-     "reds": 0.16,
-     "fouls": 23.2,
-     "goals": 2.21,
-     "o45": 0.632,
-     "home_win": 0.368
+     "n": 18,
+     "yellows": 5.06,
+     "reds": 0.17,
+     "fouls": 23.5,
+     "goals": 2.22,
+     "o45": 0.667,
+     "home_win": 0.389
     },
     {
      "name": "J Durkin",
@@ -2558,6 +2558,16 @@
      "goals": 3.5,
      "o45": 0.375,
      "home_win": 0.5
+    },
+    {
+     "name": "E Bell",
+     "n": 12,
+     "yellows": 4.5,
+     "reds": 0.25,
+     "fouls": 22.3,
+     "goals": 2.58,
+     "o45": 0.667,
+     "home_win": 0.667
     },
     {
      "name": "A Young",
@@ -2611,23 +2621,33 @@
     },
     {
      "name": "T Parsons",
-     "n": 21,
-     "yellows": 4.24,
-     "reds": 0.29,
+     "n": 22,
+     "yellows": 4.32,
+     "reds": 0.27,
      "fouls": 24.4,
-     "goals": 2.38,
-     "o45": 0.429,
-     "home_win": 0.286
+     "goals": 2.55,
+     "o45": 0.455,
+     "home_win": 0.318
     },
     {
-     "name": "E Bell",
-     "n": 13,
-     "yellows": 4.23,
-     "reds": 0.23,
-     "fouls": 22.2,
-     "goals": 2.54,
-     "o45": 0.615,
-     "home_win": 0.615
+     "name": "M Corlett",
+     "n": 19,
+     "yellows": 4.32,
+     "reds": 0.16,
+     "fouls": 22.5,
+     "goals": 2.84,
+     "o45": 0.421,
+     "home_win": 0.368
+    },
+    {
+     "name": "A Bannister",
+     "n": 14,
+     "yellows": 4.29,
+     "reds": 0.14,
+     "fouls": 26.4,
+     "goals": 2.43,
+     "o45": 0.429,
+     "home_win": 0.357
     },
     {
      "name": "E Duckworth",
@@ -2640,14 +2660,24 @@
      "home_win": 0.684
     },
     {
-     "name": "S Jackson",
+     "name": "S Stockbridge",
      "n": 24,
      "yellows": 4.21,
-     "reds": 0.17,
-     "fouls": 23.0,
-     "goals": 2.62,
+     "reds": 0,
+     "fouls": 25.9,
+     "goals": 2.71,
      "o45": 0.417,
-     "home_win": 0.375
+     "home_win": 0.542
+    },
+    {
+     "name": "S Jackson",
+     "n": 23,
+     "yellows": 4.17,
+     "reds": 0.17,
+     "fouls": 23.1,
+     "goals": 2.57,
+     "o45": 0.391,
+     "home_win": 0.348
     },
     {
      "name": "S Mulhall",
@@ -2658,16 +2688,6 @@
      "goals": 1.83,
      "o45": 0.5,
      "home_win": 0.417
-    },
-    {
-     "name": "M Corlett",
-     "n": 18,
-     "yellows": 4.17,
-     "reds": 0.17,
-     "fouls": 21.7,
-     "goals": 2.83,
-     "o45": 0.389,
-     "home_win": 0.389
     },
     {
      "name": "J Miles",
@@ -2690,16 +2710,6 @@
      "home_win": 0.375
     },
     {
-     "name": "S Stockbridge",
-     "n": 25,
-     "yellows": 4.12,
-     "reds": 0,
-     "fouls": 25.5,
-     "goals": 2.68,
-     "o45": 0.4,
-     "home_win": 0.52
-    },
-    {
      "name": "S Tallis",
      "n": 9,
      "yellows": 4.11,
@@ -2718,16 +2728,6 @@
      "goals": 2.22,
      "o45": 0.444,
      "home_win": 0.444
-    },
-    {
-     "name": "R Martin",
-     "n": 14,
-     "yellows": 4.07,
-     "reds": 0.07,
-     "fouls": 25.1,
-     "goals": 2.07,
-     "o45": 0.357,
-     "home_win": 0.357
     },
     {
      "name": "A Byrne",
@@ -2770,16 +2770,6 @@
      "home_win": 0.333
     },
     {
-     "name": "A Bannister",
-     "n": 15,
-     "yellows": 4.0,
-     "reds": 0.13,
-     "fouls": 26.1,
-     "goals": 2.67,
-     "o45": 0.4,
-     "home_win": 0.333
-    },
-    {
      "name": "T Reeves",
      "n": 17,
      "yellows": 3.94,
@@ -2790,6 +2780,16 @@
      "home_win": 0.529
     },
     {
+     "name": "R Martin",
+     "n": 15,
+     "yellows": 3.93,
+     "reds": 0.07,
+     "fouls": 24.3,
+     "goals": 2.0,
+     "o45": 0.333,
+     "home_win": 0.4
+    },
+    {
      "name": "P Howard",
      "n": 15,
      "yellows": 3.93,
@@ -2798,16 +2798,6 @@
      "goals": 1.8,
      "o45": 0.333,
      "home_win": 0.467
-    },
-    {
-     "name": "O Mackey",
-     "n": 19,
-     "yellows": 3.89,
-     "reds": 0.11,
-     "fouls": 24.5,
-     "goals": 3.16,
-     "o45": 0.368,
-     "home_win": 0.368
     },
     {
      "name": "R Joyce",
@@ -2830,14 +2820,24 @@
      "home_win": 0.375
     },
     {
-     "name": "C Brook",
-     "n": 22,
-     "yellows": 3.82,
-     "reds": 0.18,
-     "fouls": 21.7,
-     "goals": 3.05,
-     "o45": 0.455,
-     "home_win": 0.455
+     "name": "O Mackey",
+     "n": 18,
+     "yellows": 3.83,
+     "reds": 0.11,
+     "fouls": 24.4,
+     "goals": 3.17,
+     "o45": 0.333,
+     "home_win": 0.333
+    },
+    {
+     "name": "D Baines",
+     "n": 10,
+     "yellows": 3.8,
+     "reds": 0,
+     "fouls": 25.9,
+     "goals": 2.5,
+     "o45": 0.4,
+     "home_win": 0.4
     },
     {
      "name": "R Eley",
@@ -2850,6 +2850,16 @@
      "home_win": 0.389
     },
     {
+     "name": "C Brook",
+     "n": 22,
+     "yellows": 3.77,
+     "reds": 0.18,
+     "fouls": 22.0,
+     "goals": 3.0,
+     "o45": 0.455,
+     "home_win": 0.455
+    },
+    {
      "name": "S Oldham",
      "n": 28,
      "yellows": 3.71,
@@ -2858,16 +2868,6 @@
      "goals": 2.32,
      "o45": 0.321,
      "home_win": 0.321
-    },
-    {
-     "name": "D Baines",
-     "n": 11,
-     "yellows": 3.64,
-     "reds": 0,
-     "fouls": 24.9,
-     "goals": 3.0,
-     "o45": 0.364,
-     "home_win": 0.364
     },
     {
      "name": "W Finnie",
@@ -2890,16 +2890,6 @@
      "home_win": 0.385
     },
     {
-     "name": "S Mather",
-     "n": 30,
-     "yellows": 3.53,
-     "reds": 0,
-     "fouls": 20.7,
-     "goals": 2.57,
-     "o45": 0.233,
-     "home_win": 0.467
-    },
-    {
      "name": "O Yates",
      "n": 20,
      "yellows": 3.5,
@@ -2920,6 +2910,16 @@
      "home_win": 0.6
     },
     {
+     "name": "S Mather",
+     "n": 29,
+     "yellows": 3.45,
+     "reds": 0,
+     "fouls": 20.8,
+     "goals": 2.59,
+     "o45": 0.207,
+     "home_win": 0.483
+    },
+    {
      "name": "M Woods",
      "n": 22,
      "yellows": 3.36,
@@ -2928,6 +2928,16 @@
      "goals": 1.68,
      "o45": 0.318,
      "home_win": 0.364
+    },
+    {
+     "name": "M Russell",
+     "n": 15,
+     "yellows": 3.33,
+     "reds": 0.07,
+     "fouls": 26.7,
+     "goals": 2.4,
+     "o45": 0.133,
+     "home_win": 0.467
     },
     {
      "name": "M Barlow",
@@ -3020,6 +3030,16 @@
      "home_win": 0.273
     },
     {
+     "name": "J O'Connor",
+     "n": 17,
+     "yellows": 3.06,
+     "reds": 0.24,
+     "fouls": 20.6,
+     "goals": 1.88,
+     "o45": 0.176,
+     "home_win": 0.471
+    },
+    {
      "name": "S Copeland",
      "n": 14,
      "yellows": 3.0,
@@ -3030,24 +3050,24 @@
      "home_win": 0.357
     },
     {
-     "name": "M Russell",
+     "name": "C Hicks",
      "n": 14,
      "yellows": 3.0,
-     "reds": 0.07,
-     "fouls": 26.1,
-     "goals": 2.29,
-     "o45": 0.071,
-     "home_win": 0.429
+     "reds": 0,
+     "fouls": 25.2,
+     "goals": 2.36,
+     "o45": 0.214,
+     "home_win": 0.5
     },
     {
-     "name": "J O'Connor",
-     "n": 16,
+     "name": "A Dale",
+     "n": 8,
      "yellows": 3.0,
-     "reds": 0.19,
-     "fouls": 20.2,
-     "goals": 1.88,
-     "o45": 0.188,
-     "home_win": 0.438
+     "reds": 0.25,
+     "fouls": 19.5,
+     "goals": 2.75,
+     "o45": 0.25,
+     "home_win": 0.375
     },
     {
      "name": "A Chilowicz",
@@ -3078,16 +3098,6 @@
      "goals": 3.56,
      "o45": 0.111,
      "home_win": 0.222
-    },
-    {
-     "name": "C Hicks",
-     "n": 15,
-     "yellows": 2.87,
-     "reds": 0,
-     "fouls": 25.6,
-     "goals": 2.47,
-     "o45": 0.2,
-     "home_win": 0.467
     }
    ]
   },
@@ -3117,32 +3127,32 @@
      "away": 0.317
     },
     "current": {
-     "n": 120,
-     "avg": 3.125,
-     "over25": 0.625,
-     "cards": 4.12,
-     "cards_o45": 0.3917,
-     "corners": 9.93,
-     "corners_o95": 0.5417,
-     "btts": 0.65,
-     "nil": 0.0083,
-     "home": 0.475,
-     "draw": 0.1833,
-     "away": 0.3417
+     "n": 143,
+     "avg": 3.084,
+     "over25": 0.6084,
+     "cards": 4.06,
+     "cards_o45": 0.3776,
+     "corners": 9.91,
+     "corners_o95": 0.5385,
+     "btts": 0.6434,
+     "nil": 0.007,
+     "home": 0.4615,
+     "draw": 0.1888,
+     "away": 0.3497
     },
     "all": {
-     "n": 7626,
+     "n": 7649,
      "avg": 2.737,
      "over25": 0.5122,
      "cards": 3.15,
-     "cards_o45": 0.2275,
-     "corners": 10.36,
-     "corners_o95": 0.576,
-     "btts": 0.5357,
-     "nil": 0.0686,
-     "home": 0.4295,
-     "draw": 0.2516,
-     "away": 0.3189
+     "cards_o45": 0.2277,
+     "corners": 10.35,
+     "corners_o95": 0.5755,
+     "btts": 0.5359,
+     "nil": 0.0684,
+     "home": 0.4293,
+     "draw": 0.2515,
+     "away": 0.3191
     }
    },
    "goals_by_season": {
@@ -3323,56 +3333,56 @@
      "away": 0.3351
     },
     "2026/2027": {
-     "n": 120,
-     "avg": 3.125,
-     "over25": 0.625,
-     "cards": 4.12,
-     "cards_o45": 0.3917,
-     "corners": 9.93,
-     "corners_o95": 0.5417,
-     "btts": 0.65,
-     "nil": 0.0083,
-     "home": 0.475,
-     "draw": 0.1833,
-     "away": 0.3417
+     "n": 143,
+     "avg": 3.084,
+     "over25": 0.6084,
+     "cards": 4.06,
+     "cards_o45": 0.3776,
+     "corners": 9.91,
+     "corners_o95": 0.5385,
+     "btts": 0.6434,
+     "nil": 0.007,
+     "home": 0.4615,
+     "draw": 0.1888,
+     "away": 0.3497
     }
    },
    "toto": {
     "all": {
-     "n": 391,
-     "fav_expected": 0.6684,
-     "fav_actual": 0.7008,
-     "diff": 0.0324,
-     "se": 0.0237,
-     "t": 1.37,
-     "roi": 0.0092,
-     "draw_expected": 0.1961,
-     "draw_actual": 0.1893
+     "n": 394,
+     "fav_expected": 0.6685,
+     "fav_actual": 0.703,
+     "diff": 0.0346,
+     "se": 0.0236,
+     "t": 1.46,
+     "roi": 0.0122,
+     "draw_expected": 0.196,
+     "draw_actual": 0.1878
     },
     "2012-2019": null,
     "2019-2026": {
-     "n": 391,
-     "fav_expected": 0.6684,
-     "fav_actual": 0.7008,
-     "diff": 0.0324,
-     "se": 0.0237,
-     "t": 1.37,
-     "roi": 0.0092,
-     "draw_expected": 0.1961,
-     "draw_actual": 0.1893
+     "n": 394,
+     "fav_expected": 0.6685,
+     "fav_actual": 0.703,
+     "diff": 0.0346,
+     "se": 0.0236,
+     "t": 1.46,
+     "roi": 0.0122,
+     "draw_expected": 0.196,
+     "draw_actual": 0.1878
     },
     "confirmed": false
    },
    "favourites": {
-    "n": 3748,
-    "fav_expected": 0.4931,
-    "fav_actual": 0.4952,
-    "diff": 0.0021,
+    "n": 3771,
+    "fav_expected": 0.4932,
+    "fav_actual": 0.4959,
+    "diff": 0.0027,
     "se": 0.008,
-    "t": 0.26,
-    "roi": -0.053,
-    "draw_expected": 0.2499,
-    "draw_actual": 0.2484
+    "t": 0.34,
+    "roi": -0.0521,
+    "draw_expected": 0.2498,
+    "draw_actual": 0.2482
    },
    "after_break": {
     "after": {
@@ -3387,15 +3397,15 @@
      "draw_actual": 0.2286
     },
     "other": {
-     "n": 3678,
-     "fav_expected": 0.4928,
-     "fav_actual": 0.4946,
-     "diff": 0.0018,
-     "se": 0.0081,
-     "t": 0.22,
-     "roi": -0.0531,
-     "draw_expected": 0.25,
-     "draw_actual": 0.2488
+     "n": 3701,
+     "fav_expected": 0.4929,
+     "fav_actual": 0.4953,
+     "diff": 0.0024,
+     "se": 0.008,
+     "t": 0.3,
+     "roi": -0.0522,
+     "draw_expected": 0.2499,
+     "draw_actual": 0.2486
     },
     "goals_after": {
      "n": 187,
@@ -3419,13 +3429,13 @@
    "referees": [
     {
      "name": "J Richardson",
-     "n": 15,
-     "yellows": 5.07,
-     "reds": 0.2,
-     "fouls": 32.0,
-     "goals": 2.6,
-     "o45": 0.4,
-     "home_win": 0.067
+     "n": 16,
+     "yellows": 5.06,
+     "reds": 0.25,
+     "fouls": 27.0,
+     "goals": 2.81,
+     "o45": 0.438,
+     "home_win": 0.062
     },
     {
      "name": "R Watkins",
@@ -3449,13 +3459,13 @@
     },
     {
      "name": "G Laflin",
-     "n": 12,
-     "yellows": 4.75,
+     "n": 13,
+     "yellows": 4.69,
      "reds": 0.08,
-     "fouls": 26.0,
-     "goals": 2.17,
-     "o45": 0.5,
-     "home_win": 0.333
+     "fouls": 25.3,
+     "goals": 2.31,
+     "o45": 0.462,
+     "home_win": 0.308
     },
     {
      "name": "S Morland",
@@ -3478,16 +3488,6 @@
      "home_win": 0.333
     },
     {
-     "name": "D Watson",
-     "n": 14,
-     "yellows": 4.5,
-     "reds": 0.21,
-     "fouls": 27.0,
-     "goals": 3.14,
-     "o45": 0.5,
-     "home_win": 0.714
-    },
-    {
      "name": "A Ajibola",
      "n": 8,
      "yellows": 4.5,
@@ -3498,14 +3498,14 @@
      "home_win": 0.75
     },
     {
-     "name": "A Byrne",
+     "name": "D Watson",
      "n": 15,
      "yellows": 4.47,
-     "reds": 0.27,
-     "fouls": 33.0,
-     "goals": 2.6,
-     "o45": 0.4,
-     "home_win": 0.267
+     "reds": 0.2,
+     "fouls": 30.3,
+     "goals": 3.13,
+     "o45": 0.467,
+     "home_win": 0.667
     },
     {
      "name": "R Aspinall",
@@ -3516,6 +3516,16 @@
      "goals": 2.91,
      "o45": 0.409,
      "home_win": 0.455
+    },
+    {
+     "name": "A Byrne",
+     "n": 16,
+     "yellows": 4.31,
+     "reds": 0.25,
+     "fouls": 20.0,
+     "goals": 2.62,
+     "o45": 0.375,
+     "home_win": 0.312
     },
     {
      "name": "P Johnson",
@@ -3549,13 +3559,13 @@
     },
     {
      "name": "J Durkin",
-     "n": 16,
-     "yellows": 4.19,
-     "reds": 0.25,
-     "fouls": 23.5,
-     "goals": 3.44,
-     "o45": 0.438,
-     "home_win": 0.25
+     "n": 17,
+     "yellows": 4.18,
+     "reds": 0.24,
+     "fouls": 23.0,
+     "goals": 3.35,
+     "o45": 0.412,
+     "home_win": 0.235
     },
     {
      "name": "H Blair",
@@ -3588,14 +3598,24 @@
      "home_win": 0.435
     },
     {
+     "name": "M Mcquillan",
+     "n": 10,
+     "yellows": 4.1,
+     "reds": 0.3,
+     "fouls": 26.0,
+     "goals": 2.5,
+     "o45": 0.1,
+     "home_win": 0.4
+    },
+    {
      "name": "S Jackson",
-     "n": 12,
-     "yellows": 4.08,
+     "n": 14,
+     "yellows": 4.07,
      "reds": 0,
-     "fouls": 20.7,
-     "goals": 2.58,
+     "fouls": 20.4,
+     "goals": 2.64,
      "o45": 0.5,
-     "home_win": 0.583
+     "home_win": 0.643
     },
     {
      "name": "G Rollason",
@@ -3648,16 +3668,6 @@
      "home_win": 0.579
     },
     {
-     "name": "R Eley",
-     "n": 16,
-     "yellows": 3.94,
-     "reds": 0,
-     "fouls": null,
-     "goals": 3.44,
-     "o45": 0.312,
-     "home_win": 0.5
-    },
-    {
      "name": "H Wager",
      "n": 16,
      "yellows": 3.94,
@@ -3669,13 +3679,23 @@
     },
     {
      "name": "D Brown",
-     "n": 18,
+     "n": 19,
      "yellows": 3.89,
      "reds": 0.11,
-     "fouls": 25.5,
-     "goals": 2.5,
-     "o45": 0.5,
-     "home_win": 0.5
+     "fouls": 25.3,
+     "goals": 2.47,
+     "o45": 0.474,
+     "home_win": 0.474
+    },
+    {
+     "name": "R Eley",
+     "n": 17,
+     "yellows": 3.82,
+     "reds": 0,
+     "fouls": 22.0,
+     "goals": 3.35,
+     "o45": 0.294,
+     "home_win": 0.471
     },
     {
      "name": "C Walchester",
@@ -3686,16 +3706,6 @@
      "goals": 2.67,
      "o45": 0.37,
      "home_win": 0.407
-    },
-    {
-     "name": "A Jackson",
-     "n": 23,
-     "yellows": 3.78,
-     "reds": 0.17,
-     "fouls": 18.8,
-     "goals": 2.48,
-     "o45": 0.391,
-     "home_win": 0.304
     },
     {
      "name": "N Smith",
@@ -3728,6 +3738,16 @@
      "home_win": 0.455
     },
     {
+     "name": "A Jackson",
+     "n": 25,
+     "yellows": 3.64,
+     "reds": 0.16,
+     "fouls": 20.5,
+     "goals": 2.4,
+     "o45": 0.36,
+     "home_win": 0.28
+    },
+    {
      "name": "P Marsden",
      "n": 22,
      "yellows": 3.64,
@@ -3739,13 +3759,13 @@
     },
     {
      "name": "J O'Connor",
-     "n": 17,
-     "yellows": 3.59,
-     "reds": 0.35,
-     "fouls": 22.3,
-     "goals": 2.71,
-     "o45": 0.353,
-     "home_win": 0.412
+     "n": 18,
+     "yellows": 3.61,
+     "reds": 0.33,
+     "fouls": 22.8,
+     "goals": 2.61,
+     "o45": 0.333,
+     "home_win": 0.389
     },
     {
      "name": "J Westgate",
@@ -3758,6 +3778,16 @@
      "home_win": 0.444
     },
     {
+     "name": "C Jones",
+     "n": 9,
+     "yellows": 3.56,
+     "reds": 0.11,
+     "fouls": 26.6,
+     "goals": 3.44,
+     "o45": 0.333,
+     "home_win": 0.556
+    },
+    {
      "name": "A Bannister",
      "n": 11,
      "yellows": 3.55,
@@ -3768,24 +3798,14 @@
      "home_win": 0.182
     },
     {
-     "name": "M Mcquillan",
-     "n": 8,
-     "yellows": 3.5,
-     "reds": 0.25,
-     "fouls": null,
-     "goals": 2.62,
-     "o45": 0.0,
-     "home_win": 0.375
-    },
-    {
-     "name": "L Sandoe",
-     "n": 14,
-     "yellows": 3.5,
-     "reds": 0.14,
-     "fouls": 21.3,
-     "goals": 3.0,
-     "o45": 0.214,
-     "home_win": 0.5
+     "name": "R Massey-Ellis",
+     "n": 34,
+     "yellows": 3.53,
+     "reds": 0.26,
+     "fouls": 30.0,
+     "goals": 3.32,
+     "o45": 0.294,
+     "home_win": 0.441
     },
     {
      "name": "J Bancroft",
@@ -3798,16 +3818,6 @@
      "home_win": 0.357
     },
     {
-     "name": "R Massey-Ellis",
-     "n": 33,
-     "yellows": 3.48,
-     "reds": 0.27,
-     "fouls": 35.0,
-     "goals": 3.24,
-     "o45": 0.273,
-     "home_win": 0.424
-    },
-    {
      "name": "D Bourne",
      "n": 13,
      "yellows": 3.46,
@@ -3816,6 +3826,16 @@
      "goals": 3.08,
      "o45": 0.308,
      "home_win": 0.308
+    },
+    {
+     "name": "L Sandoe",
+     "n": 15,
+     "yellows": 3.4,
+     "reds": 0.13,
+     "fouls": 21.8,
+     "goals": 2.93,
+     "o45": 0.2,
+     "home_win": 0.467
     },
     {
      "name": "A Miller",
@@ -3838,6 +3858,16 @@
      "home_win": 0.515
     },
     {
+     "name": "K Dowle",
+     "n": 17,
+     "yellows": 3.24,
+     "reds": 0,
+     "fouls": 27.5,
+     "goals": 2.76,
+     "o45": 0.235,
+     "home_win": 0.294
+    },
+    {
      "name": "W Cartmel",
      "n": 20,
      "yellows": 3.2,
@@ -3849,13 +3879,13 @@
     },
     {
      "name": "A Humphries",
-     "n": 13,
-     "yellows": 3.15,
-     "reds": 0.15,
-     "fouls": null,
-     "goals": 3.38,
-     "o45": 0.154,
-     "home_win": 0.231
+     "n": 14,
+     "yellows": 3.14,
+     "reds": 0.21,
+     "fouls": 22.0,
+     "goals": 3.43,
+     "o45": 0.143,
+     "home_win": 0.286
     },
     {
      "name": "A Dale",
@@ -3866,16 +3896,6 @@
      "goals": 2.58,
      "o45": 0.269,
      "home_win": 0.5
-    },
-    {
-     "name": "K Dowle",
-     "n": 16,
-     "yellows": 3.06,
-     "reds": 0,
-     "fouls": 26.0,
-     "goals": 2.69,
-     "o45": 0.188,
-     "home_win": 0.25
     },
     {
      "name": "S Parkinson",
@@ -4497,32 +4517,32 @@
      "away": 0.3093
     },
     "current": {
-     "n": 39,
-     "avg": 1.949,
-     "over25": 0.2308,
-     "cards": 3.54,
-     "cards_o45": 0.359,
-     "corners": 9.67,
-     "corners_o95": 0.4103,
-     "btts": 0.3333,
-     "nil": 0.1026,
-     "home": 0.4359,
-     "draw": 0.2564,
-     "away": 0.3077
+     "n": 42,
+     "avg": 2.024,
+     "over25": 0.2857,
+     "cards": 3.52,
+     "cards_o45": 0.3571,
+     "corners": 9.69,
+     "corners_o95": 0.4286,
+     "btts": 0.3571,
+     "nil": 0.0952,
+     "home": 0.4286,
+     "draw": 0.2381,
+     "away": 0.3333
     },
     "all": {
-     "n": 2471,
+     "n": 2474,
      "avg": 2.683,
-     "over25": 0.4958,
+     "over25": 0.4964,
      "cards": 3.55,
      "cards_o45": 0.2884,
      "corners": 10.35,
-     "corners_o95": 0.5716,
-     "btts": 0.5051,
-     "nil": 0.0789,
-     "home": 0.4128,
-     "draw": 0.2667,
-     "away": 0.3205
+     "corners_o95": 0.5718,
+     "btts": 0.5053,
+     "nil": 0.0788,
+     "home": 0.4127,
+     "draw": 0.2664,
+     "away": 0.3209
     }
    },
    "goals_by_season": {
@@ -4703,56 +4723,56 @@
      "away": 0.2722
     },
     "2026/2027": {
-     "n": 39,
-     "avg": 1.949,
-     "over25": 0.2308,
-     "cards": 3.54,
-     "cards_o45": 0.359,
-     "corners": 9.67,
-     "corners_o95": 0.4103,
-     "btts": 0.3333,
-     "nil": 0.1026,
-     "home": 0.4359,
-     "draw": 0.2564,
-     "away": 0.3077
+     "n": 42,
+     "avg": 2.024,
+     "over25": 0.2857,
+     "cards": 3.52,
+     "cards_o45": 0.3571,
+     "corners": 9.69,
+     "corners_o95": 0.4286,
+     "btts": 0.3571,
+     "nil": 0.0952,
+     "home": 0.4286,
+     "draw": 0.2381,
+     "away": 0.3333
     }
    },
    "toto": {
     "all": {
-     "n": 119,
-     "fav_expected": 0.6611,
-     "fav_actual": 0.5798,
-     "diff": -0.0813,
-     "se": 0.0433,
-     "t": -1.88,
-     "roi": -0.1504,
-     "draw_expected": 0.2033,
-     "draw_actual": 0.2605
+     "n": 121,
+     "fav_expected": 0.661,
+     "fav_actual": 0.5785,
+     "diff": -0.0825,
+     "se": 0.0429,
+     "t": -1.92,
+     "roi": -0.153,
+     "draw_expected": 0.2034,
+     "draw_actual": 0.2562
     },
     "2012-2019": null,
     "2019-2026": {
-     "n": 119,
-     "fav_expected": 0.6611,
-     "fav_actual": 0.5798,
-     "diff": -0.0813,
-     "se": 0.0433,
-     "t": -1.88,
-     "roi": -0.1504,
-     "draw_expected": 0.2033,
-     "draw_actual": 0.2605
+     "n": 121,
+     "fav_expected": 0.661,
+     "fav_actual": 0.5785,
+     "diff": -0.0825,
+     "se": 0.0429,
+     "t": -1.92,
+     "roi": -0.153,
+     "draw_expected": 0.2034,
+     "draw_actual": 0.2562
     },
     "confirmed": false
    },
    "favourites": {
-    "n": 1211,
-    "fav_expected": 0.4874,
-    "fav_actual": 0.4583,
-    "diff": -0.0291,
+    "n": 1214,
+    "fav_expected": 0.4878,
+    "fav_actual": 0.4588,
+    "diff": -0.029,
     "se": 0.0141,
-    "t": -2.07,
-    "roi": -0.1108,
-    "draw_expected": 0.2589,
-    "draw_actual": 0.2865
+    "t": -2.06,
+    "roi": -0.1106,
+    "draw_expected": 0.2588,
+    "draw_actual": 0.2858
    },
    "after_break": {
     "after": {
@@ -4767,15 +4787,15 @@
      "draw_actual": 0.2421
     },
     "other": {
-     "n": 1116,
-     "fav_expected": 0.4884,
-     "fav_actual": 0.4561,
-     "diff": -0.0323,
-     "se": 0.0147,
-     "t": -2.2,
-     "roi": -0.117,
-     "draw_expected": 0.2588,
-     "draw_actual": 0.2903
+     "n": 1119,
+     "fav_expected": 0.4888,
+     "fav_actual": 0.4567,
+     "diff": -0.0321,
+     "se": 0.0146,
+     "t": -2.19,
+     "roi": -0.1167,
+     "draw_expected": 0.2586,
+     "draw_actual": 0.2895
     },
     "goals_after": {
      "n": 170,
@@ -4799,13 +4819,13 @@
    "referees": [
     {
      "name": "S Murdoch",
-     "n": 12,
-     "yellows": 5.5,
-     "reds": 0.25,
-     "fouls": 22.8,
-     "goals": 1.83,
-     "o45": 0.583,
-     "home_win": 0.25
+     "n": 13,
+     "yellows": 5.23,
+     "reds": 0.23,
+     "fouls": 22.2,
+     "goals": 1.92,
+     "o45": 0.538,
+     "home_win": 0.231
     },
     {
      "name": "D McFarlane",
@@ -5017,32 +5037,32 @@
      "away": 0.3333
     },
     "current": {
-     "n": 39,
-     "avg": 2.641,
-     "over25": 0.5641,
-     "cards": 4.59,
-     "cards_o45": 0.5641,
-     "corners": 9.21,
-     "corners_o95": 0.4359,
-     "btts": 0.4359,
-     "nil": 0.1026,
-     "home": 0.4872,
-     "draw": 0.2308,
-     "away": 0.2821
+     "n": 44,
+     "avg": 2.773,
+     "over25": 0.5909,
+     "cards": 4.64,
+     "cards_o45": 0.5909,
+     "corners": 9.09,
+     "corners_o95": 0.4318,
+     "btts": 0.4545,
+     "nil": 0.0909,
+     "home": 0.5227,
+     "draw": 0.2045,
+     "away": 0.2727
     },
     "all": {
-     "n": 2448,
-     "avg": 2.935,
-     "over25": 0.5613,
+     "n": 2453,
+     "avg": 2.937,
+     "over25": 0.5618,
      "cards": 3.48,
-     "cards_o45": 0.2823,
+     "cards_o45": 0.284,
      "corners": 9.94,
-     "corners_o95": 0.5204,
-     "btts": 0.5502,
-     "nil": 0.047,
-     "home": 0.4363,
-     "draw": 0.2247,
-     "away": 0.3391
+     "corners_o95": 0.52,
+     "btts": 0.5503,
+     "nil": 0.0469,
+     "home": 0.437,
+     "draw": 0.2242,
+     "away": 0.3388
     }
    },
    "goals_by_season": {
@@ -5223,68 +5243,68 @@
      "away": 0.3111
     },
     "2026/2027": {
-     "n": 39,
-     "avg": 2.641,
-     "over25": 0.5641,
-     "cards": 4.59,
-     "cards_o45": 0.5641,
-     "corners": 9.21,
-     "corners_o95": 0.4359,
-     "btts": 0.4359,
-     "nil": 0.1026,
-     "home": 0.4872,
-     "draw": 0.2308,
-     "away": 0.2821
+     "n": 44,
+     "avg": 2.773,
+     "over25": 0.5909,
+     "cards": 4.64,
+     "cards_o45": 0.5909,
+     "corners": 9.09,
+     "corners_o95": 0.4318,
+     "btts": 0.4545,
+     "nil": 0.0909,
+     "home": 0.5227,
+     "draw": 0.2045,
+     "away": 0.2727
     }
    },
    "toto": {
     "all": {
-     "n": 153,
-     "fav_expected": 0.667,
-     "fav_actual": 0.6667,
-     "diff": -0.0004,
-     "se": 0.038,
-     "t": -0.01,
-     "roi": -0.0395,
-     "draw_expected": 0.197,
-     "draw_actual": 0.2418
+     "n": 154,
+     "fav_expected": 0.6674,
+     "fav_actual": 0.6688,
+     "diff": 0.0014,
+     "se": 0.0379,
+     "t": 0.04,
+     "roi": -0.0371,
+     "draw_expected": 0.1968,
+     "draw_actual": 0.2403
     },
     "2012-2019": null,
     "2019-2026": {
-     "n": 153,
-     "fav_expected": 0.667,
-     "fav_actual": 0.6667,
-     "diff": -0.0004,
-     "se": 0.038,
-     "t": -0.01,
-     "roi": -0.0395,
-     "draw_expected": 0.197,
-     "draw_actual": 0.2418
+     "n": 154,
+     "fav_expected": 0.6674,
+     "fav_actual": 0.6688,
+     "diff": 0.0014,
+     "se": 0.0379,
+     "t": 0.04,
+     "roi": -0.0371,
+     "draw_expected": 0.1968,
+     "draw_actual": 0.2403
     },
     "confirmed": false
    },
    "favourites": {
-    "n": 1188,
-    "fav_expected": 0.5084,
-    "fav_actual": 0.5244,
-    "diff": 0.016,
+    "n": 1193,
+    "fav_expected": 0.5087,
+    "fav_actual": 0.5264,
+    "diff": 0.0177,
     "se": 0.0141,
-    "t": 1.13,
-    "roi": -0.0201,
-    "draw_expected": 0.2418,
-    "draw_actual": 0.2483
+    "t": 1.26,
+    "roi": -0.0168,
+    "draw_expected": 0.2417,
+    "draw_actual": 0.2473
    },
    "after_break": {
     "after": {
-     "n": 80,
-     "fav_expected": 0.5049,
-     "fav_actual": 0.55,
-     "diff": 0.0451,
-     "se": 0.0545,
-     "t": 0.83,
-     "roi": 0.0515,
-     "draw_expected": 0.2413,
-     "draw_actual": 0.25
+     "n": 85,
+     "fav_expected": 0.5088,
+     "fav_actual": 0.5765,
+     "diff": 0.0677,
+     "se": 0.0527,
+     "t": 1.28,
+     "roi": 0.0934,
+     "draw_expected": 0.2398,
+     "draw_actual": 0.2353
     },
     "other": {
      "n": 1108,
@@ -5298,18 +5318,18 @@
      "draw_actual": 0.2482
     },
     "goals_after": {
-     "n": 164,
-     "avg": 3.055,
-     "over25": 0.5732,
-     "cards": 3.59,
-     "cards_o45": 0.2818,
-     "corners": 10.19,
-     "corners_o95": 0.6273,
-     "btts": 0.5244,
-     "nil": 0.0305,
-     "home": 0.5122,
-     "draw": 0.2073,
-     "away": 0.2805
+     "n": 169,
+     "avg": 3.077,
+     "over25": 0.5799,
+     "cards": 3.65,
+     "cards_o45": 0.3043,
+     "corners": 10.1,
+     "corners_o95": 0.6174,
+     "btts": 0.5266,
+     "nil": 0.0296,
+     "home": 0.5207,
+     "draw": 0.2012,
+     "away": 0.2781
     }
    },
    "derbies": {
@@ -5329,13 +5349,13 @@
     },
     {
      "name": "J Hay",
-     "n": 8,
-     "yellows": 4.88,
-     "reds": 0.12,
-     "fouls": 21.1,
-     "goals": 2.0,
-     "o45": 0.5,
-     "home_win": 0.5
+     "n": 9,
+     "yellows": 4.89,
+     "reds": 0.11,
+     "fouls": 20.8,
+     "goals": 2.11,
+     "o45": 0.556,
+     "home_win": 0.444
     },
     {
      "name": "A Grieve",
@@ -5359,13 +5379,13 @@
     },
     {
      "name": "I Snedden",
-     "n": 21,
-     "yellows": 4.48,
+     "n": 22,
+     "yellows": 4.5,
      "reds": 0.05,
-     "fouls": 23.9,
-     "goals": 2.43,
-     "o45": 0.429,
-     "home_win": 0.238
+     "fouls": 24.4,
+     "goals": 2.55,
+     "o45": 0.455,
+     "home_win": 0.273
     },
     {
      "name": "P Stuart",
@@ -5469,13 +5489,13 @@
     },
     {
      "name": "L Wilson",
-     "n": 8,
-     "yellows": 3.38,
-     "reds": 0.5,
-     "fouls": 21.1,
-     "goals": 2.62,
-     "o45": 0.0,
-     "home_win": 0.625
+     "n": 9,
+     "yellows": 3.67,
+     "reds": 0.44,
+     "fouls": 20.9,
+     "goals": 3.11,
+     "o45": 0.111,
+     "home_win": 0.667
     },
     {
      "name": "G Grainger",
@@ -5498,16 +5518,6 @@
      "home_win": 0.3
     },
     {
-     "name": "G Hanvidge",
-     "n": 11,
-     "yellows": 2.91,
-     "reds": 0.09,
-     "fouls": 21.9,
-     "goals": 2.36,
-     "o45": 0.273,
-     "home_win": 0.636
-    },
-    {
      "name": "G Irvine",
      "n": 10,
      "yellows": 2.9,
@@ -5516,6 +5526,16 @@
      "goals": 2.7,
      "o45": 0.2,
      "home_win": 0.4
+    },
+    {
+     "name": "G Hanvidge",
+     "n": 12,
+     "yellows": 2.83,
+     "reds": 0.08,
+     "fouls": 22.8,
+     "goals": 2.42,
+     "o45": 0.25,
+     "home_win": 0.667
     },
     {
      "name": "E Anderson",
@@ -5567,32 +5587,32 @@
      "away": 0.2944
     },
     "current": {
-     "n": 40,
-     "avg": 3.475,
-     "over25": 0.65,
-     "cards": 4.1,
-     "cards_o45": 0.35,
-     "corners": 10.05,
-     "corners_o95": 0.525,
-     "btts": 0.55,
-     "nil": 0.0,
-     "home": 0.6,
-     "draw": 0.175,
-     "away": 0.225
+     "n": 45,
+     "avg": 3.4,
+     "over25": 0.6222,
+     "cards": 4.16,
+     "cards_o45": 0.3556,
+     "corners": 9.96,
+     "corners_o95": 0.5333,
+     "btts": 0.5333,
+     "nil": 0.0222,
+     "home": 0.5778,
+     "draw": 0.1778,
+     "away": 0.2444
     },
     "all": {
-     "n": 2447,
+     "n": 2452,
      "avg": 2.85,
-     "over25": 0.537,
+     "over25": 0.5367,
      "cards": 3.73,
-     "cards_o45": 0.3148,
+     "cards_o45": 0.3151,
      "corners": 9.66,
-     "corners_o95": 0.4793,
-     "btts": 0.5349,
-     "nil": 0.0535,
-     "home": 0.434,
+     "corners_o95": 0.4797,
+     "btts": 0.5347,
+     "nil": 0.0538,
+     "home": 0.4339,
      "draw": 0.2325,
-     "away": 0.3335
+     "away": 0.3336
     }
    },
    "goals_by_season": {
@@ -5773,18 +5793,18 @@
      "away": 0.3167
     },
     "2026/2027": {
-     "n": 40,
-     "avg": 3.475,
-     "over25": 0.65,
-     "cards": 4.1,
-     "cards_o45": 0.35,
-     "corners": 10.05,
-     "corners_o95": 0.525,
-     "btts": 0.55,
-     "nil": 0.0,
-     "home": 0.6,
-     "draw": 0.175,
-     "away": 0.225
+     "n": 45,
+     "avg": 3.4,
+     "over25": 0.6222,
+     "cards": 4.16,
+     "cards_o45": 0.3556,
+     "corners": 9.96,
+     "corners_o95": 0.5333,
+     "btts": 0.5333,
+     "nil": 0.0222,
+     "home": 0.5778,
+     "draw": 0.1778,
+     "away": 0.2444
     }
    },
    "toto": {
@@ -5814,27 +5834,27 @@
     "confirmed": false
    },
    "favourites": {
-    "n": 1187,
+    "n": 1192,
     "fav_expected": 0.4834,
-    "fav_actual": 0.4693,
-    "diff": -0.0141,
+    "fav_actual": 0.469,
+    "diff": -0.0145,
     "se": 0.0142,
-    "t": -0.99,
-    "roi": -0.0933,
+    "t": -1.02,
+    "roi": -0.0934,
     "draw_expected": 0.2503,
-    "draw_actual": 0.2452
+    "draw_actual": 0.245
    },
    "after_break": {
     "after": {
-     "n": 84,
-     "fav_expected": 0.4859,
-     "fav_actual": 0.5238,
-     "diff": 0.0379,
-     "se": 0.0534,
-     "t": 0.71,
-     "roi": 0.0102,
-     "draw_expected": 0.2481,
-     "draw_actual": 0.2381
+     "n": 89,
+     "fav_expected": 0.4862,
+     "fav_actual": 0.5169,
+     "diff": 0.0307,
+     "se": 0.052,
+     "t": 0.59,
+     "roi": 0.0027,
+     "draw_expected": 0.2476,
+     "draw_actual": 0.236
     },
     "other": {
      "n": 1103,
@@ -5848,18 +5868,18 @@
      "draw_actual": 0.2457
     },
     "goals_after": {
-     "n": 157,
-     "avg": 2.885,
-     "over25": 0.5414,
-     "cards": 4.02,
-     "cards_o45": 0.3654,
-     "corners": 9.48,
-     "corners_o95": 0.4423,
-     "btts": 0.5669,
-     "nil": 0.0255,
-     "home": 0.4713,
-     "draw": 0.2038,
-     "away": 0.3248
+     "n": 162,
+     "avg": 2.883,
+     "over25": 0.537,
+     "cards": 4.05,
+     "cards_o45": 0.367,
+     "corners": 9.47,
+     "corners_o95": 0.4495,
+     "btts": 0.5617,
+     "nil": 0.0309,
+     "home": 0.4691,
+     "draw": 0.2037,
+     "away": 0.3272
     }
    },
    "derbies": {
@@ -5869,13 +5889,13 @@
    "referees": [
     {
      "name": "J Kennedy",
-     "n": 20,
-     "yellows": 6.0,
+     "n": 21,
+     "yellows": 5.86,
      "reds": 0.1,
-     "fouls": 23.4,
-     "goals": 3.1,
-     "o45": 0.8,
-     "home_win": 0.35
+     "fouls": 23.0,
+     "goals": 3.05,
+     "o45": 0.762,
+     "home_win": 0.333
     },
     {
      "name": "L Hogarth",
@@ -6059,13 +6079,13 @@
     },
     {
      "name": "G Grainger",
-     "n": 12,
-     "yellows": 2.92,
+     "n": 13,
+     "yellows": 2.77,
      "reds": 0,
-     "fouls": 21.9,
-     "goals": 3.08,
-     "o45": 0.167,
-     "home_win": 0.5
+     "fouls": 21.5,
+     "goals": 3.46,
+     "o45": 0.154,
+     "home_win": 0.538
     }
    ]
   },
@@ -8115,32 +8135,32 @@
      "away": 0.2641
     },
     "current": {
-     "n": 77,
-     "avg": 2.506,
-     "over25": 0.4416,
-     "cards": 4.99,
-     "cards_o45": 0.5455,
-     "corners": 8.61,
-     "corners_o95": 0.3377,
-     "btts": 0.4545,
-     "nil": 0.0909,
-     "home": 0.4286,
-     "draw": 0.2078,
-     "away": 0.3636
+     "n": 87,
+     "avg": 2.586,
+     "over25": 0.4713,
+     "cards": 5.03,
+     "cards_o45": 0.5747,
+     "corners": 8.79,
+     "corners_o95": 0.3678,
+     "btts": 0.4828,
+     "nil": 0.1034,
+     "home": 0.4253,
+     "draw": 0.2299,
+     "away": 0.3448
     },
     "all": {
-     "n": 6545,
-     "avg": 2.33,
-     "over25": 0.411,
+     "n": 6555,
+     "avg": 2.331,
+     "over25": 0.4114,
      "cards": 5.01,
-     "cards_o45": 0.5691,
+     "cards_o45": 0.5696,
      "corners": 9.29,
-     "corners_o95": 0.4468,
-     "btts": 0.4785,
-     "nil": 0.1056,
-     "home": 0.4515,
-     "draw": 0.2958,
-     "away": 0.2527
+     "corners_o95": 0.4472,
+     "btts": 0.4789,
+     "nil": 0.1057,
+     "home": 0.4514,
+     "draw": 0.296,
+     "away": 0.2526
     }
    },
    "goals_by_season": {
@@ -8321,31 +8341,31 @@
      "away": 0.303
     },
     "2026/2027": {
-     "n": 77,
-     "avg": 2.506,
-     "over25": 0.4416,
-     "cards": 4.99,
-     "cards_o45": 0.5455,
-     "corners": 8.61,
-     "corners_o95": 0.3377,
-     "btts": 0.4545,
-     "nil": 0.0909,
-     "home": 0.4286,
-     "draw": 0.2078,
-     "away": 0.3636
+     "n": 87,
+     "avg": 2.586,
+     "over25": 0.4713,
+     "cards": 5.03,
+     "cards_o45": 0.5747,
+     "corners": 8.79,
+     "corners_o95": 0.3678,
+     "btts": 0.4828,
+     "nil": 0.1034,
+     "home": 0.4253,
+     "draw": 0.2299,
+     "away": 0.3448
     }
    },
    "toto": {
     "all": {
-     "n": 294,
-     "fav_expected": 0.6578,
-     "fav_actual": 0.6803,
-     "diff": 0.0224,
+     "n": 295,
+     "fav_expected": 0.6577,
+     "fav_actual": 0.6814,
+     "diff": 0.0236,
      "se": 0.0276,
-     "t": 0.81,
-     "roi": -0.0021,
+     "t": 0.86,
+     "roi": -0.0003,
      "draw_expected": 0.2171,
-     "draw_actual": 0.1871
+     "draw_actual": 0.1864
     },
     "2012-2019": {
      "n": 142,
@@ -8359,28 +8379,28 @@
      "draw_actual": 0.2394
     },
     "2019-2026": {
-     "n": 152,
-     "fav_expected": 0.6585,
-     "fav_actual": 0.7303,
-     "diff": 0.0718,
-     "se": 0.0384,
-     "t": 1.87,
-     "roi": 0.0726,
+     "n": 153,
+     "fav_expected": 0.6583,
+     "fav_actual": 0.732,
+     "diff": 0.0738,
+     "se": 0.0383,
+     "t": 1.93,
+     "roi": 0.0756,
      "draw_expected": 0.2138,
-     "draw_actual": 0.1382
+     "draw_actual": 0.1373
     },
     "confirmed": false
    },
    "favourites": {
-    "n": 6524,
-    "fav_expected": 0.4625,
-    "fav_actual": 0.4672,
-    "diff": 0.0047,
+    "n": 6534,
+    "fav_expected": 0.4626,
+    "fav_actual": 0.4671,
+    "diff": 0.0045,
     "se": 0.0061,
-    "t": 0.77,
-    "roi": -0.045,
-    "draw_expected": 0.2874,
-    "draw_actual": 0.2968
+    "t": 0.74,
+    "roi": -0.0453,
+    "draw_expected": 0.2873,
+    "draw_actual": 0.2969
    },
    "after_break": {
     "after": {
@@ -8395,15 +8415,15 @@
      "draw_actual": 0.4013
     },
     "other": {
-     "n": 6372,
+     "n": 6382,
      "fav_expected": 0.4627,
-     "fav_actual": 0.4691,
-     "diff": 0.0064,
+     "fav_actual": 0.469,
+     "diff": 0.0062,
      "se": 0.0062,
-     "t": 1.04,
-     "roi": -0.0412,
+     "t": 1.01,
+     "roi": -0.0414,
      "draw_expected": 0.2873,
-     "draw_actual": 0.2943
+     "draw_actual": 0.2944
     },
     "goals_after": {
      "n": 152,
@@ -15148,24 +15168,24 @@
      "away": 0.2786
     },
     "current": {
-     "n": 402,
-     "avg": 3.224,
-     "over25": 0.6269,
-     "btts": 0.6294,
-     "nil": 0.0498,
-     "home": 0.4602,
-     "draw": 0.2562,
-     "away": 0.2836
+     "n": 404,
+     "avg": 3.223,
+     "over25": 0.6287,
+     "btts": 0.6287,
+     "nil": 0.0495,
+     "home": 0.4604,
+     "draw": 0.255,
+     "away": 0.2847
     },
     "all": {
-     "n": 6070,
+     "n": 6072,
      "avg": 2.921,
-     "over25": 0.5708,
+     "over25": 0.571,
      "btts": 0.5814,
      "nil": 0.0641,
      "home": 0.4929,
-     "draw": 0.2532,
-     "away": 0.2539
+     "draw": 0.2531,
+     "away": 0.254
     }
    },
    "goals_by_season": {
@@ -15310,14 +15330,14 @@
      "away": 0.3074
     },
     "2026": {
-     "n": 402,
-     "avg": 3.224,
-     "over25": 0.6269,
-     "btts": 0.6294,
-     "nil": 0.0498,
-     "home": 0.4602,
-     "draw": 0.2562,
-     "away": 0.2836
+     "n": 404,
+     "avg": 3.223,
+     "over25": 0.6287,
+     "btts": 0.6287,
+     "nil": 0.0495,
+     "home": 0.4604,
+     "draw": 0.255,
+     "away": 0.2847
     }
    },
    "toto": {
@@ -15357,15 +15377,15 @@
     "confirmed": false
    },
    "favourites": {
-    "n": 6069,
-    "fav_expected": 0.5072,
-    "fav_actual": 0.5054,
-    "diff": -0.0019,
+    "n": 6071,
+    "fav_expected": 0.5073,
+    "fav_actual": 0.5055,
+    "diff": -0.0017,
     "se": 0.0063,
-    "t": -0.3,
-    "roi": -0.0472,
+    "t": -0.28,
+    "roi": -0.047,
     "draw_expected": 0.2468,
-    "draw_actual": 0.2533
+    "draw_actual": 0.2532
    },
    "after_break": {
     "after": {
@@ -15380,15 +15400,15 @@
      "draw_actual": 0.2763
     },
     "other": {
-     "n": 5993,
+     "n": 5995,
      "fav_expected": 0.5073,
-     "fav_actual": 0.5054,
-     "diff": -0.0018,
+     "fav_actual": 0.5056,
+     "diff": -0.0017,
      "se": 0.0063,
-     "t": -0.29,
-     "roi": -0.047,
+     "t": -0.27,
+     "roi": -0.0468,
      "draw_expected": 0.2468,
-     "draw_actual": 0.253
+     "draw_actual": 0.2529
     },
     "goals_after": {
      "n": 76,
@@ -15410,24 +15430,24 @@
  },
  "summary": {
   "after_break": {
-   "n": 12423,
-   "fav_expected": 0.5128,
-   "fav_actual": 0.5111,
-   "diff": -0.0017,
+   "n": 12433,
+   "fav_expected": 0.5129,
+   "fav_actual": 0.5113,
+   "diff": -0.0016,
    "se": 0.0043,
-   "t": -0.39,
-   "roi": -0.0482,
+   "t": -0.36,
+   "roi": -0.0479,
    "draw_expected": 0.2532,
-   "draw_actual": 0.2601
+   "draw_actual": 0.26
   },
   "other": {
-   "n": 151505,
+   "n": 151554,
    "fav_expected": 0.5019,
    "fav_actual": 0.5013,
-   "diff": -0.0007,
+   "diff": -0.0006,
    "se": 0.0012,
-   "t": -0.52,
-   "roi": -0.0474,
+   "t": -0.5,
+   "roi": -0.0473,
    "draw_expected": 0.2588,
    "draw_actual": 0.2644
   },
@@ -15443,15 +15463,15 @@
    "draw_actual": 0.2549
   },
   "after_break_2019_2026": {
-   "n": 6710,
+   "n": 6720,
    "fav_expected": 0.5099,
-   "fav_actual": 0.5049,
-   "diff": -0.005,
+   "fav_actual": 0.5052,
+   "diff": -0.0047,
    "se": 0.0059,
-   "t": -0.84,
-   "roi": -0.0561,
+   "t": -0.8,
+   "roi": -0.0555,
    "draw_expected": 0.2515,
-   "draw_actual": 0.2645
+   "draw_actual": 0.2643
   },
   "other_2012_2019": {
    "n": 71017,
@@ -15465,37 +15485,37 @@
    "draw_actual": 0.2659
   },
   "other_2019_2026": {
-   "n": 80488,
+   "n": 80537,
    "fav_expected": 0.5032,
-   "fav_actual": 0.5011,
+   "fav_actual": 0.5012,
    "diff": -0.002,
    "se": 0.0017,
-   "t": -1.17,
-   "roi": -0.0489,
+   "t": -1.14,
+   "roi": -0.0488,
    "draw_expected": 0.2558,
-   "draw_actual": 0.2631
+   "draw_actual": 0.263
   },
   "low_band_after": {
-   "n": 1664,
+   "n": 1665,
    "fav_expected": 0.6806,
-   "fav_actual": 0.6893,
-   "diff": 0.0087,
+   "fav_actual": 0.6895,
+   "diff": 0.0089,
    "se": 0.0114,
-   "t": 0.77,
-   "roi": -0.0173,
+   "t": 0.78,
+   "roi": -0.0171,
    "draw_expected": 0.1963,
-   "draw_actual": 0.1941
+   "draw_actual": 0.194
   },
   "low_band_other": {
-   "n": 17600,
+   "n": 17606,
    "fav_expected": 0.6776,
    "fav_actual": 0.6789,
-   "diff": 0.0012,
+   "diff": 0.0013,
    "se": 0.0035,
-   "t": 0.35,
-   "roi": -0.0275,
+   "t": 0.37,
+   "roi": -0.0274,
    "draw_expected": 0.1989,
-   "draw_actual": 0.1982
+   "draw_actual": 0.1981
   }
  },
  "goals_ranking": [
