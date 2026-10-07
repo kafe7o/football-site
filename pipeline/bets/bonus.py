@@ -29,7 +29,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import analysis, config, db, derbies, notify, odds_api, prices as P, robot, tips
+from . import analysis, config, db, derbies, notify, odds_api, prices as P, robot, rules, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -120,8 +120,8 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
     (robot_now) и промени няма: това е първият анализ."""
     robot_p = (json.loads(record["probs_json"])["robot"] if record and record["basis"] == "model" else None) or robot_now
     derby = derbies.is_derby(fx["league"], fx["home"], fx["away"])
-    if derby:
-        robot_p = None                      # дерби: без прогноза на робота, и в бонус анализа (правилото на майстора)
+    if rules.match_block({"derby": derby}, "model"):
+        robot_p = None                      # дерби: без прогноза на робота, и в бонус анализа (bets/rules.py)
     morning_prices = json.loads(record["prices_json"]) if record and record["prices_json"] else None
     picks = json.loads(record["picks_json"]) if record else {}
     m_avg, n_avg = (morning_prices or {}).get("avg") or {}, (now_prices or {}).get("avg") or {}

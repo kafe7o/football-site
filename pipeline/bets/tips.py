@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from . import analysis, db, derbies, model, odds_api, prices as P, results, robot, xg
+from . import analysis, db, derbies, model, odds_api, prices as P, results, robot, rules, xg
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -152,10 +152,10 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
     an, extras = match_analysis(ctx, fx, fitted, flags)
     risky = safer = one = None
     avg = (pr or {}).get("avg") or {}
-    if basis == "model" and flags.get("derby"):
-        # дербита (професионалистът, проверено на 1465 дербита): в тях не се залага - НИКАКВА прогноза на робота
-        # (нито едната, нито по-сигурната, нито рискова); шансовете и анализът се показват за сведение
-        sel, odds, why = None, None, "дерби - професионалистът: в дербитата не се залага (повече равни от обещаното), прогноза няма"
+    blocked = rules.match_block(flags, basis)           # bets/rules.py: дерби и т.н. - никаква прогноза
+    if basis == "model" and blocked:
+        # шансовете и анализът се показват за сведение; нито едната, нито по-сигурната, нито рискова прогноза
+        sel, odds, why = None, None, blocked
     elif basis == "model":
         # професионалистът (30.09 вечерта): без коефициенти и без фаворити; рискова (знак) и по-сигурна
         # професионалистът (30.09 късно): сигурна 1.40-1.80, рискова над 1.80 - по шанса на робота

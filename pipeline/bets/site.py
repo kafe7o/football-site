@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, live, robot, season, tips
+from . import config, db, live, robot, rules, season, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -292,6 +292,7 @@ def build(conn, now=None, upcoming=None):
         "signs_bt": signs_summary(),
         "one_bt": one_summary(),
         "columns": columns_data(conn, upcoming, now),
+        "rules": rules.summary(),
         "hc_bt": hc_summary(),
         # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
         "ranges": {"safe": list(robot.SAFE_RANGE), "one": list(robot.ONE_RANGE), "floor": robot.FLOOR,

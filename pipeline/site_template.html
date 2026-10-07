@@ -1152,10 +1152,23 @@ function leagueDetail(c) {
 }
 
 // ======================= ПРОФЕСИОНАЛИСТ =======================
+// bets/rules.py: всички правила на майстора на едно място - къде се прилагат и в какво състояние са
+function rulesTable() {
+  const R = DATA.rules || [];
+  if (!R.length) return "";
+  const where = {one: "прогноза на робота", safer: "зелена", risky: "жълта", column: "колонки", bonus: "бонус анализ"};
+  return `<div class="pro-tip"><h3 class="pro-h">Правилата на майстора - къде се прилагат</h3>
+    <p class="pro-check" style="margin-top:0">Един списък (bets/rules.py), по който се строят прогнозите и колонките; независим одитор го проверява срещу записаното на всяко пускане и праща известие при нарушение.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Правило</th><th>Къде</th><th>Състояние</th><th>Какво е казал и какво показват данните</th></tr></thead><tbody>
+    ${R.map(r => `<tr><td class="l">${esc(r.title)}</td><td class="small">${r.applies.length ? r.applies.map(a => where[a]).join(", ") : "-"}</td>
+      <td class="small">${esc(r.status)}</td><td class="small">${esc(r.said)}<br><span class="muted">${esc(r.evidence)}</span></td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+
 function renderPro() {
   const tips = DATA.pro || [];
   const el = document.getElementById("pr-body");
-  el.innerHTML = `<p class="lede" style="margin-top:0">Целият сайт е построен по неговите идеи. Тук е всеки съвет, който е дал: какво казва, какво показват данните и какво прави роботът с него. Новите му указания (и гласовите съобщения) се добавят тук.</p>` +
+  el.innerHTML = rulesTable() + `<p class="lede" style="margin-top:0">Целият сайт е построен по неговите идеи. Тук е всеки съвет, който е дал: какво казва, какво показват данните и какво прави роботът с него. Новите му указания (и гласовите съобщения) се добавят тук.</p>` +
     (tips.length ? tips.map((t, i) => `<div class="pro-tip"><span class="pro-date">${i + 1}. ${esc(t.date || "")}</span>
       ${t.title ? `<h3 class="pro-h">${esc(t.title)}</h3>` : ""}
       <p class="pro-said"><b>Той казва:</b> ${esc(t.text)}</p>

@@ -22,7 +22,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import config, robot
+from . import config, robot, rules
 
 SOFIA = ZoneInfo("Europe/Sofia")
 MIN_P = 0.65          # шанс по робота за мач в колонка
@@ -58,9 +58,9 @@ def candidates(matches, min_p=MIN_P):
     out = []
     for m in matches:
         one = m.get("one")
-        if m.get("basis") != "model" or not one or (m.get("flags") or {}).get("derby"):
-            continue
-        if one["p"] < min_p or not one.get("odds") or one["sel"][0] in "CK" or one["sel"] in robot.CORNER_SIDES:
+        if not one or rules.match_block(m.get("flags"), m.get("basis")):
+            continue                                       # дерби / без собствена оценка (bets/rules.py)
+        if one["p"] < min_p or not one.get("odds") or rules.pick_block("column", one["sel"], one["p"], one["odds"], m["league"]):
             continue
         out.append({"id": m.get("id") or m.get("i"), "league": m["league"], "kickoff": m["kickoff"],
                     "home": m.get("home_src") or m["home"], "away": m.get("away_src") or m["away"],

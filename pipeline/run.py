@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from bets import columns, config, db, fixtures, notify, odds_api, prices, results, site, tips, xg
+from bets import columns, config, db, fixtures, notify, odds_api, prices, results, rules, site, tips, xg
 from bets.leagues import LEAGUES
 
 RESULTS_EVERY = timedelta(hours=11)     # football-data е безплатен сървър - два пъти на ден стига
@@ -89,6 +89,7 @@ def cloud(log):
            step(log, "4а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))),
            step(log, "5. Уреждане", tips.settle, conn, now),
            step(log, "5б. Уреждане на колонките", columns.settle, conn),
+           step(log, "5в. Проверка на правилата на майстора", rules.check_and_alert, conn, now),
            step(log, "5а. Стари мачове без прогноза", fixtures.prune, conn, now)]
     if conn.execute("SELECT 1 FROM tips LIMIT 1").fetchone() and not db.get_meta(conn, "first_tip"):
         db.set_meta(conn, "first_tip", conn.execute("SELECT MIN(locked_at) FROM tips").fetchone()[0])
