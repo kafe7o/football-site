@@ -19,7 +19,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import config, db, robot
+from . import config, db, robot, sure
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ NTFY_URL = "https://ntfy.sh"
 SOFIA = ZoneInfo("Europe/Sofia")
 STAKE = 10          # евро на прогноза - само за превод на дохода в пари
 TOP = 8
+TOP_SURE = 12       # най-сигурни мачове в сутрешното известие (по шанс, най-вероятните първи)
 
 
 def send(title, message, tags="soccer", priority=3):
@@ -81,7 +82,7 @@ def score(rows):
     и по пазари. Картоните/корнерите се броят, когато football-data донесе статистиката."""
     rows = [t for t in rows if t["basis"] == "model" or t["tip"]]    # само мачовете с прогноза на робота (02.10)
     out = {}
-    done = []
+    done, sure_hits, rest_hits = [], [], []
     rows = [t for t in rows if not json.loads(t["flags_json"] or "{}").get("derby_late")]   # дерби, разпознато след записа
     for t in rows:
         x = json.loads(t["picks_json"]).get("one")
@@ -89,8 +90,12 @@ def score(rows):
             h = robot.hit_any(x["sel"], t["hg"], t["ag"], t["cards"], t["corners"], (t["hc"], t["ac"]))
             if h is not None:
                 done.append((h, x.get("odds") if x.get("src") == "book" else None))
+                s = json.loads(t["flags_json"] or "{}").get("sure")
+                if s:                                      # най-сигурните мачове (bets/sure.py) срещу останалите с белег
+                    (sure_hits if s["y"] else rest_hits).append(h)
     out["one"] = {"n": len(done), "hits": sum(h for h, _ in done),
                   "money": sum(((o - 1) if h else -1) * STAKE for h, o in done if o), "n_money": sum(1 for _, o in done if o)}
+    out["sure"] = {"n": len(sure_hits), "hits": sum(sure_hits), "rest_n": len(rest_hits), "rest_hits": sum(rest_hits)}
     for kind in ("risky", "safer"):
         done = []
         for t in rows:
@@ -124,6 +129,11 @@ def score_text(s, label):
         return f"{label}: няма уредени мачове."
     parts = []
     one = s.get("one") or {}
+    su = s.get("sure") or {}
+    if su.get("n"):
+        parts.append(f"{label}: НАЙ-СИГУРНИТЕ мачове - {su['hits']} от {su['n']} ({su['hits'] / su['n']:.0%})"
+                     + (f"; останалите с прогноза - {su['rest_hits']} от {su['rest_n']} ({su['rest_hits'] / su['rest_n']:.0%})"
+                        if su["rest_n"] else "") + ".")
     if one.get("n"):
         parts.append(f"{label}: ПРОГНОЗАТА на робота (една за мач) - {one['hits']} от {one['n']} ({one['hits'] / one['n']:.0%})"
                      + (f"; при {STAKE} € (където има коефициент от букмейкър, {one['n_money']}): {one['money']:+.0f} €" if one["n_money"] else "") + ".")
@@ -159,19 +169,22 @@ def morning(conn, upcoming, now=None):
         if today:
             with_pred = [m for m in today if m.get("one") or m.get("risky") or m.get("safer")]
             leagues = {m["league"] for m in today}
-            lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)} - "
-                         f"ПО ЕДНА на мач (най-вероятното по робота, коеф. от {robot.FLOOR:.2f}). "
-                         f"Рисковата (знак 1 или 2 под 50%) и по-сигурната - на сайта.")
-            top10 = ("E0", "SP1", "I1", "D1", "F1", "BUL", "T1", "N1", "P1", "B1")
-            order = sorted(with_pred, key=lambda m: (m["league"] not in top10, m["kickoff"]))
-            for m in order[:TOP]:
+            # професионалистът (08.10): не всички мачове, а най-сигурните - третината с най-голям шанс на първенство (bets/sure.py)
+            sure_ms = [m for m in with_pred if ((m.get("flags") or {}).get("sure") or {}).get("y")]
+            meas = sure.measured()
+            lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)}. "
+                         f"НАЙ-СИГУРНИТЕ: {len(sure_ms)} - третината с най-голям шанс на първенство, поне {sure.MIN_P:.0%}; по една прогноза на мач"
+                         + (f". Назад такива излизат {meas['clean']['sure']['hit']:.0%} (роботът казва {meas['clean']['sure']['said']:.0%}), "
+                            f"останалите {meas['clean']['rest']['hit']:.0%}" if meas else "") + ". Другите мачове и рисковата - на сайта.")
+            order = sorted(sure_ms, key=lambda m: -(m.get("one") or m.get("safer") or m.get("risky"))["p"])
+            for m in order[:TOP_SURE]:
                 x = m.get("one") or m.get("safer") or m.get("risky")
                 odd = f" @{x['odds']:.2f}" if x.get("odds") else ""
                 lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
                              f"{robot.label(x['sel']).replace('домакинът', m.get('home_src') or m['home']).replace('гостът', m.get('away_src') or m['away'])}{odd} ({x['p']:.0%})"
                              + (" - дерби, не за залог" if (m.get("flags") or {}).get("derby") else ""))
-            if len(order) > TOP:
-                lines.append(f"... и още {len(order) - TOP} - на сайта.")
+            if len(order) > TOP_SURE:
+                lines.append(f"... и още {len(order) - TOP_SURE} най-сигурни - на сайта.")
             from .bonus import TOP5, LEAD
             slots = {}
             for m in today:

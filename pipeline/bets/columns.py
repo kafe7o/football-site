@@ -5,6 +5,7 @@
 Колонката е няколко мача, от които ТРЯБВА да излязат всичките. Затова:
   - вземаме само „Прогнозата на робота“ (една за мач, bets/robot.one_pick) с шанс поне MIN_P - по една на мач;
   - без дерби, без мачове без собствена оценка на робота и без картони/корнери (за тях няма истински коефициенти);
+  - само от НАЙ-СИГУРНИТЕ мачове (bets/sure.py, от 2026-10-08): третината с най-голям шанс на първенство за деня;
   - в колонката най-много един мач от първенство (иначе мачовете имат обща причина да паднат - 4 аржентински
     „под 2.5“); мачовете се подреждат по шанс, всеки е най-много в една колонка - колонките на деня не зависят една
     от друга;
@@ -53,13 +54,16 @@ def day_bounds(day):
     return start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
 
 
-def candidates(matches, min_p=MIN_P):
-    """Мачовете, от които може да се прави колонка: [{id, league, kickoff, home, away, sel, p, odds, src}]."""
+def candidates(matches, min_p=MIN_P, need_sure=True):
+    """Мачовете, от които може да се прави колонка: [{id, league, kickoff, home, away, sel, p, odds, src}].
+    need_sure=False - само за проверката назад на старото правило (research/columns_backtest.py)."""
     out = []
     for m in matches:
         one = m.get("one")
         if not one or rules.match_block(m.get("flags"), m.get("basis")):
             continue                                       # дерби / без собствена оценка (bets/rules.py)
+        if need_sure and rules.sure_block(m.get("flags")):
+            continue                                       # само най-сигурните мачове (bets/sure.py)
         if one["p"] < min_p or not one.get("odds") or rules.pick_block("column", one["sel"], one["p"], one["odds"], m["league"]):
             continue
         out.append({"id": m.get("id") or m.get("i"), "league": m["league"], "kickoff": m["kickoff"],

@@ -196,6 +196,8 @@ def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30
             "id": f["id"], "league": f["league"], "kickoff": f["kickoff"],
             "home": f["home_src"] or f["home"], "away": f["away_src"] or f["away"],
             "recorded": bool(record), "changes": changes, "new": new,
+            # най-сигурен мач (bets/sure.py) - белегът е от записа сутринта
+            "sure": bool(record and (json.loads(record["flags_json"] or "{}").get("sure") or {}).get("y")),
             "status": "first" if not record else ("changed" if changes else "same"),
             "odds_now": (now_prices or {}).get("avg"), **nums,
             "referee": (an or {}).get("referee"), "lines": (an or {}).get("text", [])[:3],
@@ -220,7 +222,8 @@ def notify_slot(out, prefix=""):
     changed = [m for m in out["matches"] if m["changes"]]
     lines = []
     for m in out["matches"]:
-        head = f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})" + (" [ДЕРБИ - без прогноза]" if m.get("derby") else "")
+        head = (f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})" + (" [ДЕРБИ - без прогноза]" if m.get("derby") else "")
+                + (" ★ най-сигурен" if m.get("sure") else ""))
         cur = []
         for kind, name in (("one", "ПРОГНОЗА"), ("risky", "рискова"), ("safer", "по-сигурна")):
             x = (m.get("new") or {}).get(kind)

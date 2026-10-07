@@ -11,6 +11,9 @@
 0.70; размер 2 / 3 / 4; с разнообразие и без (един мач на първенство и вид пазар). Мери се: колонки, колко
 минават (срещу казаното от робота), дни, в които НИТО ЕДНА колонка не минава (сред дните с поне 2 колонки),
 връщане от 1 € само за колонки, в които всеки мач има истински коефициент (иначе е кръгова сметка).
+ДОПЪЛНЕНИЕ 2026-10-08 (най-сигурните мачове, bets/sure.py): колонките се правят само от мачовете, белязани като най-сигурни
+(третината с най-голям шанс на първенство за деня, поне 65%); мери се същото с добавка „_sure“. Старите варианти остават
+без това ограничение (need_sure=False), за да са сравними с предишните числа.
 Параметрите по подразбиране на сайта: MIN_P 0.65, размер 3, с разнообразие. Променят се само ако избраните
 варианти са по-добри и в избора, и в чистата проверка по „дни без нито една минала колонка“ и броя колонки на
 ден, а минаването не е с повече от 2 грешки под казаното. Резултатът: data/columns_backtest.json.
@@ -25,7 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from bets import columns, db, robot                       # noqa: E402
+from bets import columns, db, robot, sure                 # noqa: E402
 
 OUT = ROOT / "data" / "columns_backtest.json"
 SELECT_END = "2025-07-01"
@@ -50,13 +53,27 @@ def load():
     return days
 
 
-def evaluate(days, min_p, size, diversify):
+def mark_sure(ms):
+    """Белегът „най-сигурен“ върху мачовете на един ден - както на живо (bets/sure.py)."""
+    groups = {}
+    for m in ms:
+        if sure.candidate(m["flags"], m["basis"], m["one"]):
+            groups.setdefault(m["league"], []).append(m)
+    for g in groups.values():
+        info = sure.info_for([(m["id"], m["one"]["p"]) for m in g])
+        for m in g:
+            m["flags"]["sure"] = info[m["id"]]
+
+
+def evaluate(days, min_p, size, diversify, with_sure=False):
     stats = {per: {"n": 0, "pass": 0, "claimed": 0.0, "honest": 0.0, "days": 0, "days_none": 0, "book_n": 0, "book_ret": 0.0}
              for per in ("select", "clean")}
     for day, ms in days.items():
         per = "select" if day < SELECT_END else "clean"
         by_id = {m["id"]: m for m in ms}
-        cols = columns.build(columns.candidates(ms, min_p), size=size, diversify=diversify)
+        if with_sure:
+            mark_sure(ms)
+        cols = columns.build(columns.candidates(ms, min_p, need_sure=with_sure), size=size, diversify=diversify)
         if len(cols) < 2:
             continue
         s = stats[per]
@@ -104,6 +121,15 @@ def main():
                         print(f"{key:<18} {per:<6} колонки {x['n']:>5} в {x['days']:>4} дни | минават {x['pass']:.1%} ± {x['se']:.1%} "
                               f"(роботът казва {x['claimed']:.1%}, поправено {x['honest']:.1%}) | дни без нито една {x['days_none']:.0%}"
                               + (f" | връща {x['book_return']:.2f} € от 1 € (на {x['book_n']} с истински коефициенти)" if x["book_return"] is not None else ""))
+    for size in (2, 3):                      # най-сигурните мачове: само един вариант на разнообразие - като на живо
+        key = f"p0.65_n{size}_league_sure"
+        res[key] = evaluate(days, 0.65, size, "league", with_sure=True)
+        for per in ("select", "clean"):
+            x = res[key][per]
+            if x["n"]:
+                print(f"{key:<22} {per:<6} колонки {x['n']:>5} в {x['days']:>4} дни | минават {x['pass']:.1%} ± {x['se']:.1%} "
+                      f"(роботът казва {x['claimed']:.1%}, поправено {x['honest']:.1%}) | дни без нито една {x['days_none']:.0%}"
+                      + (f" | връща {x['book_return']:.2f} € от 1 € (на {x['book_n']} с истински коефициенти)" if x["book_return"] is not None else ""))
     OUT.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     return res
 

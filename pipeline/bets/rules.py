@@ -19,11 +19,12 @@
 import json
 from datetime import datetime, timezone
 
-from . import robot
+from . import robot, sure
 
 # от кога важи всяко правило за записите (по-старите записи не се одитират - записът не се пипа)
 FROM_RANGES = "2026-10-03T04:00:00+00:00"     # граници 1.40 / зелена до 1.80 / рисковата знак под 50%
 FROM_ALL_BLOCKS = "2026-10-07T00:00:00+00:00"  # дерби и „тото“ във всяка прогноза
+FROM_SURE = sure.FROM                          # белегът „най-сигурен мач“ (bets/sure.py)
 
 # kind: one - прогнозата на робота (рамката), safer - зелената, risky - жълтата, column, bonus
 RULES = [
@@ -40,6 +41,14 @@ RULES = [
      "applies": ["one", "safer", "risky", "column"], "status": "блокира",
      "said": "„Да не се влияе от коефициентите, когато казва процента“ (30.09)",
      "evidence": "мачовете без собствена оценка (национални отбори, някои лиги) остават само в „Прогнози“"},
+    {"id": "sure", "title": "Само най-сигурните мачове: от първенство за деня - най-вероятната третина, шанс 65%+",
+     "applies": ["one", "column"], "status": "прилага се (измерено)",
+     "said": "„Да му намалим обхвата от мачове и просто да го помолим да поддържа по-висока успеваемост на мачовете, които ни дава... "
+             "може да не ни дава всичките 11 мача от Испания втора лига, да ни даде 4 мача, ама реално тия 4 да са за него най-сигурните... "
+             "освен най-сигурната прогноза за даден мач, да ни дава и най-сигурните мачове“ (08.10)",
+     "evidence": "назад третината най-вероятни излиза 66% (чиста проверка) срещу 63% за останалите и 64% за всички; роботът казва 70% - "
+                 "завишава; ~14 мача на ден вместо ~33. В парите няма предимство: при истински коефициенти -7% (избор) и -12% (чиста) "
+                 "срещу -7% и -5% за останалите - коефициентите им са по-ниски"},
     {"id": "one", "title": "Точно една прогноза на мач, най-вероятното събитие (шанс 50%+)", "applies": ["one"], "status": "прилага се",
      "said": "„Точно една прогноза, за да видим какъв процент държи роботът“ (01.10)",
      "evidence": "назад 63.5-64% излизат; роботът казва 66%"},
@@ -74,6 +83,14 @@ def match_block(flags, basis):
         return "дерби - професионалистът: в дербитата не се залага (повече равни от обещаното), прогноза няма"
     if basis != "model":
         return "роботът няма собствена оценка за тези отбори - показан е само пазарът"
+    return None
+
+
+def sure_block(flags):
+    """Причина мачът да не е в колонка/„най-сигурен“ (или None): белегът от bets/sure.py (tips.mark_sure) липсва или е „не“."""
+    s = (flags or {}).get("sure")
+    if not (s and s.get("y")):
+        return "не е сред най-сигурните мачове на първенството за деня (третината с най-голям шанс, поне 65%)"
     return None
 
 
@@ -129,6 +146,7 @@ def audit(conn, since=None):
                     why = f"по-сигурната е 1.40-1.80 (тази е {o})"
             if why:
                 out.append((name, kind, why))
+    out += audit_sure(conn)
     for c in conn.execute("SELECT day, idx, legs_json, summary_json FROM columns WHERE idx > 0"):
         if json.loads(c["summary_json"] or "{}").get("manual"):
             continue                               # ръчните колонки на собственика не са на робота
@@ -141,8 +159,51 @@ def audit(conn, since=None):
         for l in legs:
             flags, league = flags_of.get(l["id"], ({}, l["league"]))
             why = match_block(flags, "model") or pick_block("column", l["sel"], l["p"], l["odds"], league)
+            if not why and c["day"] >= FROM_SURE[:10]:
+                why = sure_block(flags)                # колонката е само от най-сигурните мачове
             if why:
                 out.append((f"колонка {c['day']} #{c['idx']}: {l['home']} - {l['away']}", "column", why))
+    return out
+
+
+def audit_sure(conn):
+    """Одиторът за „най-сигурните“: ПРЕСМЯТА независимо белега на всяка група (първенство × ден) от записаните шансове.
+    Проверява: всеки кандидат има белег; най-сигурните не са повече от третината (нагоре) и са с шанс 65%+; никой неотбелязан
+    не е по-вероятен от отбелязан; а когато всички членове на групата са отбелязани наведнъж - точно очакваното множество."""
+    out, groups = [], {}
+    for t in conn.execute("SELECT fixture_id, league, home, away, kickoff, basis, picks_json, flags_json FROM tips "
+                          "WHERE locked_at >= ?", (FROM_SURE,)):
+        flags = json.loads(t["flags_json"] or "{}")
+        one = json.loads(t["picks_json"]).get("one")
+        if flags.get("derby") or t["basis"] != "model" or not one:
+            continue
+        name, s = f"{t['home']} - {t['away']}", flags.get("sure")
+        if not s:
+            out.append((name, "sure", "липсва белегът „най-сигурен“ (стъпка 4в не е минала)"))
+            continue
+        groups.setdefault((t["league"], sure.day_of(t["kickoff"])), []).append((t["fixture_id"], one["p"], bool(s["y"]), s, name))
+    for (league, day), ms in groups.items():
+        base = [m for m in ms if not m[3].get("late")]
+        if not base:
+            continue
+        n = base[0][3]["n"]
+        k = -(-n // 3)                                     # третина, нагоре
+        yes = [m for m in base if m[2]]
+        if len(yes) > k:
+            out.append((f"{league} {day}", "sure", f"{len(yes)} най-сигурни при {n} кандидата (най-много {k})"))
+        for m in yes:
+            if m[1] < 0.65:
+                out.append((m[4], "sure", f"най-сигурен с шанс {m[1]:.0%} (под 65%)"))
+        floor = min((m[1] for m in yes), default=None)
+        if floor is not None:
+            for m in base:
+                if not m[2] and m[1] > floor + 1e-9:
+                    out.append((m[4], "sure", f"не е най-сигурен при шанс {m[1]:.0%}, а най-слабият отбелязан е {floor:.0%}"))
+        if len(base) == n and len(ms) == len(base):        # цялата група е отбелязана наведнъж - точно очакваното
+            order = sorted(base, key=lambda m: (-m[1], str(m[0])))[:k]
+            expected = {m[0] for m in order if m[1] >= 0.65}
+            if expected != {m[0] for m in yes}:
+                out.append((f"{league} {day}", "sure", "множеството на най-сигурните не съвпада с пресметнатото независимо"))
     return out
 
 

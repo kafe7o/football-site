@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, live, robot, rules, season, tips
+from . import config, db, live, robot, rules, season, sure, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -87,6 +87,9 @@ def compact_forecast(m):
         "rk": _pred(m.get("risky")), "sf": _pred(m.get("safer")), "one": _one(m.get("one")),
         "w": m.get("why"), "f": [k for k, v in (m.get("flags") or {}).items() if v is True],
     })
+    su = (m.get("flags") or {}).get("sure")
+    if su:
+        out["su"] = [1 if su["y"] else 0, su.get("r"), su.get("n")]       # най-сигурен ли е, място, от колко кандидата
     if r.get("xg_home") is not None:
         out["xg"] = [round(r["xg_home"], 2), round(r["xg_away"], 2)]
     an = compact_analysis(m.get("analysis"))
@@ -144,6 +147,8 @@ def record(conn, now):
                     "rk": None if flags.get("derby_late") else _pred(picks.get("risky")),
                     "sf": None if flags.get("derby_late") else _pred(picks.get("safer")),
                     "one": None if flags.get("derby_late") else _one(picks.get("one")),
+                    "su": ([1 if flags["sure"]["y"] else 0, flags["sure"].get("r"), flags["sure"].get("n")]
+                           if flags.get("sure") and not flags.get("derby_late") else None),
                     "ct": [t["cards"], t["corners"]],
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от
@@ -196,6 +201,25 @@ def one_summary():
     pick = lambda d: {k: d[k] for k in keep if d and k in d} if d else None
     return {"variant": v, "select": pick(ob["variants"][v]["select"]), "clean": pick(ob["variants"][v]["clean"]),
             "leagues": {lg: {"n": d["n"], "hit": d["hit"]} for lg, d in (ob.get("leagues") or {}).items() if d}}
+
+
+def sure_summary():
+    """Най-сигурните мачове назад (data/sure_backtest.json): правилото на сайта - избор, чиста проверка, по лиги, системата."""
+    m = sure.measured()
+    sb = read_json("sure_backtest.json", {})
+    out = {"share": sure.SHARE, "min_p": sure.MIN_P, "from": sure.FROM, "stale": m is None}
+    if m is None:
+        return out
+    pick = lambda d: {k: d[k] for k in ("n", "hit", "se", "said", "odds", "roi", "roi_se", "n_book") if d and k in d} if d else None
+    for per in ("select", "clean"):
+        x = m[per]
+        out[per] = {"cover": x["cover"], "per_day": x["per_day"], "sure": pick(x["sure"]), "rest": pick(x["rest"]),
+                    "diff": x.get("diff"), "diff_se": x.get("diff_se")}
+    out["system"] = (sb.get("system") or {}).get("live")
+    out["leagues"] = {lg: {"n": d["sure"]["n"], "hit": d["sure"]["hit"], "all": d["all"]["hit"], "n_all": d["all"]["n"]}
+                      for lg, d in (sb.get("leagues") or {}).items() if d.get("sure") and d.get("all")}
+    out["generated"], out["select_end"] = m.get("generated"), m.get("select_end")
+    return out
 
 
 def signs_summary():
@@ -294,12 +318,13 @@ def build(conn, now=None, upcoming=None):
         "extras_bt": extras_summary(),
         "signs_bt": signs_summary(),
         "one_bt": one_summary(),
+        "sure_bt": sure_summary(),
         "columns": columns_data(conn, upcoming, now),
         "rules": rules.summary(),
         "hc_bt": hc_summary(),
         # границите на професионалиста (bets/robot.py) - сайтът ги пише от тук, за да не се разминат
         "ranges": {"safe": list(robot.SAFE_RANGE), "one": list(robot.ONE_RANGE), "floor": robot.FLOOR,
-                   "risky": robot.RISKY_RULE},
+                   "risky": robot.RISKY_RULE, "sure": {"share": sure.SHARE, "min_p": sure.MIN_P, "from": sure.FROM}},
         "bonus": bonus_data(now),
         "seasons": seasons(conn, now),
         "pro": read_json("pro_tips.json", []),

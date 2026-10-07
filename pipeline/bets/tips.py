@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from . import analysis, db, derbies, model, odds_api, prices as P, results, robot, rules, xg
+from . import analysis, db, derbies, model, odds_api, prices as P, results, robot, rules, sure, xg
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -248,7 +248,45 @@ def preview(conn, now=None, days=14):
             continue
         out.append({"id": fx["id"], "league": fx["league"], "kickoff": fx["kickoff"], "home": fx["home"],
                     "away": fx["away"], "home_src": fx["home_src"], "away_src": fx["away_src"], "locked": None, **f})
-    return out
+    return sure.annotate(out)         # най-сигурните мачове (bets/sure.py): записаният белег се пази, останалите са предварителни
+
+
+def mark_sure(conn, now=None):
+    """Най-сигурните мачове на деня (bets/sure.py): белег във флаговете на записаните прогнози - веднъж, в деня на записа, ПРЕДИ
+    началото на мачовете, и после не се променя. Групата е първенство × „ден“ (07:00-07:00); подреждането е по шанса на
+    едната прогноза, както е записан. Мач, добавен в групата по-късно, е най-сигурен само ако е поне толкова вероятен, колкото
+    най-слабият отбелязан (никой отбелязан не се сваля). Започналите мачове участват в подреждането, но не получават белег."""
+    now = now or datetime.now(timezone.utc)
+    start, end = sure.day_bounds(sure.day_of(now.isoformat()))
+    if start.isoformat() < sure.FROM:
+        return 0
+    stamp = now.isoformat(timespec="seconds")
+    groups = {}
+    for t in conn.execute("SELECT fixture_id, league, kickoff, basis, picks_json, flags_json FROM tips "
+                          "WHERE kickoff >= ? AND kickoff < ?", (start.isoformat(), end.isoformat())).fetchall():
+        flags = json.loads(t["flags_json"] or "{}")
+        one = json.loads(t["picks_json"]).get("one")
+        if sure.candidate(flags, t["basis"], one):
+            groups.setdefault(t["league"], []).append({"id": t["fixture_id"], "kickoff": t["kickoff"], "one": one, "flags": flags})
+    done = 0
+    for league, ms in groups.items():
+        fresh = [m for m in ms if not m["flags"].get("sure") and datetime.fromisoformat(m["kickoff"]) > now]
+        if not fresh:
+            continue
+        stored = [m for m in ms if m["flags"].get("sure")]
+        if not stored:
+            info = sure.info_for([(m["id"], m["one"]["p"]) for m in ms])
+        else:
+            cut = sure.late_cut(stored)
+            info = {m["id"]: sure.late_info(m["one"]["p"], cut) for m in fresh}
+        for m in fresh:
+            m["flags"]["sure"] = {**info[m["id"]], "at": stamp}
+            conn.execute("UPDATE tips SET flags_json = ? WHERE fixture_id = ?", (json.dumps(m["flags"]), m["id"]))
+            done += 1
+        yes = [m for m in fresh if m["flags"]["sure"]["y"]]
+        log.info("Най-сигурни в %s: %d от %d кандидата", league, len(yes), len(ms))
+    conn.commit()
+    return done
 
 
 def mark_late_derbies(conn, now=None):
