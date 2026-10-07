@@ -308,8 +308,8 @@ def text(a, home, hn, an, flags):
                      f"({pct(best[2])}), после " + ", ".join(f"{s[0]}:{s[1]} ({pct(s[2])})" for s in g["scores"][1:]) + ".")
         lines.append(f"Голове: над 1.5 - {pct(g['o15'])}, над 2.5 - {pct(g['o25'])}, над 3.5 - {pct(g['o35'])}; "
                      f"двата вкарват - {pct(g['btts'])}.")
-    if g and g.get("hcp"):
-        # хендикап (професионалистът): при голям фаворит - ще спечели ли с 2+ гола разлика
+    if g and g.get("hcp") and not flags.get("derby"):
+        # хендикап (професионалистът): при голям фаворит - ще спечели ли с 2+ гола разлика (в дерби - не: без съвет)
         fav_home = g["win"][0] >= g["win"][1]
         fav, fp = (hn, g["win"][0]) if fav_home else (an, g["win"][1])
         h2, h3 = (g["hcp"]["H1"], g["hcp"]["H1_2"]) if fav_home else (g["hcp"]["H2"], g["hcp"]["H2_2"])
@@ -364,7 +364,7 @@ def text(a, home, hn, an, flags):
         ref_txt = (f" Съдия {ref['name']} - средно {ref['avg']:.1f} жълти в {ref['n']} мача за 2 години."
                    if ref and ref.get("avg") else (f" Съдия {ref['name']}." if ref else ""))
         head = f"{name}: очаквани {c['total']:.1f}{' ' + unit if unit else ''} ({hn} {c['home']:.1f}, {an} {c['away']:.1f})"
-        if kind == "corners" and c.get("more"):
+        if kind == "corners" and c.get("more") and not flags.get("derby"):
             mo = c["more"]
             close = abs(mo["KH"] - mo["KA"]) < 0.15
             lines.append(f"Кой изпълнява повече корнери: {hn} {pct(mo['KH'])}, равен брой {pct(mo['KD'])}, {an} {pct(mo['KA'])}"

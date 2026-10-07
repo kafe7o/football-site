@@ -523,7 +523,9 @@ function matchCard(m) {
     if (m.xg) sub.push(`очаквани голове ${m.xg[0].toFixed(1)} : ${m.xg[1].toFixed(1)}`);
     sub.push(m.b === "model" ? "процентите са на робота" : "роботът няма собствена оценка - процентите са на букмейкъра");
     const an = m.an || {};
-    const picks = m.b !== "model" ? "" : Object.entries(m.pk || {}).map(([mkt, sel]) =>
+    const derby = (m.f || []).includes("derby");
+    if (derby) sub.push("дерби - шансовете са само за сведение, роботът не дава прогноза (професионалистът)");
+    const picks = (m.b !== "model" || derby) ? "" : Object.entries(m.pk || {}).map(([mkt, sel]) =>
       `<span class="pk">${MKT[mkt]}: <b>${LABEL[sel]}</b> <span class="num">${pct(r[sel])}${o[sel] ? " @" + o[sel].toFixed(2) : ""}</span></span>`).join("") +
       ["cards", "corners"].filter(k => an[k]).map(k => { const x = an[k], ch = x.pick === "O" ? x.over : 1 - x.over;
         return x.skill
@@ -700,7 +702,7 @@ function analysisBlock(m) {
     <div class="an-row"><span>Най-вероятни резултати</span><span>${g.scores.map(x => `${x[0]}:${x[1]} ${pct(x[2])}`).join(" · ")}</span></div>
     <div class="an-row"><span>Над 1.5 / 2.5 / 3.5</span><span>${pct(g.o15)} / ${pct(g.o25)} / ${pct(g.o35)}</span></div>
     <div class="an-row"><span>Двата вкарват</span><span>${pct(g.btts)}</span></div>
-    ${g.hcp ? `<div class="an-row"><span>С 2+ гола разлика (хендикап 0:1 / 1:0)</span><span>${esc(m.h)} ${pct(g.hcp.H1)} · ${esc(m.a)} ${pct(g.hcp.H2)}</span></div>
+    ${g.hcp && !(m.f || []).includes("derby") ? `<div class="an-row"><span>С 2+ гола разлика (хендикап 0:1 / 1:0)</span><span>${esc(m.h)} ${pct(g.hcp.H1)} · ${esc(m.a)} ${pct(g.hcp.H2)}</span></div>
     <div class="an-row"><span>С 3+ гола разлика (0:2 / 2:0)</span><span>${esc(m.h)} ${pct(g.hcp.H1_2)} · ${esc(m.a)} ${pct(g.hcp.H2_2)}</span></div>
     ${HC && HC.fav_by_2 != null ? `<div class="small muted">Назад: голям фаворит (60%+) печели с 2+ гола в ${pct(HC.fav_by_2)} от мачовете, роботът казваше ${pct(HC.said)} - малко надценява.</div>` : ""}` : ""}</div>`);
   const xl = ["cards", "corners"].filter(k => a[k]).map(k => { const x = a[k];
@@ -708,7 +710,7 @@ function analysisBlock(m) {
       ? Object.entries(x.lines).map(([l, p]) => `над ${l} ${pct(p)}`).join(" · ")
       : (x.base != null ? `в лигата над ${x.line}: ${pct(x.base)}` : "")}</span></div>`; }).join("");
   const km = (a.corners || {}).more;
-  const kl = km ? `<div class="an-row"><span>Повече корнери</span><span>${esc(m.h)} ${pct(km.KH)} · равно ${pct(km.KD)} · ${esc(m.a)} ${pct(km.KA)}</span></div>
+  const kl = km && !(m.f || []).includes("derby") ? `<div class="an-row"><span>Повече корнери</span><span>${esc(m.h)} ${pct(km.KH)} · равно ${pct(km.KD)} · ${esc(m.a)} ${pct(km.KA)}</span></div>
     ${HC && HC.k_fav != null ? `<div class="small muted">Назад: при голям фаворит роботът познава кой ще изпълни повече корнери в ${pct(HC.k_fav)}, при равни мачове - в ${pct(HC.k_bal)} (почти ези-тура).</div>` : ""}` : "";
   if (xl) rows.push(`<div class="an-box"><b class="h">Картони и корнери по робота</b>${xl}${kl}
     ${a.cards && a.cards.referee ? `<div class="an-row"><span>Съдията е включен в очакваните картони</span><span>${esc(a.cards.referee.name)}</span></div>` : ""}
@@ -751,11 +753,11 @@ function roundPanel(rows) {
   const top1 = p => ["1", "X", "2"].reduce((a, b) => (p[b] || 0) > (p[a] || 0) ? b : a, "1");
   const dis = rows.filter(m => m.b === "model" && m.m && m.m["1"] != null && top1(m.m) !== m.pk["1x2"]);
   if (dis.length) items.push(`Роботът вижда различно от букмейкъра (1/X/2): ${dis.slice(0, 6).map(m => `${nm(m)} - роботът ${m.pk["1x2"]} (${pct(m.r[m.pk["1x2"]])}), букмейкърът ${top1(m.m)} (${pct(m.m[top1(m.m)])})`).join("; ")}${dis.length > 6 ? ` и още ${dis.length - 6}` : ""}.`);
-  const favs = rows.filter(m => m.an && m.an.goals && m.an.goals.hcp && Math.max(...m.an.goals.win) >= 0.6)
+  const favs = rows.filter(m => !(m.f || []).includes("derby") && m.an && m.an.goals && m.an.goals.hcp && Math.max(...m.an.goals.win) >= 0.6)
     .map(m => { const g = m.an.goals, home = g.win[0] >= g.win[1]; return {m, home, p: g.hcp[home ? "H1" : "H2"]}; })
     .sort((a, b) => b.p - a.p);
   if (favs.length) items.push(`Големи фаворити - победа с 2+ гола разлика (хендикап): ${favs.slice(0, 6).map(x => `${nm(x.m)} - <b>${esc(x.home ? x.m.h : x.m.a)}</b> ${pct(x.p)}`).join("; ")}${favs.length > 6 ? ` и още ${favs.length - 6}` : ""}.`);
-  const kc = rows.filter(m => m.an && m.an.corners && m.an.corners.more);
+  const kc = rows.filter(m => !(m.f || []).includes("derby") && m.an && m.an.corners && m.an.corners.more);
   const kSure = kc.map(m => { const k = m.an.corners.more, home = k.KH >= k.KA; return {m, home, p: home ? k.KH : k.KA, close: Math.abs(k.KH - k.KA) < 0.15}; })
     .sort((a, b) => b.p - a.p);
   if (kSure.length) items.push(`Повече корнери - най-ясно: ${kSure.slice(0, 4).map(x => `${nm(x.m)} - <b>${esc(x.home ? x.m.h : x.m.a)}</b> ${pct(x.p)}`).join("; ")}.` +
@@ -885,8 +887,8 @@ function resultRow(r) {
   one("Над/под 2.5", "ou");
   if (R["1"] != null) dd.push(["", `<span class="muted small">${own ? "шансовете са на робота; коефициентите - средните на букмейкърите при записа" : "роботът нямаше собствена оценка за тези отбори - шансовете са на букмейкъра"}</span>`]);
   if (r.xg) dd.push(["Очаквани голове", `${r.xg[0].toFixed(1)} : ${r.xg[1].toFixed(1)} · станаха <b>${r.s[0]} : ${r.s[1]}</b>`]);
-  if (r.hp) dd.push(["Хендикап", ["H1", "H2"].map(k => `${esc(labT(k, r))} ${pct(r.hp[k])} ${mk(hitAny(k, r.s, r.ct, r.cs))}`).join(" · ")]);
-  if (r.kp) dd.push(["Повече корнери", `${esc(r.h)} ${pct(r.kp.KH)} · равно ${pct(r.kp.KD)} · ${esc(r.a)} ${pct(r.kp.KA)}` +
+  if (r.hp && !(r.f || []).includes("derby")) dd.push(["Хендикап", ["H1", "H2"].map(k => `${esc(labT(k, r))} ${pct(r.hp[k])} ${mk(hitAny(k, r.s, r.ct, r.cs))}`).join(" · ")]);
+  if (r.kp && !(r.f || []).includes("derby")) dd.push(["Повече корнери", `${esc(r.h)} ${pct(r.kp.KH)} · равно ${pct(r.kp.KD)} · ${esc(r.a)} ${pct(r.kp.KA)}` +
     (r.cs && r.cs[0] != null ? ` · станаха <b>${r.cs[0]}:${r.cs[1]}</b> ${mk(hitAny(r.kp.KH >= r.kp.KA ? "KH" : "KA", r.s, r.ct, r.cs))}` : ` · <span class="muted">броят идва от football-data 1-3 дни след мача</span>`)]);
   const hasStats = r.ct && (r.ct[0] != null || r.ct[1] != null);
   ["cards", "corners"].forEach((k, i) => {
