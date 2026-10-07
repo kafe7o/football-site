@@ -257,7 +257,7 @@ def in_one(odds):
     return in_range(odds, ONE_RANGE)
 
 
-def risky_sign(p, avg):
+def risky_sign(p, avg, league=None):
     """Рисковата (от 03.10): знак 1 или 2, който роботът дава под 50%, по-вероятният от двата; коефициент от 1.40.
     При ясен фаворит (единият отбор над 50%) - None: за него рисков знак няма."""
     under = [s for s in ("1", "2") if p.get(s) is not None and p[s] < 0.5]
@@ -265,7 +265,7 @@ def risky_sign(p, avg):
         return None
     s = max(under, key=lambda k: p[k])
     o, src = price(s, p, avg)
-    if not o or o < FLOOR:
+    if not o or o < FLOOR or toto_blocked(league, s, o):
         return None
     return {"sel": s, "p": round(p[s], 4), "odds": o, "src": src}
 
@@ -284,7 +284,13 @@ def risky_by_odds(p, base, avg, against=()):
     return {"sel": s, "p": round(p[s], 4), "odds": o, "src": src, "base": round(base[s], 4)}
 
 
-def safe_by_odds(p, avg):
+def toto_blocked(league, sel, odds):
+    """„Тото“ лига (Холандия, Австрия): фаворит с коефициент 1.30-1.55 печели по-рядко от обещаното - без съвет за него.
+    Важи за ВСЯКА прогноза (едната, по-сигурната, рисковата), не само за една (2026-10-07)."""
+    return bool(league in TOTO_LEAGUES and sel in ("1", "2") and odds and TOTO_BAND[0] <= odds <= TOTO_BAND[1])
+
+
+def safe_by_odds(p, avg, league=None):
     """Сигурната: най-вероятното по робота събитие с коефициент 1.50-1.80 (SAFE_RANGE) и шанс по робота поне 50%.
     Без условието за 50% в границите понякога оставаше само събитие, което роботът смята за по-малко
     вероятно (над 2.5 с 47% - тестът на бонус анализа, 01.10). Назад: 79% от мачовете, 59.6% познати
@@ -292,7 +298,7 @@ def safe_by_odds(p, avg):
     cands = []
     for s in SAFE_CANDIDATES:
         o, src = price(s, p, avg)
-        if o and in_safe(o) and p.get(s, 0) >= MIN_PROB:
+        if o and in_safe(o) and p.get(s, 0) >= MIN_PROB and not toto_blocked(league, s, o):
             cands.append((s, p[s], o, src))
     if not cands:
         return None

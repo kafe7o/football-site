@@ -29,7 +29,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from . import analysis, config, db, notify, odds_api, prices as P, robot, tips
+from . import analysis, config, db, derbies, notify, odds_api, prices as P, robot, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -119,6 +119,9 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
     Без сутрешен запис (напр. мачът се е появил след 07:00) - прогнозите се смятат сега от модела
     (robot_now) и промени няма: това е първият анализ."""
     robot_p = (json.loads(record["probs_json"])["robot"] if record and record["basis"] == "model" else None) or robot_now
+    derby = derbies.is_derby(fx["league"], fx["home"], fx["away"])
+    if derby:
+        robot_p = None                      # дерби: без прогноза на робота, и в бонус анализа (правилото на майстора)
     morning_prices = json.loads(record["prices_json"]) if record and record["prices_json"] else None
     picks = json.loads(record["picks_json"]) if record else {}
     m_avg, n_avg = (morning_prices or {}).get("avg") or {}, (now_prices or {}).get("avg") or {}
@@ -137,9 +140,9 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
                 changes.append(f"букмейкърите за {s}: {pct(m_fair[s])} -> {pct(n_fair[s])}")
     new = {}
     if robot_p:
-        new["safer"] = robot.safe_by_odds(robot_p, n_avg or m_avg)
+        new["safer"] = robot.safe_by_odds(robot_p, n_avg or m_avg, fx["league"])
         new["one"] = robot.one_pick(robot_p, n_avg or m_avg, picks.get("extras"), fx["league"])
-        new["risky"] = (robot.risky_sign(robot_p, n_avg or m_avg) if robot.RISKY_RULE == "under50" else
+        new["risky"] = (robot.risky_sign(robot_p, n_avg or m_avg, fx["league"]) if robot.RISKY_RULE == "under50" else
                         robot.risky_by_odds(robot_p, base, n_avg or m_avg,
                                             [x["sel"] for x in (new["safer"], new["one"]) if x]
                                             if robot.RISKY_CONSISTENT else ()))
@@ -160,7 +163,7 @@ def compare(fx, record, now_prices, referee, base, robot_now=None):
         changes.append("сутринта още нямаше коефициенти от букмейкърите - сега прогнозите са по техните")
     if referee and referee != morning_ref:
         changes.append(f"съдия: {referee}")
-    return changes, new, {"moves": moves, "fair_morning": m_fair, "fair_now": n_fair}
+    return changes, new, {"moves": moves, "fair_morning": m_fair, "fair_now": n_fair, "derby": derby}
 
 
 def run(conn, start, now=None, send=True, write=True, horizon=timedelta(hours=30), prefix=""):
@@ -217,7 +220,7 @@ def notify_slot(out, prefix=""):
     changed = [m for m in out["matches"] if m["changes"]]
     lines = []
     for m in out["matches"]:
-        head = f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})"
+        head = f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})" + (" [ДЕРБИ - без прогноза]" if m.get("derby") else "")
         cur = []
         for kind, name in (("one", "ПРОГНОЗА"), ("risky", "рискова"), ("safer", "по-сигурна")):
             x = (m.get("new") or {}).get(kind)
