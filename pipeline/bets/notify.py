@@ -82,6 +82,7 @@ def score(rows):
     rows = [t for t in rows if t["basis"] == "model" or t["tip"]]    # само мачовете с прогноза на робота (02.10)
     out = {}
     done = []
+    rows = [t for t in rows if not json.loads(t["flags_json"] or "{}").get("derby_late")]   # дерби, разпознато след записа
     for t in rows:
         x = json.loads(t["picks_json"]).get("one")
         if x:

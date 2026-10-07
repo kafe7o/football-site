@@ -140,7 +140,10 @@ def record(conn, now):
                            if probs["robot"].get("xg_home") is not None else None),
                     "t": t["tip"], "to": t["tip_odds"], "tb": t["tip_best"],
                     "rl": robot.rule_of(flags, t["locked_at"]), "lk": t["locked_at"],
-                    "rk": _pred(picks.get("risky")), "sf": _pred(picks.get("safer")), "one": _one(picks.get("one")),
+                    # дерби, разпознато след записа: прогнозите не се показват и не влизат в мерките
+                    "rk": None if flags.get("derby_late") else _pred(picks.get("risky")),
+                    "sf": None if flags.get("derby_late") else _pred(picks.get("safer")),
+                    "one": None if flags.get("derby_late") else _one(picks.get("one")),
                     "ct": [t["cards"], t["corners"]],
                     "f": [k for k, v in flags.items() if v is True], "w": flags.get("why"),
                     # картони и корнери: [избор, линия, колко станаха] - колко станаха идва от

@@ -251,6 +251,23 @@ def preview(conn, now=None, days=14):
     return out
 
 
+def mark_late_derbies(conn, now=None):
+    """Дерби, което списъкът разпозна СЛЕД записа (напр. разширеният списък от 07.10): записът не се пипа - слага се само
+    белег във флаговете (derby, derby_late). Само за още неуредени мачове: историята не се променя назад."""
+    now = (now or datetime.now(timezone.utc)).isoformat(timespec="seconds")
+    n = 0
+    for t in conn.execute("SELECT fixture_id, league, home, away, flags_json FROM tips WHERE hg IS NULL").fetchall():
+        flags = json.loads(t["flags_json"] or "{}")
+        if flags.get("derby") or not derbies.is_derby(t["league"], t["home"], t["away"]):
+            continue
+        flags.update({"derby": True, "derby_late": now})
+        conn.execute("UPDATE tips SET flags_json = ? WHERE fixture_id = ?", (json.dumps(flags), t["fixture_id"]))
+        log.info("Дерби, разпознато след записа: %s - %s (прогнозите му не се показват)", t["home"], t["away"])
+        n += 1
+    conn.commit()
+    return n
+
+
 def locked_entry(conn, ctx, fx, t, fitted):
     """Записаната прогноза (ред от tips) във вида на preview. fx може да липсва - тогава без анализ."""
     flags = json.loads(t["flags_json"] or "{}")
@@ -259,6 +276,10 @@ def locked_entry(conn, ctx, fx, t, fitted):
     flags.pop("rule", None)
     flags.pop("referee", None)
     picks = json.loads(t["picks_json"])
+    if flags.get("derby_late"):
+        # дерби, разпознато след записа: прогнозите остават в записа, но не се показват (правилото на майстора)
+        picks = {**picks, "one": None, "safer": None, "risky": None}
+        why = why or rules.match_block(flags, "model")
     an = None
     if fx is not None:
         if t["basis"] == "model":
@@ -270,7 +291,7 @@ def locked_entry(conn, ctx, fx, t, fitted):
             "prices": json.loads(t["prices_json"]) if t["prices_json"] else None,
             "picks": picks, "extras": picks.get("extras") or {}, "analysis": an,
             "risky": picks.get("risky"), "safer": picks.get("safer"), "one": picks.get("one"),
-            "tip": t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
+            "tip": None if flags.get("derby_late") else t["tip"], "tip_odds": t["tip_odds"], "rule": rule,
             "tip_best": t["tip_best"], "why": why, "flags": flags}
 
 

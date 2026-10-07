@@ -86,6 +86,7 @@ def cloud(log):
             db.set_meta(conn, "fixtures_at", now.isoformat(timespec="seconds"))
     ok += [step(log, "3. Цени", prices.refresh, conn, now),
            step(log, "4. Запис на днешните прогнози", tips.lock, conn, now),
+           step(log, "4б. Дербита, разпознати след записа", tips.mark_late_derbies, conn, now),
            step(log, "4а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))),
            step(log, "5. Уреждане", tips.settle, conn, now),
            step(log, "5б. Уреждане на колонките", columns.settle, conn),

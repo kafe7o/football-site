@@ -108,6 +108,8 @@ def audit(conn, since=None):
                           "WHERE locked_at >= ?", (since,)):
         flags = json.loads(t["flags_json"] or "{}")
         flags_of[t["fixture_id"]] = (flags, t["league"])
+        if flags.get("derby_late"):
+            continue                       # дерби, разпознато след записа: прогнозите са само в записа, не се показват
         picks = json.loads(t["picks_json"])
         name = f"{t['home']} - {t['away']}"
         for kind in ("one", "safer", "risky"):
