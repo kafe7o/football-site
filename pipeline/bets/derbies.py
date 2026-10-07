@@ -51,6 +51,55 @@ DERBIES = [
     ("G1", "PAOK", "Aris"),
 ]
 
+# Допълнение (2026-10-07, проверка на собственика): най-известните дербита в първенствата, за които списъкът нямаше нищо
+# (22 първенства с модел). Имената - както са в базата. Съставено от общо познание, НЕ е проверено на данни - изследването
+# на 1465 дербита е само за европейските първенства по-горе; тук дербито е „мач на най-голямото съперничество“.
+DERBIES += [
+    # Бразилия (градски и големи дербита)
+    ("BRA", "Flamengo RJ", "Fluminense"), ("BRA", "Flamengo RJ", "Vasco"), ("BRA", "Botafogo RJ", "Flamengo RJ"),
+    ("BRA", "Botafogo RJ", "Fluminense"), ("BRA", "Botafogo RJ", "Vasco"), ("BRA", "Fluminense", "Vasco"),
+    ("BRA", "Corinthians", "Palmeiras"), ("BRA", "Corinthians", "Sao Paulo"), ("BRA", "Santos", "Sao Paulo"),
+    ("BRA", "Palmeiras", "Sao Paulo"), ("BRA", "Corinthians", "Santos"), ("BRA", "Palmeiras", "Santos"),
+    ("BRA", "Gremio", "Internacional"), ("BRA", "Atletico-MG", "Cruzeiro"), ("BRA", "Bahia", "Vitoria"),
+    ("BRA", "Ceara", "Fortaleza"), ("BRA", "Athletico-PR", "Coritiba"),
+    # Аржентина
+    ("ARG", "Boca Juniors", "River Plate"), ("ARG", "Independiente", "Racing Club"), ("ARG", "Newells Old Boys", "Rosario Central"),
+    ("ARG", "Estudiantes L.P.", "Gimnasia L.P."), ("ARG", "Talleres Cordoba", "Belgrano"), ("ARG", "San Lorenzo", "Huracan"),
+    ("ARG", "Boca Juniors", "San Lorenzo"), ("ARG", "River Plate", "Independiente"), ("ARG", "Boca Juniors", "Racing Club"),
+    # САЩ
+    ("USA", "Los Angeles Galaxy", "Los Angeles FC"), ("USA", "Seattle Sounders", "Portland Timbers"),
+    ("USA", "New York City", "New York Red Bulls"), ("USA", "FC Dallas", "Houston Dynamo"),
+    ("USA", "Vancouver Whitecaps", "Seattle Sounders"), ("USA", "Vancouver Whitecaps", "Portland Timbers"),
+    ("USA", "CF Montreal", "Toronto FC"), ("USA", "DC United", "New York Red Bulls"),
+    ("USA", "Orlando City", "Inter Miami"), ("USA", "Colorado Rapids", "Real Salt Lake"),
+    # Мексико
+    ("MEX", "Club America", "Guadalajara Chivas"), ("MEX", "Club America", "UNAM Pumas"), ("MEX", "Monterrey", "Tigres UANL"),
+    ("MEX", "Club America", "Cruz Azul"), ("MEX", "Guadalajara Chivas", "Atlas"),
+    # Австрия, Швеция, Норвегия, Дания, Финландия
+    ("AUT", "SK Rapid", "Austria Vienna"),
+    ("SWE", "AIK", "Djurgarden"), ("SWE", "AIK", "Hammarby"), ("SWE", "Djurgarden", "Hammarby"),
+    ("SWE", "Goteborg", "GAIS"), ("SWE", "Goteborg", "Orgryte"), ("SWE", "GAIS", "Orgryte"),
+    ("NOR", "Rosenborg", "Molde"), ("NOR", "Valerenga", "Lillestrom"), ("NOR", "Valerenga", "KFUM Oslo"),
+    ("NOR", "Sarpsborg 08", "Fredrikstad"),
+    ("DNK", "FC Copenhagen", "Brondby"),
+    ("FIN", "HJK", "Gnistan"), ("FIN", "TPS", "Inter Turku"),
+    # Полша, Румъния, Швейцария, Ирландия
+    ("POL", "Wisla", "Cracovia"), ("POL", "Legia", "Lech Poznan"), ("POL", "Lechia Gdansk", "Arka Gdynia"),
+    ("POL", "Wisla", "Wieczysta Krakow"), ("POL", "Cracovia", "Wieczysta Krakow"),
+    ("ROU", "FCSB", "Dinamo Bucuresti"), ("ROU", "FCSB", "Din. Bucuresti"), ("ROU", "FC Rapid Bucuresti", "FCSB"),
+    ("ROU", "FC Rapid Bucuresti", "Dinamo Bucuresti"), ("ROU", "CFR Cluj", "U. Cluj"),
+    ("SWZ", "Zurich", "Grasshoppers"),
+    ("IRL", "Bohemians", "Shelbourne"), ("IRL", "Bohemians", "Shamrock Rovers"), ("IRL", "Shamrock Rovers", "St. Patricks"),
+    ("IRL", "Shelbourne", "Shamrock Rovers"),
+    # Русия, Япония, Китай
+    ("RUS", "Spartak Moscow", "CSKA Moscow"), ("RUS", "Spartak Moscow", "Dynamo Moscow"),
+    ("RUS", "Spartak Moscow", "Lokomotiv Moscow"), ("RUS", "CSKA Moscow", "Lokomotiv Moscow"),
+    ("RUS", "CSKA Moscow", "Dynamo Moscow"), ("RUS", "Lokomotiv Moscow", "Dynamo Moscow"),
+    ("JPN", "Gamba Osaka", "Cerezo Osaka"), ("JPN", "FC Tokyo", "Verdy"), ("JPN", "Kawasaki Frontale", "FC Tokyo"),
+    ("JPN", "Yokohama F. Marinos", "Yokohama FC"),
+    ("CHN", "Shanghai Port", "Shanghai Shenhua"), ("CHN", "Beijing Guoan", "Tianjin Jinmen Tiger"),
+]
+
 _BY_LEAGUE = {}
 for _league, _a, _b in DERBIES:
     _BY_LEAGUE.setdefault(_league, []).extend([{"home_team": _a, "away_team": _b},
