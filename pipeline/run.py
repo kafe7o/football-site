@@ -9,6 +9,8 @@
     python run.py watch --seconds N       наблюдателят между часовите пускания: резултатите до минути след края
     python run.py seed       строи базата на облака от архива (последните 3 сезона + текущия)
     python run.py site       само строи сайта от текущата база
+    python run.py ask "Домакин" "Гост" [--league КОД] [--kickoff "2026-10-10 19:00"] [--offline]
+                             какво мисли роботът за ЕДИН мач (bets/ask.py) - със същия код и правила като облака, нищо не пише
     python run.py status     какво има в базата и колко кредита са останали
 
 Редът в `cloud` не е произволен: резултати -> предстоящи мачове -> цени -> запис на днешните
@@ -241,7 +243,11 @@ def local(log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus", "watch"])
+    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus", "watch", "ask"])
+    parser.add_argument("names", nargs="*", help="за ask: домакин и гост (както са в базата, латиница)")
+    parser.add_argument("--league", default=None, help="за ask: кодът на първенството (иначе се намира само)")
+    parser.add_argument("--kickoff", default=None, help="за ask: начало, българско време („2026-10-10 19:00“ или „19:00“)")
+    parser.add_argument("--offline", action="store_true", help="за ask: без връзка с облака - местното копие на базата")
     parser.add_argument("--seconds", type=int, default=2900, help="за watch: колко секунди да наблюдава")
     parser.add_argument("--slot", default=None, help="за bonus: началният час на мачовете (UTC ISO)")
     parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
@@ -250,6 +256,9 @@ def main():
     parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
     parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")
     args = parser.parse_args()
+    if args.command == "ask":
+        from bets import ask
+        return ask.main(args.names, args.league, args.kickoff, args.offline)
     log = setup_logging()
     log.info("===== Старт: %s %s =====", args.command, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     if args.command == "cloud":
