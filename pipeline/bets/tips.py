@@ -165,7 +165,7 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
         # професионалистът (08.10): прогнозите за един мач не се омесват - по-сигурната не е в обратна посока на головете на едната
         safer = robot.safe_by_odds(robot_p, avg, fx["league"], against=[one["sel"]] if one else ())
         # професионалистът (02.10): рисковата не противоречи на по-сигурната и на едната прогноза
-        risky = (robot.risky_sign(robot_p, avg, fx["league"]) if robot.RISKY_RULE == "under50" else
+        risky = (robot.risky_sign(robot_p, avg, fx["league"], [x["sel"] for x in (safer, one) if x]) if robot.RISKY_RULE == "under50" else
                  robot.risky_by_odds(robot_p, base, avg, [x["sel"] for x in (safer, one) if x] if robot.RISKY_CONSISTENT else ()))
         sel = one["sel"] if one else None
         odds = one["odds"] if one and one["src"] == "book" else None

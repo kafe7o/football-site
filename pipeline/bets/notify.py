@@ -195,11 +195,15 @@ def morning(conn, upcoming, now=None):
                     f"{local_time((datetime.fromisoformat(k) - LEAD).isoformat())} за {local_time(k)} ({len(v)} мача)"
                     for k, v in sorted(slots.items())))
             from . import columns
-            cols = [r for r in columns.record(conn, days=1)["columns"] if r["day"] == columns.day_of(now.isoformat())]
-            if cols:
-                lines.append("Колонки за деня (по една от първенство; не са сигурни - губят средно ~20% от 1 €): " + "; ".join(
+            start, days = columns.window_of(columns.day_of(now.isoformat()))
+            cols = [r for r in columns.record(conn, days=5)["columns"] if r["day"] == start and not r.get("manual")]
+            if cols and start == columns.day_of(now.isoformat()):
+                span = f"{datetime.fromisoformat(days[0]):%d.%m}-{datetime.fromisoformat(days[-1]):%d.%m}"
+                lines.append(f"Колонки за блока {span} ({len(cols)}, по майстора - записани днес; не са сигурни - назад минават ~30% "
+                             f"и връщат ~0.8-0.9 € от 1 €): " + "; ".join(
                     f"{i + 1}) " + " + ".join(f"{name(l['home'], l['away'])} {robot.label(l['sel'])}" for l in c["legs"])
-                    + f" [коеф. {c['odds']:.2f}, шанс ~{c['honest']:.0%}]" for i, c in enumerate(cols)))
+                    + f" [коеф. {c['odds']:.2f}]" for i, c in enumerate(cols[:4]))
+                    + (f"; и още {len(cols) - 4} - на сайта" if len(cols) > 4 else ""))
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

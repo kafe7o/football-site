@@ -1235,19 +1235,28 @@ function renderPro() {
 // ======================= КОЛОНКИ =======================
 // bets/columns.py: колонката е няколко мача, от които ТРЯБВА да излязат всичките. Записаните сутринта не се менят;
 // предварителните за следващите дни се смятат наново на всяко пускане.
+// измереното назад за колонките (research/columns_backtest.py, блоковете на майстора) - вместо завишеното „роботът казва“ по колонка
+const CBT = ((DATA.columns || {}).bt || {}).clean || null;
+const colDay = d => new Date(d + "T12:00:00").toLocaleDateString("bg-BG", {weekday: "long", day: "2-digit", month: "2-digit"});
+const inDay = d => (/^[вф]/i.test(d) ? "във " : "в ") + d;          // „във вторник“, „в петък“
+const CBTS = ((DATA.columns || {}).bt || {}).select || null;
+const retTxt = () => CBT && CBT.book_return != null ? (CBTS && CBTS.book_return != null && Math.abs(CBTS.book_return - CBT.book_return) >= 0.01
+  ? `${Math.min(CBTS.book_return, CBT.book_return).toFixed(2)}-${Math.max(CBTS.book_return, CBT.book_return).toFixed(2)}` : CBT.book_return.toFixed(2)) : "~0.8";
+const winLbl = ds => ds && ds.length ? (ds.length > 1 ? `${colDay(ds[0])} – ${colDay(ds[ds.length - 1])}` : colDay(ds[0])) : "";
+
 function colCard(c, rec) {
   const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
   const head = !rec ? "" : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>` : `<span class="muted">чака мачовете</span>`;
   return `<div class="col ${state}">${head ? `<div class="small" style="margin-bottom:4px"><b>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + (c.idx || "")}</b> ${head}</div>` : ""}
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
-      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)}</span><br>
+      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)} · ${fmtDate(l.kickoff)}</span><br>
       <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
       <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
     ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
-    <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b></span>
-      <span>Шанс: роботът казва <b>${pct(c.claimed)}</b>, реално около <b>${pct(c.honest)}</b></span>
-      <span>От 1 € се връщат средно <b>${c.return.toFixed(2)} €</b>${c.book ? "" : " (част от коефициентите са по робота)"}</span></div></div>`;
+    <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b>${c.book ? "" : " (част от коефициентите са по робота)"}</span>
+      <span>Роботът казва <b>${pct(c.claimed)}</b> - завишено</span>
+      <span>Назад такива колонки минават <b>${CBT ? pct(CBT.pass) : "~29%"}</b> и връщат <b>${retTxt()} €</b> от 1 €</span></div></div>`;
 }
 
 // Много колонки наведнъж (майсторът, 08.10): измерено назад от мачовете с топ шанс на деня (research/sure_matches_backtest.py)
@@ -1264,27 +1273,31 @@ function systemNote() {
 
 function renderColumns() {
   const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
-  const bt = C.bt, pr = C.params || {};
-  const dayLbl = d => new Date(d + "T12:00:00").toLocaleDateString("bg-BG", {weekday: "long", day: "2-digit", month: "2-digit"});
-  let html = `<div class="note">Колонката е няколко мача, от които <b>трябва да излязат всичките</b>. Правило (по майстора, проверено назад):
-    само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b> (да не падат заедно),
-    без дерби и <b>само от мачовете с топ шанс</b> (най-вероятната третина на първенство за деня). ${bt && bt.clean ? `<br><span class="muted small">Назад (${bt.clean.days + (bt.select ? bt.select.days : 0)} дни): колонка от 3 минава в <b>${pct(bt.clean.pass)}</b> от случаите (роботът казва ${pct(bt.clean.claimed)}) и връща средно <b>${bt.clean.book_return != null ? bt.clean.book_return.toFixed(2) : "0.8"} €</b> от 1 € - тоест губи около 20%. Маржът на букмейкъра се умножава на всеки мач: колонките губят повече от единичните прогнози.</span>` : ""}</div>`;
+  const pr = C.params || {};
+  let html = `<div class="note">Колонката е няколко мача, от които <b>трябва да излязат всичките</b>. <b>По реда на майстора:</b> колонките се правят за цял блок -
+    <b>във вторник за вторник–четвъртък</b> и <b>в петък за петък–понеделник</b>, сутринта в 07:00 в първия ден на блока, и после не се променят.
+    Правило: само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b> (да не падат заедно),
+    без дерби, без „тото“ и <b>само от мачовете с топ шанс</b>; всеки мач е най-много в една колонка; до ${pr.per_day || 4} колонки на ден от блока.
+    ${CBT ? `<br><span class="muted small">Назад (${CBT.days} блока в чистата проверка): колонка минава в <b>${pct(CBT.pass)}</b> от случаите (роботът казва ${pct(CBT.claimed)} - завишава) и връща средно <b>${retTxt()} €</b> от 1 € (избор и чиста проверка) - тоест губи. Маржът на букмейкъра се умножава на всеки мач: колонките губят повече от единичните прогнози. Не е „сигурен залог“.</span>` : ""}</div>`;
   html += systemNote();
-  const todayCols = rec.columns.filter(c => c.day === C.today).sort((a, b) => (a.manual ? 1 : 0) - (b.manual ? 1 : 0) || a.idx - b.idx);
-  html += `<h2>Днес - ${esc(dayLbl(C.today))}</h2>`;
-  if (todayCols.length) html += `<p class="small muted" style="margin:0 0 8px">Записани сутринта в 07:00 - не се променят.</p>` + todayCols.map(c => colCard(c, true)).join("");
-  else if ((C.preview || {})[C.today]) html += `<p class="small muted" style="margin:0 0 8px">Още не е записано (записът е в 07:00) - предварително.</p>` + C.preview[C.today].map(c => colCard(c, false)).join("");
-  else html += `<div class="empty">Днес няма достатъчно различни мачове с прогноза на робота за колонка от ${pr.size || 3} (от различни първенства).</div>`;
-  const next = Object.entries(C.preview || {}).filter(([d]) => d !== C.today);
-  next.forEach(([d, cols]) => {
-    html += `<h2>${esc(dayLbl(d))} <span class="muted small">- предварително, обновява се всеки час</span></h2>` +
-      (cols.length ? cols.map(c => colCard(c, false)).join("") : `<div class="empty">За този ден още няма достатъчно мачове с прогноза.</div>`);
+  // текущият блок
+  const cur = rec.columns.filter(c => c.day === C.today).sort((a, b) => (a.manual ? 1 : 0) - (b.manual ? 1 : 0) || a.idx - b.idx);
+  const pv = C.preview || {};
+  html += `<h2>Блок ${esc(winLbl(C.window))}</h2>`;
+  if (cur.length) html += `<p class="small muted" style="margin:0 0 8px">Записани ${esc(inDay(colDay(C.today)))} в 07:00 - не се променят.</p>` + cur.map(c => colCard(c, true)).join("");
+  else if (pv[C.today]) html += `<p class="small muted" style="margin:0 0 8px">Още не са записани (записът е ${esc(inDay(colDay(C.today)))} в 07:00) - предварително, обновява се всеки час.</p>` +
+    (pv[C.today].columns.length ? pv[C.today].columns.map(c => colCard(c, false)).join("") : `<div class="empty">Още няма достатъчно мачове с топ шанс от различни първенства.</div>`);
+  else html += `<div class="empty">За този блок няма колонки - не стигнаха мачове с топ шанс от различни първенства за колонка от ${pr.size || 3}.</div>`;
+  // следващият блок - предварително
+  Object.entries(pv).filter(([s]) => s !== C.today).forEach(([s, w]) => {
+    html += `<h2>Блок ${esc(winLbl(w.days))} <span class="muted small">- предварително, записва се ${esc(inDay(colDay(s)))} в 07:00; обновява се всеки час</span></h2>` +
+      (w.columns.length ? w.columns.map(c => colCard(c, false)).join("") : `<div class="empty">За този блок още няма достатъчно мачове с топ шанс.</div>`);
   });
   const past = rec.columns.filter(c => c.day !== C.today);
   html += `<h2>Минали колонки</h2>` + (rec.n ? `<div class="note">Записани и уредени: <b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}); роботът е казвал средно ${pct(rec.claimed)}.
-    <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки.</span></div>` : `<div class="empty">Още няма уредени колонки - записът започва от днес.</div>`);
+    <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки.</span></div>` : `<div class="empty">Още няма уредени колонки - първият блок по реда на майстора е петък–понеделник от 09.10.</div>`);
   let last = "";
-  past.forEach(c => { if (c.day !== last) { html += `<div class="day-h">${esc(dayLbl(c.day))}</div>`; last = c.day; } html += colCard(c, true); });
+  past.forEach(c => { if (c.day !== last) { html += `<div class="day-h">${esc(c.days ? "Блок " + winLbl(c.days) : colDay(c.day))}</div>`; last = c.day; } html += colCard(c, true); });
   el.innerHTML = html;
 }
 

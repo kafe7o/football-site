@@ -166,14 +166,16 @@ def columns_data(conn, upcoming, now):
     """Таб „Колонки“: записаните сутринта (днес и по-рано) и предварителните за следващите дни."""
     from . import columns
     rec = columns.record(conn)
-    today = columns.day_of(now.isoformat())
+    # блоковете на майстора: вторник-четвъртък и петък-понеделник (bets/columns.py)
+    start, days = columns.window_of(columns.day_of(now.isoformat()))
     live = [m for m in upcoming if m.get("basis") == "model"]
-    # предварителни: следващите дни; а ако за днес още няма запис (преди 07:00) - и днес
-    has_today = conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (today,)).fetchone() is not None
-    prev = columns.for_days(live, skip_day=today if has_today else None, days=3)
-    return {"today": today, "record": rec, "preview": prev,
-            "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION},
-            "bt": read_json("columns_backtest.json", {}).get("p0.65_n3_league")}
+    locked = conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (start,)).fetchone() is not None
+    prev = columns.for_windows(live, now, locked_start=start if locked else None)
+    bt = read_json("columns_backtest.json", {})
+    return {"today": start, "window": days, "locked": locked, "record": rec, "preview": prev,
+            "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION,
+                       "per_day": columns.MAX_COLUMNS},
+            "bt": bt.get("p0.65_n3_league_sure_window") or bt.get("p0.65_n3_league")}
 
 
 def backtest_summary():

@@ -2,11 +2,11 @@
  "select": {
   "matches": 22870,
   "one_and_safer": 19822,
-  "conflict": 4377,
-  "conflict_share": 0.22081525577641006,
-  "one_hit_in_conflict": 0.6689513365318711,
-  "safe_hit_in_conflict": 0.5727667352067626,
-  "both_hit_in_conflict": 0.24171807173863377,
+  "conflict": 4415,
+  "conflict_share": 0.22273231762687923,
+  "one_hit_in_conflict": 0.6670441676104191,
+  "safe_hit_in_conflict": 0.573272933182333,
+  "both_hit_in_conflict": 0.24099660249150623,
   "safer_before": {
    "n": 19822,
    "hit": 0.5997376652204621,
@@ -14,21 +14,35 @@
    "coverage": 0.8667249672059466
   },
   "safer_after": {
-   "n": 17326,
-   "hit": 0.6046981415214129,
-   "se": 0.0037143650991373492,
-   "coverage": 0.7575863576738084
+   "n": 17290,
+   "hit": 0.6046269519953731,
+   "se": 0.0037183458771665712,
+   "coverage": 0.7560122431132488
   },
-  "left_conflict": 0
+  "left_conflict": 0,
+  "risky_before": {
+   "n": 12879,
+   "hit": 0.4103579470455781,
+   "se": 0.004334455787738666,
+   "coverage": 0.5631394840402274,
+   "contradicting": 3062
+  },
+  "risky_after": {
+   "n": 12881,
+   "hit": 0.3572703982610046,
+   "se": 0.004222191023767054,
+   "coverage": 0.5632269348491473
+  },
+  "risky_left_contra": 0
  },
  "clean": {
   "matches": 13122,
   "one_and_safer": 11439,
-  "conflict": 2476,
-  "conflict_share": 0.2164524871055162,
-  "one_hit_in_conflict": 0.6849757673667205,
-  "safe_hit_in_conflict": 0.565831987075929,
-  "both_hit_in_conflict": 0.2508077544426494,
+  "conflict": 2500,
+  "conflict_share": 0.21855057260250021,
+  "one_hit_in_conflict": 0.6848,
+  "safe_hit_in_conflict": 0.5652,
+  "both_hit_in_conflict": 0.2504,
   "safer_before": {
    "n": 11439,
    "hit": 0.5925343124398986,
@@ -36,11 +50,25 @@
    "coverage": 0.8717421124828533
   },
   "safer_after": {
-   "n": 10149,
-   "hit": 0.5973002266233126,
-   "se": 0.004868278400481503,
-   "coverage": 0.7734339277549154
+   "n": 10127,
+   "hit": 0.5975116026463908,
+   "se": 0.004873146292603119,
+   "coverage": 0.7717573540618808
   },
-  "left_conflict": 0
+  "left_conflict": 0,
+  "risky_before": {
+   "n": 7522,
+   "hit": 0.4223610741823983,
+   "se": 0.005695128193170986,
+   "coverage": 0.5732357872275567,
+   "contradicting": 2104
+  },
+  "risky_after": {
+   "n": 7525,
+   "hit": 0.3601328903654485,
+   "se": 0.005533794594154707,
+   "coverage": 0.5734644109129706
+  },
+  "risky_left_contra": 0
  }
 }

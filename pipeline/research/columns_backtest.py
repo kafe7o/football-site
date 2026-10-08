@@ -14,6 +14,9 @@
 ДОПЪЛНЕНИЕ 2026-10-08 (най-сигурните мачове, bets/sure.py): колонките се правят само от мачовете, белязани като най-сигурни
 (третината с най-голям шанс на първенство за деня, поне 65%); мери се същото с добавка „_sure“. Старите варианти остават
 без това ограничение (need_sure=False), за да са сравними с предишните числа.
+ДОПЪЛНЕНИЕ 2026-10-08 вечерта (собственикът: „всичко както майсторът е казал“): колонките по БЛОКОВЕ на майстора (04.10) - във
+вторник за вторник-четвъртък, в петък за петък-понеделник; мачовете на блока заедно, до 4 колонки на ден от блока, един мач на
+първенство в колонка, всеки мач в една колонка, само с топ шанс (по дни). Мери се същото с добавка „_window“; „days“ тук = блокове.
 Параметрите по подразбиране на сайта: MIN_P 0.65, размер 3, с разнообразие. Променят се само ако избраните
 варианти са по-добри и в избора, и в чистата проверка по „дни без нито една минала колонка“ и броя колонки на
 ден, а минаването не е с повече от 2 грешки под казаното. Резултатът: data/columns_backtest.json.
@@ -63,6 +66,49 @@ def mark_sure(ms):
         info = sure.info_for([(m["id"], m["one"]["p"]) for m in g])
         for m in g:
             m["flags"]["sure"] = info[m["id"]]
+
+
+def evaluate_windows(days, min_p=0.65, size=3):
+    """Колонките по блоковете на майстора (bets/columns.window_of): мачовете на всички дни от блока заедно."""
+    blocks = defaultdict(list)
+    for day, ms in days.items():
+        mark_sure(ms)                                   # топ шанс - по ден, както на живо
+        blocks[columns.window_of(day)[0]].append((day, ms))
+    stats = {per: {"n": 0, "pass": 0, "claimed": 0.0, "honest": 0.0, "days": 0, "days_none": 0, "book_n": 0, "book_ret": 0.0}
+             for per in ("select", "clean")}
+    for start, parts in blocks.items():
+        per = "select" if start < SELECT_END else "clean"
+        ms = [m for _, part in parts for m in part]
+        by_id = {m["id"]: m for m in ms}
+        n_days = len(columns.window_of(start)[1])
+        cols = columns.build(columns.candidates(ms, min_p, need_sure=True), size=size, max_columns=columns.MAX_COLUMNS * n_days,
+                             diversify="league")
+        if not cols:
+            continue
+        s = stats[per]
+        s["days"] += 1
+        passed = 0
+        for col in cols:
+            ok = all(robot.hit_any(c["sel"], by_id[c["id"]]["hg"], by_id[c["id"]]["ag"]) for c in col)
+            sm = columns.summary(col)
+            s["n"] += 1
+            s["pass"] += ok
+            s["claimed"] += sm["claimed"]
+            s["honest"] += sm["honest"]
+            passed += ok
+            if sm["book"]:
+                s["book_n"] += 1
+                s["book_ret"] += sm["odds"] if ok else 0.0
+        s["days_none"] += passed == 0
+    out = {}
+    for per, s in stats.items():
+        n = s["n"]
+        p = s["pass"] / n if n else 0
+        out[per] = {"n": n, "pass": p, "se": math.sqrt(p * (1 - p) / n) if n else None, "claimed": s["claimed"] / n if n else None,
+                    "honest": s["honest"] / n if n else None, "days": s["days"], "days_none": s["days_none"] / s["days"] if s["days"] else None,
+                    "per_block": n / s["days"] if s["days"] else None, "book_n": s["book_n"],
+                    "book_return": (s["book_ret"] / s["book_n"]) if s["book_n"] else None}
+    return out
 
 
 def evaluate(days, min_p, size, diversify, with_sure=False):
@@ -130,6 +176,12 @@ def main():
                 print(f"{key:<22} {per:<6} колонки {x['n']:>5} в {x['days']:>4} дни | минават {x['pass']:.1%} ± {x['se']:.1%} "
                       f"(роботът казва {x['claimed']:.1%}, поправено {x['honest']:.1%}) | дни без нито една {x['days_none']:.0%}"
                       + (f" | връща {x['book_return']:.2f} € от 1 € (на {x['book_n']} с истински коефициенти)" if x["book_return"] is not None else ""))
+    res["p0.65_n3_league_sure_window"] = evaluate_windows(days)
+    for per in ("select", "clean"):
+        x = res["p0.65_n3_league_sure_window"][per]
+        print(f"БЛОКОВЕ {per:<6} колонки {x['n']:>5} в {x['days']:>4} блока ({x['per_block']:.1f} на блок) | минават {x['pass']:.1%} ± {x['se']:.1%} "
+              f"(роботът казва {x['claimed']:.1%}) | блокове без нито една {x['days_none']:.0%}"
+              + (f" | връща {x['book_return']:.2f} € от 1 € (на {x['book_n']} с истински коефициенти)" if x["book_return"] is not None else ""))
     OUT.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     return res
 

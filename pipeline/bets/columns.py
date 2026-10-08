@@ -14,13 +14,15 @@
 Параметрите са избрани по research/columns_backtest.py (1091 дни, 2023-2026): колонка от 3 минава в 29% (роботът
 казва 36%), връща средно 0.8 € от 1 €. Не е „сигурен залог“: маржът на букмейкъра се умножава на всеки мач.
 
-Записът: сутринта (първото пускане след 07:00) колонките на деня се записват в таблицата `columns` и не се
-променят; уреждат се, когато мачовете им свършат (lock/settle). Предварителните за следващите дни се смятат наново
-на всяко пускане и не са запис.
+Записът - ПО РЕДА НА МАЙСТОРА (04.10: „колонките ги правя петък, събота, неделя, понеделник; вторник за вторник-четвъртък,
+петък за петък-понеделник“; от 09.10): колонките се правят за цял БЛОК - във вторник (вторник-четвъртък) и в петък (петък-понеделник),
+в първото пускане след 07:00, и после не се променят; уреждат се, когато мачовете им свършат (lock/settle). Мачовете за следващите
+дни на блока са предварителните им прогнози в момента на записа (същият код като на сайта) - кракът пази избора и белега си.
+Предварителните колонки за следващия блок се смятат наново на всяко пускане и не са запис.
 """
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from . import config, robot, rules
@@ -28,7 +30,8 @@ from . import config, robot, rules
 SOFIA = ZoneInfo("Europe/Sofia")
 MIN_P = 0.65          # шанс по робота за мач в колонка
 SIZE = 3              # мача в колонка
-MAX_COLUMNS = 4       # най-много колонки на ден
+MAX_COLUMNS = 4       # най-много колонки на ден от блока (вторник-четвъртък: 12, петък-понеделник: 16)
+WINDOWS = {1: 3, 4: 4}  # вторник -> 3 дни (вторник-четвъртък), петък -> 4 дни (петък-понеделник) - майсторът, 04.10
 DIVERSIFY = "league"  # един мач на първенство
 # роботът казва 36% за колонка от 3, излиза 29%: 0.79 = 0.925 на мач (и 0.845 при 2 мача = 0.92) - по-голямо
 # надценяване, отколкото за единичните прогнози (0.965), защото колонките събират най-вероятните избори
@@ -54,6 +57,19 @@ def day_bounds(day):
     return start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
 
 
+def window_of(day):
+    """(първият ден, [дните]) на блока, в който е денят: вторник-четвъртък или петък-понеделник."""
+    d = date.fromisoformat(day)
+    start = d - timedelta(days={1: 0, 2: 1, 3: 2, 4: 0, 5: 1, 6: 2, 0: 3}[d.weekday()])
+    return start.isoformat(), [(start + timedelta(days=i)).isoformat() for i in range(WINDOWS[start.weekday()])]
+
+
+def next_window(day):
+    """Блокът след този, в който е денят."""
+    _, days = window_of(day)
+    return window_of((date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat())
+
+
 def candidates(matches, min_p=MIN_P, need_sure=True):
     """Мачовете, от които може да се прави колонка: [{id, league, kickoff, home, away, sel, p, odds, src}].
     need_sure=False - само за проверката назад на старото правило (research/columns_backtest.py)."""
@@ -68,7 +84,8 @@ def candidates(matches, min_p=MIN_P, need_sure=True):
             continue
         out.append({"id": m.get("id") or m.get("i"), "league": m["league"], "kickoff": m["kickoff"],
                     "home": m.get("home_src") or m["home"], "away": m.get("away_src") or m["away"],
-                    "sel": one["sel"], "p": one["p"], "odds": one["odds"], "src": one.get("src")})
+                    "sel": one["sel"], "p": one["p"], "odds": one["odds"], "src": one.get("src"),
+                    "sure": (m.get("flags") or {}).get("sure")})       # белегът „топ шанс“ в момента на избора
     return sorted(out, key=lambda c: -c["p"])
 
 
@@ -121,32 +138,60 @@ def for_days(matches, skip_day=None, days=2):
     return out
 
 
+def window_columns(matches, days, now):
+    """Колонките на един блок от мачовете, които още не са започнали (до MAX_COLUMNS на ден от блока)."""
+    sel = [m for m in matches if day_of(m["kickoff"]) in days and datetime.fromisoformat(m["kickoff"]) > now]
+    return build(candidates(sel), max_columns=MAX_COLUMNS * len(days))
+
+
+def for_windows(matches, now, locked_start=None):
+    """Предварителните колонки: текущият блок (ако още не е записан) и следващият. {първи ден: {days, columns}}."""
+    out = {}
+    cur = window_of(day_of(now.isoformat()))
+    for start, days in (cur, next_window(cur[0])):
+        if start == locked_start:
+            continue
+        out[start] = {"days": days, "columns": [{"legs": col, **summary(col)} for col in window_columns(matches, days, now)]}
+    return out
+
+
 # ---------- запис и уреждане (таблицата columns) ----------
 
-def lock(conn, now=None):
-    """Сутринта: записва колонките на деня от записаните прогнози (tips). Веднъж на ден; не се променят."""
+def lock(conn, now=None, upcoming=None):
+    """Записът на колонките за БЛОКА (майсторът: вторник за вторник-четвъртък, петък за петък-понеделник) - в първото пускане след
+    07:00 в първия му ден (ако то падне - в следващото, само с още незапочналите мачове). Веднъж за блок; не се променят.
+    Днешните мачове - от записа (tips, с белега „топ шанс“ от сутринта); следващите дни на блока - предварителните прогнози
+    (upcoming = tips.preview, същото като на сайта). Кракът пази избора, шанса, коефициента и белега си."""
     now = now or datetime.now(timezone.utc)
-    day = day_of(now.isoformat())
-    if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (day,)).fetchone():
+    start, days = window_of(day_of(now.isoformat()))
+    if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (start,)).fetchone():
         return 0
-    start, end = day_bounds(day)
-    # само мачовете, които още не са започнали - ако първото пускане закъснее, колонката не бива да се избира, когато
-    # част от мачовете вече са свършили
-    rows = conn.execute("SELECT * FROM tips WHERE kickoff >= ? AND kickoff < ? AND basis = 'model'",
-                        (max(start, now).isoformat(), end.isoformat())).fetchall()
-    if not rows:
-        return 0
-    matches = []
-    for r in rows:
+    recorded, matches = set(), []
+    lo, hi = day_bounds(days[0])[0], day_bounds(days[-1])[1]
+    for r in conn.execute("SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id "
+                          "WHERE t.kickoff >= ? AND t.kickoff < ? AND t.basis = 'model'",
+                          (max(lo, now).isoformat(), hi.isoformat())).fetchall():
         picks, flags = json.loads(r["picks_json"]), json.loads(r["flags_json"] or "{}")
+        recorded.add(r["fixture_id"])
         matches.append({"id": r["fixture_id"], "league": r["league"], "kickoff": r["kickoff"], "home": r["home"],
-                        "away": r["away"], "basis": r["basis"], "one": picks.get("one"), "flags": flags})
-    cols = build(candidates(matches))
+                        "away": r["away"], "home_src": r["home_src"], "away_src": r["away_src"], "basis": r["basis"],
+                        "one": picks.get("one"), "flags": flags})
+    if upcoming is None:
+        from . import tips
+        upcoming = tips.preview(conn, now, days=len(days) + 1)
+    for m in upcoming:
+        if m["id"] in recorded or m.get("basis") != "model":
+            continue
+        matches.append({"id": m["id"], "league": m["league"], "kickoff": m["kickoff"], "home": m["home"], "away": m["away"],
+                        "home_src": m.get("home_src"), "away_src": m.get("away_src"), "basis": "model", "one": m.get("one"),
+                        "flags": m.get("flags") or {}})
+    cols = window_columns(matches, days, now)
     for i, col in enumerate(cols, 1):
         conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
-                     (day, i, json.dumps(col, ensure_ascii=False), json.dumps(summary(col)), now.isoformat(timespec="seconds")))
-    conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, '[]', '{}', ?)",
-                 (day, now.isoformat(timespec="seconds")))        # маркер „денят е обработен“ (дори без колонки)
+                     (start, i, json.dumps(col, ensure_ascii=False), json.dumps({**summary(col), "days": days}),
+                      now.isoformat(timespec="seconds")))
+    conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, '[]', ?, ?)",
+                 (start, json.dumps({"days": days}), now.isoformat(timespec="seconds")))     # маркер „блокът е обработен“
     conn.commit()
     return len(cols)
 
