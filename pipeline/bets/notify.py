@@ -131,7 +131,7 @@ def score_text(s, label):
     one = s.get("one") or {}
     su = s.get("sure") or {}
     if su.get("n"):
-        parts.append(f"{label}: НАЙ-СИГУРНИТЕ мачове - {su['hits']} от {su['n']} ({su['hits'] / su['n']:.0%})"
+        parts.append(f"{label}: ТОП ШАНС (най-вероятните мачове) - {su['hits']} от {su['n']} ({su['hits'] / su['n']:.0%})"
                      + (f"; останалите с прогноза - {su['rest_hits']} от {su['rest_n']} ({su['rest_hits'] / su['rest_n']:.0%})"
                         if su["rest_n"] else "") + ".")
     if one.get("n"):
@@ -173,7 +173,7 @@ def morning(conn, upcoming, now=None):
             sure_ms = [m for m in with_pred if ((m.get("flags") or {}).get("sure") or {}).get("y")]
             meas = sure.measured()
             lines.append(f"{len(today)} мача в {len(leagues)} първенства; прогноза на робота за {len(with_pred)}. "
-                         f"НАЙ-СИГУРНИТЕ: {len(sure_ms)} - третината с най-голям шанс на първенство, поне {sure.MIN_P:.0%}; по една прогноза на мач"
+                         f"ТОП ШАНС (най-вероятните мачове): {len(sure_ms)} - третината с най-голям шанс на първенство, поне {sure.MIN_P:.0%}; по една прогноза на мач"
                          + (f". Назад такива излизат {meas['clean']['sure']['hit']:.0%} (роботът казва {meas['clean']['sure']['said']:.0%}), "
                             f"останалите {meas['clean']['rest']['hit']:.0%}" if meas else "") + ". Другите мачове и рисковата - на сайта.")
             order = sorted(sure_ms, key=lambda m: -(m.get("one") or m.get("safer") or m.get("risky"))["p"])
@@ -184,7 +184,7 @@ def morning(conn, upcoming, now=None):
                              f"{robot.label(x['sel']).replace('домакинът', m.get('home_src') or m['home']).replace('гостът', m.get('away_src') or m['away'])}{odd} ({x['p']:.0%})"
                              + (" - дерби, не за залог" if (m.get("flags") or {}).get("derby") else ""))
             if len(order) > TOP_SURE:
-                lines.append(f"... и още {len(order) - TOP_SURE} най-сигурни - на сайта.")
+                lines.append(f"... и още {len(order) - TOP_SURE} с топ шанс - на сайта.")
             from .bonus import TOP5, LEAD
             slots = {}
             for m in today:

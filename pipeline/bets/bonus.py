@@ -223,7 +223,7 @@ def notify_slot(out, prefix=""):
     lines = []
     for m in out["matches"]:
         head = (f"{m['home']} - {m['away']} ({LEAGUES[m['league']].name})" + (" [ДЕРБИ - без прогноза]" if m.get("derby") else "")
-                + (" ★ най-сигурен" if m.get("sure") else ""))
+                + (" ★ топ шанс" if m.get("sure") else ""))
         cur = []
         for kind, name in (("one", "ПРОГНОЗА"), ("risky", "рискова"), ("safer", "по-сигурна")):
             x = (m.get("new") or {}).get(kind)

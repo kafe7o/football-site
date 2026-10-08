@@ -41,7 +41,7 @@ RULES = [
      "applies": ["one", "safer", "risky", "column"], "status": "блокира",
      "said": "„Да не се влияе от коефициентите, когато казва процента“ (30.09)",
      "evidence": "мачовете без собствена оценка (национални отбори, някои лиги) остават само в „Прогнози“"},
-    {"id": "sure", "title": "Само най-сигурните мачове: от първенство за деня - най-вероятната третина, шанс 65%+",
+    {"id": "sure", "title": "Топ шанс: от първенство за деня - само най-вероятната третина, шанс 65%+ (колонките - само от тях)",
      "applies": ["one", "column"], "status": "прилага се (измерено)",
      "said": "„Да му намалим обхвата от мачове и просто да го помолим да поддържа по-висока успеваемост на мачовете, които ни дава... "
              "може да не ни дава всичките 11 мача от Испания втора лига, да ни даде 4 мача, ама реално тия 4 да са за него най-сигурните... "
@@ -90,7 +90,7 @@ def sure_block(flags):
     """Причина мачът да не е в колонка/„най-сигурен“ (или None): белегът от bets/sure.py (tips.mark_sure) липсва или е „не“."""
     s = (flags or {}).get("sure")
     if not (s and s.get("y")):
-        return "не е сред най-сигурните мачове на първенството за деня (третината с най-голям шанс, поне 65%)"
+        return "няма топ шанс - не е сред най-вероятната третина на първенството за деня (поне 65%)"
     return None
 
 
@@ -179,7 +179,7 @@ def audit_sure(conn):
             continue
         name, s = f"{t['home']} - {t['away']}", flags.get("sure")
         if not s:
-            out.append((name, "sure", "липсва белегът „най-сигурен“ (стъпка 4в не е минала)"))
+            out.append((name, "sure", "липсва белегът „топ шанс“ (стъпка 4в не е минала)"))
             continue
         groups.setdefault((t["league"], sure.day_of(t["kickoff"])), []).append((t["fixture_id"], one["p"], bool(s["y"]), s, name))
     for (league, day), ms in groups.items():
@@ -190,20 +190,20 @@ def audit_sure(conn):
         k = -(-n // 3)                                     # третина, нагоре
         yes = [m for m in base if m[2]]
         if len(yes) > k:
-            out.append((f"{league} {day}", "sure", f"{len(yes)} най-сигурни при {n} кандидата (най-много {k})"))
+            out.append((f"{league} {day}", "sure", f"{len(yes)} с топ шанс при {n} кандидата (най-много {k})"))
         for m in yes:
             if m[1] < 0.65:
-                out.append((m[4], "sure", f"най-сигурен с шанс {m[1]:.0%} (под 65%)"))
+                out.append((m[4], "sure", f"отбелязан с топ шанс при шанс {m[1]:.0%} (под 65%)"))
         floor = min((m[1] for m in yes), default=None)
         if floor is not None:
             for m in base:
                 if not m[2] and m[1] > floor + 1e-9:
-                    out.append((m[4], "sure", f"не е най-сигурен при шанс {m[1]:.0%}, а най-слабият отбелязан е {floor:.0%}"))
+                    out.append((m[4], "sure", f"няма топ шанс при шанс {m[1]:.0%}, а най-слабият отбелязан е {floor:.0%}"))
         if len(base) == n and len(ms) == len(base):        # цялата група е отбелязана наведнъж - точно очакваното
             order = sorted(base, key=lambda m: (-m[1], str(m[0])))[:k]
             expected = {m[0] for m in order if m[1] >= 0.65}
             if expected != {m[0] for m in yes}:
-                out.append((f"{league} {day}", "sure", "множеството на най-сигурните не съвпада с пресметнатото независимо"))
+                out.append((f"{league} {day}", "sure", "множеството с топ шанс не съвпада с пресметнатото независимо"))
     return out
 
 
