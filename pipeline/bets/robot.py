@@ -290,13 +290,30 @@ def toto_blocked(league, sel, odds):
     return bool(league in TOTO_LEAGUES and sel in ("1", "2") and odds and TOTO_BAND[0] <= odds <= TOTO_BAND[1])
 
 
-def safe_by_odds(p, avg, league=None):
+OVER_LINES, UNDER_LINES = ("O15", "O", "O35"), ("U15", "U", "U35")
+
+
+def goal_direction(sel):
+    """„над“ / „под“ за линиите на головете, иначе None (1/X/2, двоен шанс, двата вкарват, картони, корнери...)."""
+    return "over" if sel in OVER_LINES else "under" if sel in UNDER_LINES else None
+
+
+def opposes(a, b):
+    """Две прогнози за ЕДИН мач са в обратна посока на головете (майсторът, 08.10: „над 2.5 + под 3.5“ иска точно 3 гола - шанс ~1 към 6,
+    „над 1.5 + под 2.5“ - точно 2 гола). Една и съща посока е позволена („под 2.5“ и „под 3.5“)."""
+    da, db = goal_direction(a), goal_direction(b)
+    return bool(da and db and da != db)
+
+
+def safe_by_odds(p, avg, league=None, against=()):
     """Сигурната: най-вероятното по робота събитие с коефициент 1.50-1.80 (SAFE_RANGE) и шанс по робота поне 50%.
     Без условието за 50% в границите понякога оставаше само събитие, което роботът смята за по-малко
     вероятно (над 2.5 с 47% - тестът на бонус анализа, 01.10). Назад: 79% от мачовете, 59.6% познати
     (без условието - 89%, 59.2%), същият доход."""
     cands = []
     for s in SAFE_CANDIDATES:
+        if any(opposes(s, a) for a in against):
+            continue               # не се омесва с другата прогноза за мача (against = избора на едната прогноза)
         o, src = price(s, p, avg)
         if o and in_safe(o) and p.get(s, 0) >= MIN_PROB and not toto_blocked(league, s, o):
             cands.append((s, p[s], o, src))

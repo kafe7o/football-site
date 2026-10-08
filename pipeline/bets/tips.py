@@ -160,9 +160,10 @@ def forecast(conn, fx, fitted, dates_cache, ctx=None):
         # професионалистът (30.09 вечерта): без коефициенти и без фаворити; рискова (знак) и по-сигурна
         # професионалистът (30.09 късно): сигурна 1.40-1.80, рискова над 1.80 - по шанса на робота
         base = ctx.base(fx["league"]) if ctx else robot.base_rates(conn, fx["league"])
-        safer = robot.safe_by_odds(robot_p, avg, fx["league"])
         # професионалистът (01.10): ЕДНА прогноза за мача - нея мерим (главният съвет в tips.tip)
         one = robot.one_pick(robot_p, avg, extras, fx["league"])
+        # професионалистът (08.10): прогнозите за един мач не се омесват - по-сигурната не е в обратна посока на головете на едната
+        safer = robot.safe_by_odds(robot_p, avg, fx["league"], against=[one["sel"]] if one else ())
         # професионалистът (02.10): рисковата не противоречи на по-сигурната и на едната прогноза
         risky = (robot.risky_sign(robot_p, avg, fx["league"]) if robot.RISKY_RULE == "under50" else
                  robot.risky_by_odds(robot_p, base, avg, [x["sel"] for x in (safer, one) if x] if robot.RISKY_CONSISTENT else ()))
