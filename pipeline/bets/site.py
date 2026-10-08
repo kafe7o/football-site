@@ -166,16 +166,20 @@ def columns_data(conn, upcoming, now):
     """Таб „Колонки“: записаните сутринта (днес и по-рано) и предварителните за следващите дни."""
     from . import columns
     rec = columns.record(conn)
-    # блоковете на майстора: вторник-четвъртък и петък-понеделник (bets/columns.py)
-    start, days = columns.window_of(columns.day_of(now.isoformat()))
+    # блоковете на майстора (вторник-четвъртък, петък-понеделник), записани ЕДИН ДЕН ПРЕДИ блока (bets/columns.py)
+    today = columns.day_of(now.isoformat())
+    cur, nxt = columns.window_of(today), columns.next_window(today)
     live = [m for m in upcoming if m.get("basis") == "model"]
-    locked = conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (start,)).fetchone() is not None
-    prev = columns.for_windows(live, now, locked_start=start if locked else None)
+    is_locked = lambda s: conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (s,)).fetchone() is not None
+    locked = {s for s, _ in (cur, nxt) if is_locked(s)}
+    prev = columns.for_windows(live, now, locked)
+    block = lambda w: {"start": w[0], "days": w[1], "locked": w[0] in locked, "lock_day": columns.lock_day(w[0])}
     bt = read_json("columns_backtest.json", {})
-    return {"today": start, "window": days, "locked": locked, "record": rec, "preview": prev,
+    return {"today": today, "current": block(cur), "next": block(nxt), "record": rec, "preview": prev,
             "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION,
                        "per_day": columns.MAX_COLUMNS},
-            "bt": bt.get("p0.65_n3_league_sure_window") or bt.get("p0.65_n3_league")}
+            # измереното назад: колонки по 3, по една на ден, само с топ шанс
+            "bt": bt.get("p0.65_n3_league_sure") or bt.get("p0.65_n3_league")}
 
 
 def backtest_summary():
