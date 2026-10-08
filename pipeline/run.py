@@ -98,8 +98,8 @@ def cloud(log):
         db.set_meta(conn, "first_tip", conn.execute("SELECT MIN(locked_at) FROM tips").fetchone()[0])
     upcoming = []
     ok.append(step(log, "6. Прогнозите напред", lambda: upcoming.extend(tips.preview(conn, now))))
-    # колонките за блока (вторник-четвъртък / петък-понеделник) - след прогнозите напред, защото взимат и следващите дни на блока
-    ok.append(step(log, "6а. Колонките на блока", lambda: (columns.lock(conn, now, upcoming), columns.sync_manual(conn))))
+    # колонките за деня - ден за ден (майсторът, 09.10), от записаните сутринта прогнози
+    ok.append(step(log, "6а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))))
     ok.append(step(log, "7. Сайт", site.build, conn, now, upcoming))
     from bets import bonus
     ok.append(step(log, "7а. Бонус анализи: поръчване за мачовете от топ 5 в следващите 2 часа",

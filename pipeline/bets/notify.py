@@ -199,19 +199,12 @@ def morning(conn, upcoming, now=None):
             rec = [c for c in columns.record(conn, days=10)["columns"] if not c.get("manual")]
             todays = [c for c in rec if columns.col_day(c) == today_d]
             if todays:
-                lines.append(f"КОЛОНКИ ЗА ДНЕС ({len(todays)}, записани предварително и не се променят; не са сигурни - назад минават ~29% "
+                lines.append(f"КОЛОНКИ ЗА ДНЕС ({len(todays)}, записани сега - ден за ден, не се променят; не са сигурни - назад минават ~29% "
                              f"и връщат ~0.8 € от 1 €): " + "; ".join(
                     f"{c['idx']}) " + " + ".join(f"{name(l['home'], l['away'])} {robot.label(l['sel'])}" for l in c["legs"])
                     + f" [коеф. {c['odds']:.2f}]" for c in todays))
-            nxt_start, nxt_days = columns.next_window(today_d)
-            if today_d == columns.lock_day(nxt_start):
-                block = [c for c in rec if c["day"] == nxt_start]
-                per = {}
-                for c in block:
-                    per[columns.col_day(c)] = per.get(columns.col_day(c), 0) + 1
-                lines.append(f"Записани днес колонките за {datetime.fromisoformat(nxt_days[0]):%d.%m}-{datetime.fromisoformat(nxt_days[-1]):%d.%m} - "
-                             f"за залагане, не се променят: " + ", ".join(f"{datetime.fromisoformat(d):%d.%m} - {per.get(d, 0)}" for d in nxt_days)
-                             + " (виж таб Колонки).")
+            if not todays:
+                lines.append("Колонки за днес няма - не стигнаха 3 мача с топ шанс от различни първенства (ден за ден, по майстора).")
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

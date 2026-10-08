@@ -14,13 +14,11 @@
 Параметрите са избрани по research/columns_backtest.py (1091 дни, 2023-2026): колонка от 3 минава в 29% (роботът
 казва 36%), връща средно 0.8 € от 1 €. Не е „сигурен залог“: маржът на букмейкъра се умножава на всеки мач.
 
-Записът - ПО БЛОКОВЕТЕ НА МАЙСТОРА (04.10: „колонките ги правя петък, събота, неделя, понеделник; вторник за вторник-четвъртък,
-петък за петък-понеделник“) и ЕДИН ДЕН ПРЕДИ БЛОКА (собственикът, 08.10 вечерта: „да се ъпдейтват един ден преди пускането, за да е
-сигурно на кое да заложа“): в понеделник в 07:00 се записват колонките за вторник-четвъртък, в четвъртък в 07:00 - за петък-понеделник,
-и после не се променят (ако записът в деня преди се пропусне - в първия ден на блока, само с незапочналите мачове). Всяка колонка е за
-ЕДИН ден („за събота 10.10“), до MAX_COLUMNS на ден. Мачовете са предварителните им прогнози в момента на записа (същият код като на
-сайта) - кракът пази избора, коефициента и белега си. Уреждат се, когато мачовете им свършат (lock/settle). Дотогава колонките на
-следващия блок са предварителни и се смятат наново на всяко пускане.
+Записът - ДЕН ЗА ДЕН (майсторът, 09.10: „ако искаш му кажи ден за ден; нямаме бърза работа“; собственикът: „ден за ден да се вадят,
+не предварително и несигурно“): всяка сутрин (първото пускане след 07:00) се записват колонките за СЪЩИЯ ден - само от записаните
+сутринта прогнози (tips, с белега „топ шанс“ от записа) - и после не се променят; уреждат се, когато мачовете им свършат (lock/settle).
+Предварителни колонки за следващите дни НЯМА. Блокът петък-понеделник, записан предварително в нощта срещу 09.10 по предишния ред
+(„един ден преди“), е оттеглен: редовете му не се трият, а са на idx 200+ с белег withdrawn - не се показват, не се уреждат и не се броят.
 """
 
 import json
@@ -32,8 +30,9 @@ from . import config, robot, rules
 SOFIA = ZoneInfo("Europe/Sofia")
 MIN_P = 0.65          # шанс по робота за мач в колонка
 SIZE = 3              # мача в колонка
-MAX_COLUMNS = 4       # най-много колонки на ден (всяка колонка е за един ден от блока)
-WINDOWS = {1: 3, 4: 4}  # вторник -> 3 дни (вторник-четвъртък), петък -> 4 дни (петък-понеделник) - майсторът, 04.10
+MAX_COLUMNS = 4       # най-много колонки на ден
+WITHDRAWN = 200       # оттеглените колонки (записани предварително по предишния ред) - idx 200+
+WINDOWS = {1: 3, 4: 4}  # блоковете вторник-четвъртък / петък-понеделник - само за проверката назад (research/columns_backtest.py)
 DIVERSIFY = "league"  # един мач на първенство
 # роботът казва 36% за колонка от 3, излиза 29%: 0.79 = 0.925 на мач (и 0.845 при 2 мача = 0.92) - по-голямо
 # надценяване, отколкото за единичните прогнози (0.965), защото колонките събират най-вероятните избори
@@ -70,11 +69,6 @@ def next_window(day):
     """Блокът след този, в който е денят."""
     _, days = window_of(day)
     return window_of((date.fromisoformat(days[-1]) + timedelta(days=1)).isoformat())
-
-
-def lock_day(start):
-    """Денят, в който се записват колонките на блока: ЕДИН ДЕН ПРЕДИ първия му ден (понеделник / четвъртък)."""
-    return (date.fromisoformat(start) - timedelta(days=1)).isoformat()
 
 
 def col_day(col):
@@ -150,84 +144,53 @@ def for_days(matches, skip_day=None, days=2):
     return out
 
 
-def block_columns(matches, days, now):
-    """{ден: [колонки]} - колонките на блока ПО ДНИ (всяка колонка е за един ден), само от незапочналите мачове."""
-    out = {}
-    for d in days:
-        sel = [m for m in matches if day_of(m["kickoff"]) == d and datetime.fromisoformat(m["kickoff"]) > now]
-        out[d] = build(candidates(sel))
-    return out
-
-
-def for_windows(matches, now, locked=()):
-    """Предварителните колонки на текущия и следващия блок, които още не са записани: {първи ден: {days, lock_day, by_day}}."""
-    out = {}
-    cur = window_of(day_of(now.isoformat()))
-    for start, days in (cur, next_window(cur[0])):
-        if start in locked:
-            continue
-        by_day = block_columns(matches, days, now)
-        out[start] = {"days": days, "lock_day": lock_day(start),
-                      "by_day": {d: [{"legs": col, **summary(col), "cday": d} for col in cols] for d, cols in by_day.items()}}
-    return out
-
-
 # ---------- запис и уреждане (таблицата columns) ----------
 
-def lock(conn, now=None, upcoming=None):
-    """Записът на колонките за БЛОКА - ЕДИН ДЕН ПРЕДИ него (понеделник за вторник-четвъртък, четвъртък за петък-понеделник), в първото
-    пускане след 07:00; ако денят преди е пропуснат - в първия ден на блока, с още незапочналите мачове. Веднъж за блок; не се променят.
-    Всяка колонка е за един ден. Мачовете от записа (tips) - с белега от сутринта; другите - предварителните прогнози (upcoming =
-    tips.preview, същото като на сайта). Кракът пази избора, шанса, коефициента и белега си."""
-    now = now or datetime.now(timezone.utc)
-    today = day_of(now.isoformat())
-    targets = []
-    nxt = next_window(today)
-    if today == lock_day(nxt[0]):
-        targets.append(nxt)
-    cur = window_of(today)
-    if today == cur[0]:
-        targets.append(cur)                                   # резервно: записът в деня преди е пропуснат
-    done = 0
-    for start, days in targets:
-        if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (start,)).fetchone():
+def withdraw_advance(conn):
+    """Колонките, записани ПРЕДВАРИТЕЛНО (маркер с „days“ - блокът по предишния ред), се оттеглят: местят се на idx 200+ с белег
+    withdrawn. Нищо не се трие. Еднократно - после такива маркери няма."""
+    moved = 0
+    for m in conn.execute("SELECT day, summary_json FROM columns WHERE idx = 0").fetchall():
+        if "days" not in json.loads(m["summary_json"] or "{}"):
             continue
-        done += lock_block(conn, now, upcoming, start, days)
-    return done
+        for r in conn.execute("SELECT idx, summary_json FROM columns WHERE day = ? AND idx < 100", (m["day"],)).fetchall():
+            s = {**json.loads(r["summary_json"] or "{}"), "withdrawn": "майсторът, 09.10: колонките са ден за ден, не предварително"}
+            conn.execute("UPDATE columns SET idx = ?, summary_json = ? WHERE day = ? AND idx = ?",
+                         (WITHDRAWN + r["idx"], json.dumps(s, ensure_ascii=False), m["day"], r["idx"]))
+            moved += 1
+    conn.commit()
+    return moved
 
 
-def lock_block(conn, now, upcoming, start, days):
-    recorded, matches = set(), []
-    lo, hi = day_bounds(days[0])[0], day_bounds(days[-1])[1]
-    for r in conn.execute("SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id "
-                          "WHERE t.kickoff >= ? AND t.kickoff < ? AND t.basis = 'model'",
-                          (max(lo, now).isoformat(), hi.isoformat())).fetchall():
+def lock(conn, now=None, upcoming=None):
+    """Колонките за ДЕНЯ - ден за ден: в първото пускане след 07:00, само от записаните сутринта прогнози за деня (tips, с белега
+    „топ шанс“ от записа) и само с незапочналите мачове. Веднъж на ден; не се променят. upcoming не се ползва - предварителни колонки няма."""
+    now = now or datetime.now(timezone.utc)
+    withdraw_advance(conn)
+    day = day_of(now.isoformat())
+    if conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (day,)).fetchone():
+        return 0
+    start, end = day_bounds(day)
+    rows = conn.execute("SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id "
+                        "WHERE t.kickoff >= ? AND t.kickoff < ? AND t.basis = 'model'",
+                        (max(start, now).isoformat(), end.isoformat())).fetchall()
+    if not rows:
+        return 0                                       # записът на прогнозите за деня още не е станал - следващото пускане
+    matches = []
+    for r in rows:
         picks, flags = json.loads(r["picks_json"]), json.loads(r["flags_json"] or "{}")
-        recorded.add(r["fixture_id"])
         matches.append({"id": r["fixture_id"], "league": r["league"], "kickoff": r["kickoff"], "home": r["home"],
                         "away": r["away"], "home_src": r["home_src"], "away_src": r["away_src"], "basis": r["basis"],
                         "one": picks.get("one"), "flags": flags})
-    if upcoming is None:
-        from . import tips
-        upcoming = tips.preview(conn, now, days=len(days) + 1)
-    for m in upcoming:
-        if m["id"] in recorded or m.get("basis") != "model":
-            continue
-        matches.append({"id": m["id"], "league": m["league"], "kickoff": m["kickoff"], "home": m["home"], "away": m["away"],
-                        "home_src": m.get("home_src"), "away_src": m.get("away_src"), "basis": "model", "one": m.get("one"),
-                        "flags": m.get("flags") or {}})
-    by_day = block_columns(matches, days, now)
-    idx = 0
-    for d in days:
-        for col in by_day[d]:
-            idx += 1
-            conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
-                         (start, idx, json.dumps(col, ensure_ascii=False), json.dumps({**summary(col), "days": days, "cday": d}),
-                          now.isoformat(timespec="seconds")))
+    cols = build(candidates(matches))
+    for i, col in enumerate(cols, 1):
+        conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
+                     (day, i, json.dumps(col, ensure_ascii=False), json.dumps({**summary(col), "cday": day}),
+                      now.isoformat(timespec="seconds")))
     conn.execute("INSERT OR IGNORE INTO columns (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, '[]', ?, ?)",
-                 (start, json.dumps({"days": days, "locked_on": day_of(now.isoformat())}), now.isoformat(timespec="seconds")))
+                 (day, json.dumps({"cday": day}), now.isoformat(timespec="seconds")))       # маркер „денят е обработен“
     conn.commit()
-    return idx
+    return len(cols)
 
 
 def sync_manual(conn):
@@ -258,7 +221,7 @@ def sync_manual(conn):
 def settle(conn):
     """Уреждане: колонка пада щом един мач не излезе; минава, когато всичките са уредени и излезли."""
     done = 0
-    for r in conn.execute("SELECT day, idx, legs_json FROM columns WHERE idx > 0 AND passed IS NULL").fetchall():
+    for r in conn.execute("SELECT day, idx, legs_json FROM columns WHERE idx > 0 AND idx < ? AND passed IS NULL", (WITHDRAWN,)).fetchall():
         legs, state = json.loads(r["legs_json"]), []
         for leg in legs:
             t = conn.execute("SELECT hg, ag FROM tips WHERE fixture_id = ?", (leg["id"],)).fetchone()
@@ -279,7 +242,7 @@ def record(conn, days=30):
     """Записаните колонки за сайта: по дни, с уреден ли е всеки мач, и общо колко минават."""
     since = (datetime.now(timezone.utc) - timedelta(days=days + 4)).date().isoformat()     # + блокът (до 4 дни)
     out, total, passed, claimed, honest = [], 0, 0, 0.0, 0.0
-    for r in conn.execute("SELECT * FROM columns WHERE idx > 0 AND day >= ? ORDER BY day DESC, idx", (since,)).fetchall():
+    for r in conn.execute("SELECT * FROM columns WHERE idx > 0 AND idx < ? AND day >= ? ORDER BY day DESC, idx", (WITHDRAWN, since)).fetchall():
         legs, s = json.loads(r["legs_json"]), json.loads(r["summary_json"])
         for leg in legs:
             t = conn.execute("SELECT hg, ag FROM tips WHERE fixture_id = ?", (leg["id"],)).fetchone()
