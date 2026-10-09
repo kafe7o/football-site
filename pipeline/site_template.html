@@ -364,6 +364,11 @@ function hitAny(sel, s, ct, cs) {
   return hit(sel, s);
 }
 const XK = {cards: "Картони", corners: "Корнери"};
+// „да не се омесват“ (майсторът, 08.10; bets/robot.opposes) - важи за записите от 09.10 в 07:00; по-старите записи не се пипат, само се отбелязват
+const NO_MIX_FROM = "2026-10-09T04:00", OVL = ["O15", "O", "O35"], UNL = ["U15", "U", "U35"], CLP = [["GG", "U"], ["GG", "U15"], ["NG", "O"], ["NG", "O35"]];
+const clashJS = (a, b) => (OVL.includes(a) && UNL.includes(b)) || (UNL.includes(a) && OVL.includes(b)) || CLP.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
+const oldMix = m => !!(m.lk && m.lk < NO_MIX_FROM && m.one && m.sf && clashJS(m.one[0], m.sf[0]));
+const oldMixTxt = m => `Записано на ${fmtDate(m.lk)} - преди правилото на майстора „да не се омесват“ (важи от 09.10): тогава „${lab(m.one[0])}“ и „${lab(m.sf[0])}“ се дадоха заедно и двете излизат само при точен брой голове. Записът не се променя; от 09.10 такава двойка не се дава.`;
 // Имена на съдии има само football-data за Англия и Шотландия (и за предстоящите мачове - около седмица напред)
 const REF_LEAGUES = ["E0", "E1", "E2", "E3", "EC", "SC0", "SC1", "SC2", "SC3"];
 const XU = {cards: "жълти", corners: "корнера"};
@@ -575,7 +580,8 @@ function matchCard(m) {
         ${m.sf ? `<div class="pred safe"><span class="pl">По-сигурна прогноза (${rulesOf(m).safe})</span><b class="pv">${lab(m.sf[0])}</b>
           <span class="pm">шанс ${pct(m.sf[1])} по робота${odd(m.sf)}</span></div>`
           : `<div class="pred safe"><span class="pl">По-сигурна прогноза (${rulesOf(m).safe})</span><span class="pm">няма събитие с коефициент ${rulesOf(m).safe}</span></div>`}</div>
-        ${(m.f || []).includes("derby") ? `<div class="pred-note"><b>Дерби</b> - професионалистът: избягвай за залог.</div>` : ""}`;
+        ${(m.f || []).includes("derby") ? `<div class="pred-note"><b>Дерби</b> - професионалистът: избягвай за залог.</div>` : ""}
+        ${oldMix(m) ? `<div class="pred-note">⚠ ${esc(oldMixTxt(m))}</div>` : ""}`;
     } else if (m.t && m.rl === "market_likely" && !m.one) {
       // записан сутринта преди смяната на правилото (30.09) - по букмейкъра; записът не се пипа
       const nt = ownTip(m);
@@ -949,6 +955,7 @@ function resultRow(r) {
   if (bo) dd.push(["Бонус анализ", `${bo.ch.length ? esc(bo.ch.join("; ")) : "без промяна спрямо сутринта"}${bo.one ? ` · прогнозата ${lab(bo.one[0])} ${mk(hm(bo.one[0]))}` : ""}${bo.sf ? ` · по-сигурна ${lab(bo.sf[0])} ${mk(hm(bo.sf[0]))}` : ""}${bo.rk ? ` · рискова ${lab(bo.rk[0])} ${mk(hm(bo.rk[0]))}` : ""}`]);
   if (r.fast) dd.push(["Резултатът", `<span class="muted small">от ${r.fastSrc === "espn" ? "ESPN" : "odds API"} в ${fmtTime(r.fast)}, минути след края; официалният от football-data го сверява до 1-3 дни</span>`]);
   if (r.w && !p1) dd.push(["Защо без прогноза", esc(r.w)]);
+  if (oldMix(r)) dd.push(["Внимание", esc(oldMixTxt(r))]);
   const details = `<details class="an"><summary>Подробно</summary><dl class="dl">${dd.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></details>`;
   const oneBox = r.one ? `<div class="onebox"><span class="ol">Прогнозата на робота</span><b>${esc(labT(r.one[0], r))}</b>
     <span class="muted">${pct(r.one[1])}${r.one[2] ? ` @${r.one[2].toFixed(2)}${r.one[3] === "robot" ? " (по робота)" : ""}` : ""}</span>
