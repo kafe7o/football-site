@@ -202,6 +202,15 @@ def sync_manual(conn):
     added = 0
     for i, m in enumerate(json.loads(path.read_text(encoding="utf-8"))):
         idx = 100 + i
+        if m.get("hidden"):
+            # скрита от собственика: не се показва и не се брои (idx 300+), но не се трие - записът се пази
+            row = conn.execute("SELECT summary_json FROM columns WHERE day = ? AND idx = ?", (m["day"], idx)).fetchone()
+            if row is not None:
+                s = {**json.loads(row["summary_json"] or "{}"), "hidden": m["hidden"]}
+                conn.execute("UPDATE columns SET idx = ?, summary_json = ? WHERE day = ? AND idx = ?",
+                             (300 + i, json.dumps(s, ensure_ascii=False), m["day"], idx))
+                added += 1
+            continue
         s = {**summary(m["legs"]), "manual": True, "name": m.get("name"), "note": m.get("note")}
         legs = json.dumps(m["legs"], ensure_ascii=False)
         row = conn.execute("SELECT legs_json FROM columns WHERE day = ? AND idx = ?", (m["day"], idx)).fetchone()
