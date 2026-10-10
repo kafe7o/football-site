@@ -1,0 +1,188 @@
+{
+ "day": "2026-10-10",
+ "idx": 1,
+ "made_at": "2026-10-10T13:16:43+00:00",
+ "first": "2026-10-10T14:00+00:00",
+ "legs": [
+  {
+   "id": "713bc529f655efc0aff6109cb2396c11",
+   "league": "E1",
+   "kickoff": "2026-10-10T14:00+00:00",
+   "home": "Blackburn Rovers",
+   "away": "Cardiff City",
+   "sel": "1X",
+   "p": 0.7533,
+   "odds": 1.57,
+   "src": "book",
+   "odds_now": 1.55,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Blackburn",
+    "m": "Cardiff",
+    "i": {
+     "h": [
+      [
+       "A. Forshaw",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Jorgensen",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Litherland",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Miller",
+       "out",
+       "контузия"
+      ],
+      [
+       "Y. Ohashi",
+       "out",
+       "контузия"
+      ],
+      [
+       "Y. Ribeiro",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Kargbo",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "S. Wharton",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "K. Bielik",
+       "out",
+       "наказан"
+      ],
+      [
+       "C. Chambers",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Colwill",
+       "out",
+       "контузия"
+      ],
+      [
+       "I. Davies",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "W. Fish",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-10T13:16:43+00:00"
+   }
+  },
+  {
+   "id": "fcef931dd86b6c626a3bc0006639c22f",
+   "league": "F2",
+   "kickoff": "2026-10-10T18:00+00:00",
+   "home": "Saint Etienne",
+   "away": "Rodez AF",
+   "sel": "O",
+   "p": 0.7275,
+   "odds": 1.42,
+   "src": "book",
+   "odds_now": 1.42,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Saint Etienne",
+    "m": "Rodez",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-10T13:16:43+00:00"
+   }
+  },
+  {
+   "id": "fa36c2f60be6cb1dba4fad4e755a18cb",
+   "league": "USA",
+   "kickoff": "2026-10-10T23:30+00:00",
+   "home": "Inter Miami CF",
+   "away": "D.C. United",
+   "sel": "1",
+   "p": 0.7354,
+   "odds": 1.41,
+   "src": "book",
+   "odds_now": 1.41,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Inter Miami",
+    "m": "DC United",
+    "i": {
+     "h": [
+      [
+       "T. Allende",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Morales",
+       "out",
+       "наказан"
+      ],
+      [
+       "M. Silvetti",
+       "out",
+       "контузия"
+      ],
+      [
+       "Y. Bright",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "I. Fray",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "F. Mura",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "T. Segovia",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "G. Segal",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-10T13:16:43+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 2
+}
