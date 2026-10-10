@@ -372,7 +372,7 @@ const oldMixTxt = m => `Записано на ${fmtDate(m.lk)} - преди пр
 // Имена на съдии има само football-data за Англия и Шотландия (и за предстоящите мачове - около седмица напред)
 const REF_LEAGUES = ["E0", "E1", "E2", "E3", "EC", "SC0", "SC1", "SC2", "SC3"];
 const XU = {cards: "жълти", corners: "корнера"};
-const FLAG = {"Англия":"🇬🇧","Шотландия":"🇬🇧","Германия":"🇩🇪","Италия":"🇮🇹","Испания":"🇪🇸","Франция":"🇫🇷",
+const FLAG = {"Англия":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Шотландия":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","Германия":"🇩🇪","Италия":"🇮🇹","Испания":"🇪🇸","Франция":"🇫🇷",
   "Нидерландия":"🇳🇱","Белгия":"🇧🇪","Португалия":"🇵🇹","Турция":"🇹🇷","Гърция":"🇬🇷","Аржентина":"🇦🇷","Австрия":"🇦🇹",
   "Бразилия":"🇧🇷","Китай":"🇨🇳","Дания":"🇩🇰","Финландия":"🇫🇮","Ирландия":"🇮🇪","Япония":"🇯🇵","Мексико":"🇲🇽",
   "Норвегия":"🇳🇴","Полша":"🇵🇱","Румъния":"🇷🇴","Русия":"🇷🇺","Швеция":"🇸🇪","Швейцария":"🇨🇭","САЩ":"🇺🇸",
@@ -962,7 +962,7 @@ function resultRow(r) {
     ${mh == null ? `<span class="muted">чака статистиката</span>` : mh ? `<span class="y">✓ излезе</span>` : `<span class="n">✗ не излезе</span>`}</div>` : "";
   const lost = mh === false ? `<div class="lost">${x12}${r.one ? "" : preds}</div>` : "";
   return `<div class="rs2"><div class="top"><span class="muted num">${fmtTime(r.k)}</span>
-      <span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(L[r.l] ? L[r.l].n : r.l)}</span>${r.su && r.su[0] ? ` <span class="badge star" title="Топ шанс: ${esc(r.su[1] ? r.su[1] + "-о място от " + r.su[2] + " кандидата на първенството за деня" : "добавен по-късно в деня")}">★ топ шанс</span>` : ""}</span>
+      <span>${esc(r.h)} – ${esc(r.a)} <span class="muted small">${flag(r.l)} ${esc(title(r.l))}</span>${r.su && r.su[0] ? ` <span class="badge star" title="Топ шанс: ${esc(r.su[1] ? r.su[1] + "-о място от " + r.su[2] + " кандидата на първенството за деня" : "добавен по-късно в деня")}">★ топ шанс</span>` : ""}</span>
       ${chip1}<span class="sc">${r.s[0]}:${r.s[1]}</span>${big}</div>${oneBox}${lost}${details}</div>`;
 }
 
@@ -1259,7 +1259,7 @@ function colCard(c, rec) {
   const name = c.manual ? esc(c.name || "Играна от теб") : (c.idx ? "Колонка " + c.idx : "Колонка");
   return `<div class="col ${state}"><div class="small" style="margin-bottom:4px"><b>${name}</b> · <b>за ${esc(colDay(cDay(c)))}</b> ${res}</div>
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
-      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(L[l.league] ? L[l.league].n : l.league)}</span><br>
+      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(title(l.league))}</span><br>
       <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
       <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
     ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
