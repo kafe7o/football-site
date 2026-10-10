@@ -1297,7 +1297,7 @@ function colReviewBlock(c) {
       на всичките ѝ мачове заедно: пресни коефициенти, отсъстващи и състави, с известие. Отделни прегледи на мачовете няма.</div>`;
   }
   const bad = rv.legs.filter(x => x.flags.length || x.changes.length);
-  return `<div class="bonus ${bad.length ? "changed" : ""}"><b class="t">Преглед на колонката ${fmtTime(rv.made_at)} (час преди първия мач)${rv.lineups_at ? ` · състави ${fmtTime(rv.lineups_at)}` : ""}</b>
+  return `<div class="bonus ${bad.length ? "changed" : ""}"><b class="t">Преглед на колонката ${fmtTime(rv.made_at)} (първият мач е в ${fmtTime(new Date(first).toISOString())})${rv.lineups_at ? ` · състави ${fmtTime(rv.lineups_at)}` : ""}</b>
     ${rv.legs.map(x => { const notes = [...x.flags, ...x.changes];
       return `<div class="small" style="margin-top:6px"><b>${esc(x.home)} – ${esc(x.away)}</b> ${x.odds_now ? `<span class="muted">коеф. ${x.odds.toFixed(2)} → ${x.odds_now.toFixed(2)}</span>` : ""}
         ${notes.length ? `<ul style="margin:2px 0 0;padding-left:18px">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : `<span class="muted">без промяна</span>`}
@@ -1313,7 +1313,8 @@ async function fetchColReviews() {
     if (c.manual || c.idx >= 200 || !c.legs.length || c.passed != null) continue;
     const first = colFirst(c), key = `${c.day}-${c.idx}`, prev = COLREV[key] || {};
     if (now < Math.max(first - 62 * 60e3, new Date(c.locked_at).getTime() + 2 * 60e3) || now - first > 3 * 3600e3) continue;
-    if (prev.checked && now - prev.checked < (now < first + 90 * 60e3 ? 120e3 : 600e3)) continue;
+    // още няма файл: преди първия мач на минута, после на 10 мин. (колонка без преглед - записана твърде късно или с повредена задача)
+    if (prev.checked && now - prev.checked < (prev.made_at ? (now < first + 90 * 60e3 ? 120e3 : 600e3) : (now < first ? 60e3 : 600e3))) continue;
     COLREV[key] = {...prev, checked: now};
     try {
       const r = await fetch(`colreview/${key}.json?t=${now}`, {cache: "no-store"});
