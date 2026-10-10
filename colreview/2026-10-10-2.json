@@ -1,0 +1,155 @@
+{
+ "day": "2026-10-10",
+ "idx": 2,
+ "made_at": "2026-10-10T13:16:47+00:00",
+ "first": "2026-10-10T14:00+00:00",
+ "legs": [
+  {
+   "id": "6e370faecd2f841fc843ec49c641a9e3",
+   "league": "E1",
+   "kickoff": "2026-10-10T14:00+00:00",
+   "home": "Sheffield United",
+   "away": "Lincoln City",
+   "sel": "O15",
+   "p": 0.7158,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Sheffield Utd",
+    "m": "Lincoln",
+    "i": {
+     "h": [
+      [
+       "T. Campbell",
+       "out",
+       "контузия"
+      ],
+      [
+       "H. Burrows",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "S. McCallum",
+       "doubt",
+       "не е в групата"
+      ],
+      [
+       "R. One",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "F. Seriki",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "T. Darikwa",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Melia",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Hamer",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-10T13:16:47+00:00"
+   }
+  },
+  {
+   "id": "53fe5171e2c7a834388133b06b571727",
+   "league": "SC0",
+   "kickoff": "2026-10-10T14:00+00:00",
+   "home": "Hearts",
+   "away": "St Mirren",
+   "sel": "O15",
+   "p": 0.7158,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "e923e7caf339e76d705060afb4b5606e",
+   "league": "USA",
+   "kickoff": "2026-10-10T23:30+00:00",
+   "home": "Charlotte FC",
+   "away": "FC Dallas",
+   "sel": "1X",
+   "p": 0.7296,
+   "odds": 1.4,
+   "src": "book",
+   "odds_now": 1.38,
+   "changes": [
+    "прогнозата: 1X -> под 3.5 @1.62",
+    "по-сигурната: 1X -> няма (нищо в границите)"
+   ],
+   "flags": [
+    "коефициентът падна под 1.40 (1.38) - вече не е по правилото на майстора"
+   ],
+   "sq": {
+    "n": "Charlotte",
+    "m": "FC Dallas",
+    "i": {
+     "h": [
+      [
+       "N. Berchimas",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Goodwin",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. John",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Ream",
+       "out",
+       "наказан"
+      ],
+      [
+       "B. Bronico",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "Daniel",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "Geovane Jesus",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-10T13:16:47+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 2
+}
