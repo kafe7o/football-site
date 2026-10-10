@@ -31,7 +31,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-from . import config, odds_api, teams
+from . import apifootball, config, odds_api, teams
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -168,10 +168,12 @@ def due(matches, last_scores, now):
 
 
 def push(message):
-    """Качва само папката results - базата и сайта ги пише часовото пускане."""
+    """Качва само папките results и squads (бързите резултати и съставите) - базата и сайта ги пише часовото пускане."""
     root = config.SITE_DIR
     run = lambda *a: subprocess.run(["git", *a], cwd=root, capture_output=True, text=True)
     run("add", "results")
+    if (root / "squads").exists():
+        run("add", "squads")
     if run("diff", "--staged", "--quiet").returncode == 0:
         return True
     out = run("commit", "-q", "-m", message)
@@ -190,7 +192,7 @@ def watch(seconds, publish=True):
     """Наблюдателят: върти се seconds секунди; връща колко резултата е намерил."""
     deadline = time.time() + seconds
     known = load_results()
-    last_events, last_scores, gone_seen, last_espn = {}, {}, set(), {}
+    last_events, last_scores, gone_seen, last_espn, last_lineup = {}, {}, set(), {}, {}
     found, pending_push, last_push = 0, [], 0.0
     log.info("Наблюдателят тръгна за %d мин.; вече известни резултати: %d", seconds // 60, len(known))
     while time.time() < deadline:
@@ -242,6 +244,10 @@ def watch(seconds, publish=True):
             known[m["fixture_id"]] = {"s": [hg, ag]}
             pending_push.append(f"{m['home']} - {m['away']} {hg}:{ag}")
             found += 1
+        # съставите (API-Football): за мачовете до 90 минути напред на всеки 7 минути, докато се обявят
+        got = apifootball.live_round(now, last_lineup)
+        if got:
+            pending_push.append(f"Състави: {got}")
         if publish and pending_push and time.time() - last_push >= PUSH_EVERY:
             if push("Резултати: " + "; ".join(pending_push[:6])):
                 pending_push, last_push = [], time.time()

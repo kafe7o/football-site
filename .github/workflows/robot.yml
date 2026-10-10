@@ -40,6 +40,7 @@ jobs:
       - name: Целият цикъл
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}     # състави и отсъствия (bets/apifootball.py)
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           GH_TOKEN: ${{ github.token }}          # за поръчване на бонус анализите (bonus.yml)
           FOOTBALL_DB: ${{ github.workspace }}/robot.db
@@ -82,6 +83,7 @@ jobs:
         continue-on-error: true         # каквото и да стане тук, веригата продължава
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}     # съставите на минути след обявяването (bets/apifootball.py: live_round)
           FOOTBALL_DB: ${{ github.workspace }}/robot.db
           FOOTBALL_SITE: ${{ github.workspace }}
           FOOTBALL_LOGS: ${{ runner.temp }}/logs

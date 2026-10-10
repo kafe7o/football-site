@@ -364,6 +364,37 @@ function hitAny(sel, s, ct, cs) {
   return hit(sel, s);
 }
 const XK = {cards: "Картони", corners: "Корнери"};
+// състави и отсъствия (API-Football, bets/apifootball.py): ИНФОРМАЦИЯ - шансовете на робота не се менят от тях.
+// DATA.upcoming[].sq идва от часовото пускане; squads/live.json - от наблюдателя, на минути след обявяването на състава.
+const SQX = {};
+const sqOf = m => { const a = m.sq, b = SQX[m.i]; return !a && !b ? null : {...(a || {}), ...(b || {})}; };
+const sqKind = {out: "", doubt: ", под въпрос"};
+function squadBlock(m, compact) {
+  const q = sqOf(m);
+  if (!q) return "";
+  const nm = {h: m.h, a: m.a};
+  const inj = ["h", "a"].map(s => { const xs = ((q.i || {})[s]) || [];
+    return xs.length ? `<div class="an-row"><span>${esc(nm[s])}</span><span>${xs.map(([p, k, r]) => `${esc(p)} <span class="muted">(${esc(r)}${sqKind[k] || ""})</span>`).join(", ")}</span></div>` : ""; }).join("");
+  const lu = ["h", "a"].map(s => { const x = (q.l || {})[s];
+    return x ? `<div class="small" style="margin-top:4px"><b>${esc(nm[s])}</b> ${x.f ? `<span class="muted">${esc(x.f)}</span>` : ""}: ${x.xi.map(p => esc(p[1])).join(", ")}</div>` : ""; }).join("");
+  const hm = iso => iso ? fmtTime(iso) : "";
+  return `<div class="${compact ? "" : "an-box"}" style="margin-top:${compact ? 2 : 8}px">${compact ? "" : `<b class="h">Състав и отсъствия (API-Football) - само информация, шансовете на робота не се менят</b>`}
+    ${q.i ? (inj || `<div class="small muted">Няма съобщени отсъствия (обновено ${hm(q.ia)}).</div>`) : `<div class="small muted">Отсъствията още не са изтеглени.</div>`}
+    ${lu || `<div class="small muted" style="margin-top:4px">Съставът още не е обявен - обявява се около час преди мача и се появява тук сам.</div>`}</div>`;
+}
+async function fetchSquads() {
+  // мачовете до 100 минути напред: дотегля squads/live.json (наблюдателят го пише на минути след обявяването)
+  const soon = ALL.some(m => { const d = new Date(m.k).getTime() - Date.now(); return d > -10 * 60e3 && d < 100 * 60e3; });
+  if (!soon) return;
+  try {
+    const r = await fetch(`squads/live.json?t=${Date.now()}`, {cache: "no-store"});
+    if (!r.ok) return;
+    const d = await r.json();
+    let changed = false;
+    Object.entries(d).forEach(([id, x]) => { if (!SQX[id] || SQX[id].la !== x.la) { SQX[id] = {...(SQX[id] || {}), ...x}; changed = true; } });
+    if (changed) { renderForecasts(); renderResults(); renderColumns(); }
+  } catch (e) { /* няма връзка - следващия път */ }
+}
 // „да не се омесват“ (майсторът, 08.10; bets/robot.opposes) - важи за записите от 09.10 в 07:00; по-старите записи не се пипат, само се отбелязват
 const NO_MIX_FROM = "2026-10-09T04:00", OVL = ["O15", "O", "O35"], UNL = ["U15", "U", "U35"], CLP = [["GG", "U"], ["GG", "U15"], ["NG", "O"], ["NG", "O35"]];
 const clashJS = (a, b) => (OVL.includes(a) && UNL.includes(b)) || (UNL.includes(a) && OVL.includes(b)) || CLP.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
@@ -597,7 +628,7 @@ function matchCard(m) {
       tip = `<div class="tip none">Без прогноза на робота - ${esc(m.w || "")}</div>`;
     }
     body = probBar(r) + `<div class="sub">${sub.map(esc).join("<span aria-hidden='true'>·</span>")}</div>
-      <div class="picks">${picks}</div>${tip}${bonusBlock(m)}${analysisBlock(m)}`;
+      <div class="picks">${picks}</div>${tip}${squadBlock(m)}${colRevNote(m)}${bonusBlock(m)}${analysisBlock(m)}`;
   }
   return `<div class="m ${isSure(m) ? "sure" : ""}"><div class="top"><span class="time">${fmtTime(m.k)}</span>
     <span class="teams">${esc(m.h)} – ${esc(m.a)}</span><span class="flags">${flags}${state}</span></div>${body}</div>`;
@@ -629,7 +660,7 @@ function bonusBlock(m) {
   const b = BONUS[m.i];
   if (!TOP5.includes(m.l)) return "";
   if (!b) {
-    if (new Date(m.k).getTime() <= Date.now()) return "";
+    if (new Date(m.k).getTime() <= Date.now() || COLOF[m.i]) return "";          // мач от колонка: прегледът е на цялата колонка (colRevNote)
     const at = new Date(new Date(m.k).getTime() - 3600e3);
     return `<div class="bonus"><b class="t">Бонус анализ</b>ще е в ${fmtTime(at.toISOString())} (час преди мача) - с известие дали има промени.</div>`;
   }
@@ -642,14 +673,15 @@ function bonusBlock(m) {
 async function fetchBonus() {
   // мачовете от топ 5, започващи до 3 часа: дотегля готовите бонус анализи без да чака часовото обновяване
   const now = Date.now();
-  const want = [...new Set(ALL.filter(m => TOP5.includes(m.l) && !BONUS[m.i] && new Date(m.k) - now < 3 * 3600e3 && new Date(m.k) - now > -2 * 3600e3).map(m => slotName(m.k)))];
+  const want = [...new Set(ALL.filter(m => TOP5.includes(m.l) && !BONUS[m.i] && !COLOF[m.i] && new Date(m.k) - now < 3 * 3600e3 && new Date(m.k) - now > -2 * 3600e3).map(m => slotName(m.k)))];
   let got = 0;
   for (const name of want) {
     try {
       const r = await fetch(`bonus/${name}.json?t=${now}`, {cache: "no-store"});
       if (!r.ok) continue;
       const d = await r.json();
-      d.matches.forEach(x => { BONUS[x.id] = {at: d.made_at, ch: x.changes, one: x.new && x.new.one ? [x.new.one.sel, x.new.one.p, x.new.one.odds, x.new.one.src, x.new.one.band] : null,
+      d.matches.forEach(x => { if (x.sq) SQX[x.id] = {...(SQX[x.id] || {}), ...x.sq};
+                               BONUS[x.id] = {at: d.made_at, ch: x.changes, one: x.new && x.new.one ? [x.new.one.sel, x.new.one.p, x.new.one.odds, x.new.one.src, x.new.one.band] : null,
                                           rk: x.new && x.new.risky ? [x.new.risky.sel, x.new.risky.p, x.new.risky.odds] : null,
                                           sf: x.new && x.new.safer ? [x.new.safer.sel, x.new.safer.p, x.new.safer.odds] : null}; got++; });
     } catch (e) { /* няма още файл - нищо */ }
@@ -1245,6 +1277,53 @@ function renderPro() {
 // измереното назад за колонките (research/columns_backtest.py: по 3 мача, по една на ден, само с топ шанс) - вместо завишеното „роботът казва“
 const CBT = ((DATA.columns || {}).bt || {}).clean || null;
 const CBTS = ((DATA.columns || {}).bt || {}).select || null;
+// мач -> колонка (за днес и последните дни): за тях няма отделен преглед - прегледът е на цялата колонка, час преди най-ранния ѝ мач
+const COLOF = {};
+((DATA.columns || {}).record || {columns: []}).columns.filter(c => !c.manual && c.idx < 200).forEach(c => c.legs.forEach(l => { COLOF[l.id] = c; }));
+const COLREV = {};
+const colFirst = c => Math.min(...c.legs.map(l => new Date(l.kickoff).getTime()));
+function colRevNote(m) {
+  const c = COLOF[m.i];
+  if (!c || new Date(m.k).getTime() <= Date.now()) return "";
+  return `<div class="bonus"><b class="t">Мачът е в колонка ${c.idx}</b> - отделен преглед няма; прегледът е на цялата колонка, час преди най-ранния ѝ мач (${fmtTime(new Date(colFirst(c)).toISOString())}). Виж таб Колонки.</div>`;
+}
+function colReviewBlock(c) {
+  if (c.manual || c.idx >= 200 || !c.legs.length) return "";
+  const first = colFirst(c), rv = COLREV[`${c.day}-${c.idx}`];
+  if (!rv || !rv.legs) {
+    if (c.passed != null || first < Date.now() - 3600e3) return "";
+    const at = Math.max(first - 3600e3, new Date(c.locked_at).getTime());
+    return `<div class="bonus"><b class="t">Преглед на колонката</b> ще е около ${fmtTime(new Date(at).toISOString())} (час преди първия мач от ${fmtTime(new Date(first).toISOString())}) -
+      на всичките ѝ мачове заедно: пресни коефициенти, отсъстващи и състави, с известие. Отделни прегледи на мачовете няма.</div>`;
+  }
+  const bad = rv.legs.filter(x => x.flags.length || x.changes.length);
+  return `<div class="bonus ${bad.length ? "changed" : ""}"><b class="t">Преглед на колонката ${fmtTime(rv.made_at)} (час преди първия мач)${rv.lineups_at ? ` · състави ${fmtTime(rv.lineups_at)}` : ""}</b>
+    ${rv.legs.map(x => { const notes = [...x.flags, ...x.changes];
+      return `<div class="small" style="margin-top:6px"><b>${esc(x.home)} – ${esc(x.away)}</b> ${x.odds_now ? `<span class="muted">коеф. ${x.odds.toFixed(2)} → ${x.odds_now.toFixed(2)}</span>` : ""}
+        ${notes.length ? `<ul style="margin:2px 0 0;padding-left:18px">${notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : `<span class="muted">без промяна</span>`}
+        ${squadBlock({i: x.id, h: x.home, a: x.away, sq: x.sq}, true)}</div>`; }).join("")}
+    <div class="small muted" style="margin-top:6px">Само информация: шансовете на робота не се менят от съставите. Не е сигурен залог.</div></div>`;
+}
+async function fetchColReviews() {
+  // прегледите на днешните колонки: от 62 мин. преди първия мач (или 2 мин. след записа на колонката, ако е по-късно) до 3 ч след него;
+  // наново на 2 мин., докато могат да се появят състави - иначе файл още няма и не се пита
+  const now = Date.now();
+  let got = 0;
+  for (const c of ((DATA.columns || {}).record || {columns: []}).columns) {
+    if (c.manual || c.idx >= 200 || !c.legs.length || c.passed != null) continue;
+    const first = colFirst(c), key = `${c.day}-${c.idx}`, prev = COLREV[key] || {};
+    if (now < Math.max(first - 62 * 60e3, new Date(c.locked_at).getTime() + 2 * 60e3) || now - first > 3 * 3600e3) continue;
+    if (prev.checked && now - prev.checked < (now < first + 90 * 60e3 ? 120e3 : 600e3)) continue;
+    COLREV[key] = {...prev, checked: now};
+    try {
+      const r = await fetch(`colreview/${key}.json?t=${now}`, {cache: "no-store"});
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.made_at !== prev.made_at || d.lineups_at !== prev.lineups_at) { COLREV[key] = {...d, checked: now}; got++; }
+    } catch (e) { /* няма още файл - нищо */ }
+  }
+  if (got) renderColumns();
+}
 const colDay = d => new Date(d + "T12:00:00").toLocaleDateString("bg-BG", {weekday: "long", day: "2-digit", month: "2-digit"});
 const inDay = d => (/^[вф]/i.test(d) ? "във " : "в ") + d;          // „във вторник“, „в петък“
 const retTxt = () => CBT && CBT.book_return != null ? (CBTS && CBTS.book_return != null && Math.abs(CBTS.book_return - CBT.book_return) >= 0.01
@@ -1263,6 +1342,7 @@ function colCard(c, rec) {
       <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
       <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
     ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
+    ${colReviewBlock(c)}
     <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b>${c.book ? "" : " (част от коефициентите са по робота - провери истинските)"}</span>
       <span>Роботът казва <b>${pct(c.claimed)}</b> - завишено</span>
       <span>Назад такива колонки минават <b>${CBT ? pct(CBT.pass) : "~29%"}</b> и връщат <b>${retTxt()} €</b> от 1 €</span></div></div>`;
@@ -1308,6 +1388,10 @@ function renderColumns() {
 initForecasts();
 fetchBonus();
 setInterval(fetchResults, 60e3);
+fetchSquads();
+setInterval(fetchSquads, 120e3);
+fetchColReviews();
+setInterval(fetchColReviews, 60e3);
 initResults();
 renderColumns();
 fetchResults();

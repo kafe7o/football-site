@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from bets import columns, config, db, fixtures, notify, odds_api, prices, results, rules, site, tips, xg
+from bets import apifootball, columns, config, db, fixtures, notify, odds_api, prices, results, rules, site, tips, xg
 from bets.leagues import LEAGUES
 
 RESULTS_EVERY = timedelta(hours=11)     # football-data е безплатен сървър - два пъти на ден стига
@@ -100,6 +100,8 @@ def cloud(log):
     ok.append(step(log, "6. Прогнозите напред", lambda: upcoming.extend(tips.preview(conn, now))))
     # колонките за деня - ден за ден (майсторът, 09.10), от записаните сутринта прогнози
     ok.append(step(log, "6а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))))
+    # състави, контузени и наказани (API-Football) - информация за анализа и бонус прегледа; преди сайта, за да влязат в него
+    ok.append(step(log, "6б. Състави и отсъствия (API-Football)", apifootball.refresh, conn, now))
     ok.append(step(log, "7. Сайт", site.build, conn, now, upcoming))
     from bets import bonus
     ok.append(step(log, "7а. Бонус анализи: поръчване за мачовете от топ 5 в следващите 2 часа",
@@ -253,6 +255,8 @@ def main():
     parser.add_argument("--slot", default=None, help="за bonus: началният час на мачовете (UTC ISO)")
     parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
     parser.add_argument("--demo", action="store_true", help="за bonus: показ - без чакане и без запис, известие с „ПРОБА“")
+    parser.add_argument("--column", default=None, help="за bonus: преглед на колонка ден:номер (САМО нейните мачове), вместо мачове от топ 5")
+    parser.add_argument("--lineups", action="store_true", help="за bonus --column: допълнение със съставите 35 мин. преди най-ранния мач")
     parser.add_argument("--target", default=None, help="за seed: къде да се запише базата на облака")
     parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
     parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")
@@ -273,6 +277,20 @@ def main():
         from bets import bonus
         if not args.slot:
             raise SystemExit("--slot е задължителен")
+        if args.column:
+            day, idx = args.column.split(":")
+            test = args.test or args.demo
+            wait = 0 if test else (bonus.lineup_wait_seconds(args.slot) if args.lineups else bonus.wait_seconds(args.slot))
+            log.info("Преглед на колонка %s: чакане %d мин. (%s)", args.column, wait // 60,
+                     "до съставите" if args.lineups else "до час преди най-ранния мач")
+            time.sleep(wait)
+            conn = db.init()
+            if args.lineups:
+                out = bonus.column_lineups(conn, day, int(idx), send=not args.test, write=not test)
+            else:
+                out = bonus.run_column(conn, day, int(idx), send=not args.test, write=not test, prefix="ПРОБА - " if args.demo else "")
+            conn.close()
+            return 0 if out is not None else 1
         wait = 0 if (args.test or args.demo) else bonus.wait_seconds(args.slot)
         log.info("Бонус анализ за %s: чакане %d мин. до час преди мача", args.slot, wait // 60)
         time.sleep(wait)

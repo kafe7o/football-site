@@ -15,7 +15,8 @@ tips.locked_entry (ако мачът вече е записан - показва
 Ако мачът не е в разписанието на робота (напр. отложен мач или първенство без източник на предстоящи мачове), се
 изчислява със същия модел и се казва, че не е в разписанието; такъв отговор не влиза в записа и в статистиката.
 
-Роботът НЕ знае контузии, състави и новини (няма безплатен източник) - отговорът го казва.
+Контузиите, наказанията и съставите идват от API-Football (bets/apifootball.py) и са САМО информация - шансовете на робота
+не се менят от тях; отговорът го казва. Роботът не знае новини и мотивация.
 """
 
 import json
@@ -29,7 +30,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from . import analysis, config, db, publish, robot, sure, teams, tips
+from . import analysis, apifootball, config, db, publish, robot, sure, teams, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -204,6 +205,22 @@ def report(conn, ctx, e, status, source_note):
         L.append(f"Топ шанс: не - {sure_pos(s)}; топ шанс е най-вероятната третина с шанс {sure.MIN_P:.0%}+.")
     L.append("")
 
+    # --- отсъстващи и състави (API-Football) ---
+    sq = e.get("squads")
+    L.append("СЪСТАВ И ОТСЪСТВИЯ (API-Football; само информация - шансовете на робота не се менят от тях):")
+    if not apifootball.enabled():
+        L.append("  Няма ключ за API-Football на тази машина - не са проверени.")
+    elif not sq:
+        L.append("  Мачът не е намерен в API-Football (или още няма данни за него) - не са проверени.")
+    else:
+        lines = apifootball.describe(sq, home, away)
+        if not (sq.get("i") or {}).get("h") and not (sq.get("i") or {}).get("a"):
+            lines.insert(0, "Няма съобщени отсъстващи (контузени, наказани) в нито един от двата отбора.")
+        if not sq.get("l"):
+            lines.append("Съставите още не са обявени (обявяват се около час преди мача).")
+        L += ["  " + t for t in lines]
+    L.append("")
+
     # --- колко да му вярвам ---
     one_bt = ((read_data("one_backtest.json").get("leagues") or {}).get(e["league"]) or {})
     sb = sure.measured()
@@ -216,7 +233,7 @@ def report(conn, ctx, e, status, source_note):
         c = sb["clean"]
         L.append(f"  Общо: мачовете с топ шанс излизат ~{c['sure']['hit']:.0%}, а роботът им казва ~{c['sure']['said']:.0%} (завишава); "
                  f"в парите няма предимство пред останалите.")
-    L.append("  Моделът е малко по-неточен от пазара (измерено). Роботът НЕ знае контузии, състави, мотивация и новини.")
+    L.append("  Моделът е малко по-неточен от пазара (измерено). Контузиите и съставите са само информация отгоре; роботът не знае новини и мотивация.")
     if flags.get("derby"):
         L.append("  Дербита: назад равните са повече от обещаното и формата значи малко - затова без съвет.")
     L.append("")
@@ -280,6 +297,7 @@ def answer(names, league=None, kickoff=None, offline=False):
             if other is not None:
                 group.append(other)
         sure.annotate(group)
+        e["squads"] = apifootball.squads_for(conn, fx, now) if (scheduled or ko) else None       # отсъстващи и състав - само информация
         if e.get("locked"):
             when = datetime.fromisoformat(e["locked"]).astimezone(SOFIA).strftime("%d.%m %H:%M")
             status = f"ЗАПИСАНА преди мача в {when} (записът не се променя)"

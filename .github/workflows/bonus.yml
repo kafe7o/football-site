@@ -13,6 +13,10 @@ on:
       slot:
         description: "Началният час на мачовете (UTC ISO, напр. 2026-10-10T14:00+00:00)"
         required: true
+      column:
+        description: "Преглед на колонка (ден:номер, напр. 2026-10-10:4) - САМО нейните мачове, час преди най-ранния; празно = мачове от топ 5"
+        required: false
+        default: ""
       test:
         description: "Проба: без чакане, без известие, без запис"
         type: boolean
@@ -39,23 +43,49 @@ jobs:
       - name: Бонус анализ (чака до час преди мача)
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           FOOTBALL_DB: ${{ github.workspace }}/robot.db
           FOOTBALL_SITE: ${{ github.workspace }}
           FOOTBALL_LOGS: ${{ runner.temp }}/logs
           FOOTBALL_CACHE: ${{ runner.temp }}/cache
           PYTHONIOENCODING: utf-8
-        run: cd pipeline && python run.py bonus --slot "${{ inputs.slot }}" ${{ inputs.test && '--test' || '' }}
+        run: cd pipeline && python run.py bonus --slot "${{ inputs.slot }}" ${{ inputs.column != '' && format('--column {0}', inputs.column) || '' }} ${{ inputs.test && '--test' || '' }}
 
       - name: Записване на бонус анализа
         if: ${{ !inputs.test }}
         run: |
           git config user.name "football-bot"
           git config user.email "football-bot@users.noreply.github.com"
-          git add bonus
+          git add bonus colreview
           git diff --staged --quiet && exit 0
-          git commit -m "Бонус анализ ${{ inputs.slot }}"
+          git commit -m "Бонус анализ ${{ inputs.slot }} ${{ inputs.column }}"
           git reset -q --hard HEAD          # базата на робота е променена само тук - не се качва
+          for i in 1 2 3 4 5; do
+            git pull --rebase -q origin main && git push && exit 0
+            sleep 15
+          done
+          exit 1
+
+      - name: Състави на колонката (35 мин. преди най-ранния мач)
+        if: ${{ !inputs.test && inputs.column != '' }}
+        env:
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          FOOTBALL_DB: ${{ github.workspace }}/robot.db
+          FOOTBALL_SITE: ${{ github.workspace }}
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
+          PYTHONIOENCODING: utf-8
+        run: |
+          cd pipeline && python run.py bonus --slot "${{ inputs.slot }}" --column ${{ inputs.column }} --lineups
+          cd ..
+          git config user.name "football-bot"
+          git config user.email "football-bot@users.noreply.github.com"
+          git add colreview
+          git diff --staged --quiet && exit 0
+          git commit -m "Състави на колонка ${{ inputs.column }}"
+          git reset -q --hard HEAD
           for i in 1 2 3 4 5; do
             git pull --rebase -q origin main && git push && exit 0
             sleep 15

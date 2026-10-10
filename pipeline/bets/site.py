@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import config, db, live, robot, rules, season, sure, tips
+from . import apifootball, config, db, live, robot, rules, season, sure, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -296,9 +296,19 @@ def bonus_data(now):
     return out
 
 
+def with_squads(items, squads):
+    """Отсъствията и съставите (bets/apifootball.py) - ключ sq на мача; информация, шансовете на робота не се менят от тях."""
+    for c in items:
+        if c.get("i") in squads:
+            c["sq"] = squads[c["i"]]
+    return items
+
+
 def build(conn, now=None, upcoming=None):
     now = now or datetime.now(timezone.utc)
     upcoming = upcoming if upcoming is not None else tips.preview(conn, now)
+    squads = apifootball.load(conn, [m["id"] for m in upcoming] + [r["fixture_id"] for r in conn.execute(
+        "SELECT fixture_id FROM tips WHERE hg IS NULL AND kickoff <= ?", (now.isoformat(),))])
     data = {
         "generated": now.isoformat(timespec="seconds"),
         "credits": db.get_meta(conn, "credits_remaining"),
@@ -306,13 +316,13 @@ def build(conn, now=None, upcoming=None):
                         "rr": season.meetings(c) if lg.has_history else 0, "split": lg.split,
                         "fast": bool(lg.sport) or c in live.ESPN}      # бърз резултат (bets/live.py): odds API или ESPN
                     for c, lg in LEAGUES.items()},
-        "upcoming": [compact_forecast(m) for m in upcoming],
+        "upcoming": with_squads([compact_forecast(m) for m in upcoming], squads),
         "record": record(conn, now),
         # започнали, без резултат - страницата ги мести в „Чакат резултат“ 10 мин. след началото
         # собственикът (02.10): в резултатите - само мачовете, за които роботът е дал прогноза (и старите съвети
         # по пазара); „Без прогноза на робота“ - само в „Прогнози“
-        "pending": [compact_forecast(m) for m in tips.started(conn, now)
-                    if m.get("basis") == "model" or m.get("tip")],
+        "pending": with_squads([compact_forecast(m) for m in tips.started(conn, now)
+                                if m.get("basis") == "model" or m.get("tip")], squads),
         "first_tip": db.get_meta(conn, "first_tip"),
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),
