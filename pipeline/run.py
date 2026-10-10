@@ -256,7 +256,7 @@ def main():
     parser.add_argument("--test", action="store_true", help="за bonus: проба - без чакане и без известие")
     parser.add_argument("--demo", action="store_true", help="за bonus: показ - без чакане и без запис, известие с „ПРОБА“")
     parser.add_argument("--column", default=None, help="за bonus: преглед на колонка ден:номер (САМО нейните мачове), вместо мачове от топ 5")
-    parser.add_argument("--lineups", action="store_true", help="за bonus --column: допълнение със съставите 35 мин. преди най-ранния мач")
+    parser.add_argument("--lineups", action="store_true", help="за bonus --column: допълнение със съставите 20 мин. преди най-ранния мач")
     parser.add_argument("--target", default=None, help="за seed: къде да се запише базата на облака")
     parser.add_argument("--backtest", action="store_true", help="за weekly: и роботът назад, не само първия понеделник")
     parser.add_argument("--keep-local", action="store_true", help="за weekly: местният архив, без сваляне и качване")

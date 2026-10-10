@@ -67,7 +67,7 @@ jobs:
           done
           exit 1
 
-      - name: Състави на колонката (35 мин. преди най-ранния мач)
+      - name: Състави на колонката (20 мин. преди най-ранния мач)
         if: ${{ !inputs.test && inputs.column != '' }}
         env:
           APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
