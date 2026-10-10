@@ -21,6 +21,7 @@ import json
 import logging
 import re
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -116,13 +117,18 @@ def request(path, params=None, conn=None, now=None, essential=False):
         return None
     url = BASE + path + ("?" + urllib.parse.urlencode(params) if params else "")
     req = urllib.request.Request(url, headers={"x-apisports-key": key})
-    try:
-        with urllib.request.urlopen(req, timeout=40, context=_context()) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-            left = resp.headers.get("x-ratelimit-requests-remaining")
-    except (urllib.error.URLError, OSError, ValueError) as e:
-        log.error("API-Football %s: %s", path, str(e).replace(key, "<КЛЮЧ>"))
-        return None
+    for attempt in (1, 2):                       # еднократен повторен опит при срив на сървъра (HTTP 5xx) или мрежата
+        try:
+            with urllib.request.urlopen(req, timeout=40, context=_context()) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+                left = resp.headers.get("x-ratelimit-requests-remaining")
+            break
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            if attempt == 1 and not (isinstance(e, urllib.error.HTTPError) and e.code < 500):
+                time.sleep(2)
+                continue
+            log.error("API-Football %s: %s", path, str(e).replace(key, "<КЛЮЧ>"))
+            return None
     _session["used"] += 1
     if left is not None and left.isdigit():
         _session["remaining"] = int(left)
@@ -160,7 +166,29 @@ def _best(f, api_fixtures):
     scored.sort(key=lambda x: -x[0])
     if scored and (len(scored) == 1 or scored[0][0] > scored[1][0]):
         return scored[0][1]
+    if not scored:
+        # единият отбор съвпада точно, другият е записан другояче (Hearts / Heart Of Midlothian, Brest / Stade Brestois 29):
+        # единственият мач на лигата в рамките на 30 минути, в който участва точно този отбор
+        exact = [a for a in api_fixtures if a["league"]["id"] == lid and abs(_kick(a["fixture"]["date"]) - ko) <= timedelta(minutes=30)
+                 and (max(teams.similar(n, a["teams"]["home"]["name"]) for n in homes) >= 0.99
+                      or max(teams.similar(n, a["teams"]["away"]["name"]) for n in aways) >= 0.99)]
+        if len(exact) == 1:
+            return exact[0]
     return None
+
+
+def _by_elimination(left, api_fixtures, taken):
+    """Останалите несвързани (преименувани отбори: Qingdao West Coast -> Qingdao Youth Island): един наш мач и един мач на API-Football
+    в същото първенство в рамките на 5 минути, който още не е зает - те са един и същ мач. {id на наш мач: мач на API}."""
+    out = {}
+    for f in left:
+        ko = _kick(f["kickoff"])
+        peers = [g for g in left if g["league"] == f["league"] and abs(_kick(g["kickoff"]) - ko) <= timedelta(minutes=5)]
+        free = [a for a in api_fixtures if a["league"]["id"] == LEAGUE_IDS.get(f["league"]) and a["fixture"]["id"] not in taken
+                and abs(_kick(a["fixture"]["date"]) - ko) <= timedelta(minutes=5)]
+        if len(peers) == 1 and len(free) == 1:
+            out[f["id"]] = free[0]
+    return out
 
 
 def map_fixtures(conn, now=None):
@@ -185,8 +213,15 @@ def map_fixtures(conn, now=None):
         db.set_meta(conn, f"apif_map:{day}", now.isoformat(timespec="seconds"))
         api_fixtures = [a for a in api_fixtures if a["league"]["id"] in ID_TO_CODE]
         matched = 0
+        found = {}
         for f in fs:
             a = _best(f, api_fixtures)
+            if a is not None:
+                found[f["id"]] = a
+        taken = {a["fixture"]["id"] for a in found.values()} | {r[0] for r in conn.execute("SELECT apif_id FROM squads WHERE apif_id IS NOT NULL")}
+        found.update(_by_elimination([f for f in fs if f["id"] not in found], api_fixtures, taken))
+        for f in fs:
+            a = found.get(f["id"])
             if a is None:
                 continue
             matched += 1
