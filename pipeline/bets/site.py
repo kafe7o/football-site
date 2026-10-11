@@ -179,7 +179,9 @@ def columns_data(conn, upcoming, now):
             # измереното назад: колонки по 3, по една на ден, само с топ шанс
             "bt": bt.get("p0.65_n3_league_sure") or bt.get("p0.65_n3_league"),
             # колонки на сянка с поправен шанс (bets/shadow.py) - не се играят, мерят се срещу сегашните
-            "shadow": shadow.for_site(conn, now)}
+            "shadow": shadow.for_site(conn, now),
+            # СИСТЕМАТА (bets/shadow.py system_lock) - най-доброто от проверките назад, само се мери
+            "system": shadow.system_for_site(conn, now)}
 
 
 def backtest_summary():

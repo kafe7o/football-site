@@ -1361,7 +1361,7 @@ function colCard(c, rec) {
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
   const res = !rec ? `<span class="muted">предварително</span>` : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>`
     : pstWaits(c) ? `<span class="badge warn">чака - мачът е ${esc(pstWord(c))}</span>` : `<span class="muted">чака мачовете</span>`;
-  const name = c.manual ? esc(c.name || "Играна от теб") : c.shadow ? "На сянка " + c.idx : (c.idx ? "Колонка " + c.idx : "Колонка");
+  const name = c.manual ? esc(c.name || "Играна от теб") : c.shadow ? (c.idx === "системата" ? "Системата" : "На сянка " + c.idx) : (c.idx ? "Колонка " + c.idx : "Колонка");
   return `<div class="col ${state}"><div class="small" style="margin-bottom:4px"><b>${name}</b> · <b>за ${esc(colDay(cDay(c)))}</b> ${res}</div>
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
       <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(title(l.league))}</span><br>
@@ -1405,6 +1405,23 @@ function shadowBlock(S) {
     ${(S.today || []).length ? `<p class="small muted" style="margin:8px 0 4px">Днес на сянка:</p>` + S.today.map(c => colCard({...c, shadow: true}, true)).join("") : ""}</details>`;
 }
 
+// СИСТЕМАТА (bets/shadow.py system_lock): най-доброто от проверките назад - не се играе, мери се на живо
+function systemBlock(S) {
+  if (!S) return "";
+  const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
+  const a = S.all || {}, ms = S.measured || {};
+  const today = (S.today || []).length ? S.today.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("")
+    : `<div class="small muted" style="margin-top:6px">Днес: ${S.note ? esc(S.note) : "записът е в 07:00"}.</div>`;
+  return `<details class="an" open><summary>Системата - най-доброто от проверките назад (от ${esc(S.from)})</summary>
+    <div class="note" style="margin-top:6px">${esc(S.rule)}. Първенства: ${S.leagues.map(l => esc(title(l))).join(", ")}.
+      Назад (чиста проверка, ${ms.n} колонки): минават ${pct(ms.pass)}, връща <b>${ms.return_avg.toFixed(2)} €</b> от 1 € на средна цена и <b>${ms.return_best.toFixed(2)} €</b> при най-добрия
+      букмейкър, ~${ms.per_month} колонки на месец; грешката е ± 0.12 - нулата не е изключена. Не е сигурен залог и не е правило - мери се на живо.
+      <ul style="margin:6px 0 0;padding-left:18px"><li>На живо: колонки <b>${a.cols || 0}</b>, уредени ${f(a.passed || 0, a.settled || 0)}${a.return != null ? `, връщат <b>${a.return.toFixed(2)} €</b> от 1 €` : ""}${a.settled ? `, при 30 € на колонка: <b>${a.net30 >= 0 ? "+" : ""}${a.net30.toFixed(0)} €</b>` : ""}.</li></ul>
+      ${S.monthly ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Минали</th></tr>${Object.entries(S.monthly).map(([m, v]) => `<tr><td>${esc(m)}</td><td>${f(v.passed, v.settled)}</td></tr>`).join("")}</table>` : ""}</div>
+    ${today}
+    ${(S.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали:</p>` + S.past.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("") : ""}</details>`;
+}
+
 function renderColumns() {
   const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
   const pr = C.params || {};
@@ -1425,6 +1442,7 @@ function renderColumns() {
   else if (C.locked) html += `<div class="empty">Днес няма колонки - не стигнаха 3 мача с топ шанс от различни първенства.</div>`;
   else html += `<div class="empty">Колонките за днес се записват сутринта в 07:00, от записаните прогнози за деня. Ден за ден - не предварително.</div>`;
   html += systemNote();
+  html += systemBlock(C.system);
   html += shadowBlock(C.shadow);
   const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today);
   html += `<h2>Минали колонки</h2>` + (rec.n ? `<div class="note">Записани и уредени: <b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}); роботът е казвал средно ${pct(rec.claimed)}.

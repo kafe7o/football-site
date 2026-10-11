@@ -93,6 +93,7 @@ def cloud(log):
            step(log, "5. Уреждане", tips.settle, conn, now),
            step(log, "5б. Уреждане на колонките", columns.settle, conn),
            step(log, "5б2. Уреждане на колонките на сянка", shadow.settle, conn),
+           step(log, "5б3. Уреждане на колонката на системата", shadow.settle_system, conn),
            step(log, "5в. Проверка на правилата на майстора", rules.check_and_alert, conn, now),
            step(log, "5а. Стари мачове без прогноза", fixtures.prune, conn, now)]
     if conn.execute("SELECT 1 FROM tips LIMIT 1").fetchone() and not db.get_meta(conn, "first_tip"):
@@ -103,6 +104,8 @@ def cloud(log):
     ok.append(step(log, "6а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))))
     # колонки на сянка с поправен шанс (bets/shadow.py): от същите записани прогнози, не се играят, само се мерят срещу сегашните
     ok.append(step(log, "6а2. Колонки на сянка (поправен шанс)", shadow.lock, conn, now))
+    # СИСТЕМАТА (bets/shadow.py): най-доброто от проверките назад - по 2, най-много една на ден при шанс >= 50%, чет-нед, 11 първенства, истинска цена; само се мери
+    ok.append(step(log, "6а3. Колонката на системата", shadow.system_lock, conn, now))
     # състави, контузени и наказани (API-Football) - информация за анализа и бонус прегледа; преди сайта, за да влязат в него
     ok.append(step(log, "6б. Състави и отсъствия (API-Football)", apifootball.refresh, conn, now))
     # мач, започнал преди над 3 часа и още без резултат: отложен/прекъснат ли е - белег във флаговете, преди сайта (bets/apifootball.py)
