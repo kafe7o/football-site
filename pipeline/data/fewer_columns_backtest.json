@@ -1,0 +1,2274 @@
+[
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 229,
+    "hit": 0.5021834061135371,
+    "se": 0.0330406149916954,
+    "price": 2.1802202172030802,
+    "return": 1.0868695007698124,
+    "return_se": 0.07203158469547485
+   },
+   "clean": {
+    "n": 117,
+    "hit": 0.46153846153846156,
+    "se": 0.04608805303963677,
+    "price": 2.153137680563609,
+    "return": 0.9857753226701487,
+    "return_se": 0.09932458932903096
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 16.57181818181819,
+   "median": -12.4,
+   "worst": -175.36,
+   "best": 279.04,
+   "plus100": 9,
+   "plus150": 4,
+   "minus": 17,
+   "avg_no_limit": 16.571818181818188
+  },
+  "per_month": 10.484848484848484
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 157,
+    "hit": 0.5477707006369427,
+    "se": 0.03972180008883245,
+    "price": 2.1517170960031446,
+    "return": 1.1712828496398804,
+    "return_se": 0.08552809933968174
+   },
+   "clean": {
+    "n": 84,
+    "hit": 0.5119047619047619,
+    "se": 0.054539007080995204,
+    "price": 2.114388750398701,
+    "return": 1.0864228790790835,
+    "return_se": 0.11683995583386535
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 32.01593750000001,
+   "median": 45.07,
+   "worst": -137.63,
+   "best": 156.94,
+   "plus100": 9,
+   "plus150": 2,
+   "minus": 12,
+   "avg_no_limit": 32.0159375
+  },
+  "per_month": 7.53125
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 377,
+    "hit": 0.4960212201591512,
+    "se": 0.02575049479635753,
+    "price": 2.19561561971871,
+    "return": 1.0776605995020463,
+    "return_se": 0.0563035974407846
+   },
+   "clean": {
+    "n": 181,
+    "hit": 0.4530386740331492,
+    "se": 0.03700042062351888,
+    "price": 2.154041590191386,
+    "return": 0.9698060347816992,
+    "return_se": 0.0797534029606954
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 21.647878787878792,
+   "median": 12.57,
+   "worst": -203.33,
+   "best": 374.48,
+   "plus100": 10,
+   "plus150": 6,
+   "minus": 16,
+   "avg_no_limit": 21.64787878787879
+  },
+  "per_month": 16.90909090909091
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 205,
+    "hit": 0.5414634146341464,
+    "se": 0.0348012324737513,
+    "price": 2.1558062173676813,
+    "return": 1.1621755952231414,
+    "return_se": 0.07517661319312507
+   },
+   "clean": {
+    "n": 106,
+    "hit": 0.4811320754716981,
+    "se": 0.04852970316111162,
+    "price": 2.115977024707322,
+    "return": 1.0206221631991124,
+    "return_se": 0.10374375085696108
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 33.216875,
+   "median": 37.04,
+   "worst": -110.38,
+   "best": 257.35,
+   "plus100": 9,
+   "plus150": 3,
+   "minus": 12,
+   "avg_no_limit": 33.216874999999995
+  },
+  "per_month": 9.71875
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 202,
+    "hit": 0.5,
+    "se": 0.03517987723651459,
+    "price": 2.1765354272126243,
+    "return": 1.079756238365149,
+    "return_se": 0.07654241045430565
+   },
+   "clean": {
+    "n": 104,
+    "hit": 0.4807692307692308,
+    "se": 0.0489927562851027,
+    "price": 2.1387972495131704,
+    "return": 1.0282437673953222,
+    "return_se": 0.10581241085690503
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 17.31636363636364,
+   "median": 11.48,
+   "worst": -163.33,
+   "best": 210.74,
+   "plus100": 9,
+   "plus150": 5,
+   "minus": 16,
+   "avg_no_limit": 17.316363636363633
+  },
+  "per_month": 9.272727272727273
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 146,
+    "hit": 0.5342465753424658,
+    "se": 0.041283116393504946,
+    "price": 2.1521685466015454,
+    "return": 1.1418815001879676,
+    "return_se": 0.08888715865125804
+   },
+   "clean": {
+    "n": 78,
+    "hit": 0.5128205128205128,
+    "se": 0.056595237913628776,
+    "price": 2.1133263375891036,
+    "return": 1.0877340459766784,
+    "return_se": 0.12123183578871582
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 25.835,
+   "median": 14.83,
+   "worst": -137.68,
+   "best": 156.94,
+   "plus100": 9,
+   "plus150": 2,
+   "minus": 12,
+   "avg_no_limit": 25.835
+  },
+  "per_month": 7.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 347,
+    "hit": 0.49279538904899134,
+    "se": 0.026838619727532396,
+    "price": 2.195575513088153,
+    "return": 1.0701386242569613,
+    "return_se": 0.05866006257646655
+   },
+   "clean": {
+    "n": 166,
+    "hit": 0.463855421686747,
+    "se": 0.0387059947925754,
+    "price": 2.144263686472403,
+    "return": 0.9932215770437299,
+    "return_se": 0.08348355867699886
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 21.1021212121212,
+   "median": 14.05,
+   "worst": -192.22,
+   "best": 306.18,
+   "plus100": 9,
+   "plus150": 6,
+   "minus": 15,
+   "avg_no_limit": 21.10212121212121
+  },
+  "per_month": 15.545454545454545
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 192,
+    "hit": 0.53125,
+    "se": 0.03601384553630034,
+    "price": 2.1568514804319183,
+    "return": 1.1404270775373861,
+    "return_se": 0.07783357542239792
+   },
+   "clean": {
+    "n": 100,
+    "hit": 0.48,
+    "se": 0.049959983987187186,
+    "price": 2.115243639174354,
+    "return": 1.017696830426438,
+    "return_se": 0.1067748934462905
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 26.935937500000005,
+   "median": 20.28,
+   "worst": -142.73,
+   "best": 257.35,
+   "plus100": 9,
+   "plus150": 3,
+   "minus": 13,
+   "avg_no_limit": 26.935937499999994
+  },
+  "per_month": 9.125
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 200,
+    "hit": 0.5,
+    "se": 0.035355339059327376,
+    "price": 2.174471369956129,
+    "return": 1.0793567688461985,
+    "return_se": 0.07690068839741221
+   },
+   "clean": {
+    "n": 103,
+    "hit": 0.47572815533980584,
+    "se": 0.04920838171133511,
+    "price": 2.1393882826897554,
+    "return": 1.0180527279299867,
+    "return_se": 0.10634804756914769
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 16.118787878787874,
+   "median": 11.48,
+   "worst": -163.33,
+   "best": 210.74,
+   "plus100": 9,
+   "plus150": 5,
+   "minus": 16,
+   "avg_no_limit": 16.11878787878788
+  },
+  "per_month": 9.181818181818182
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 145,
+    "hit": 0.5310344827586206,
+    "se": 0.041442678391667764,
+    "price": 2.151566906367622,
+    "return": 1.1343123630822267,
+    "return_se": 0.08917720848661502
+   },
+   "clean": {
+    "n": 77,
+    "hit": 0.5064935064935064,
+    "se": 0.05697548280807483,
+    "price": 2.1137861493457826,
+    "return": 1.074874477322806,
+    "return_se": 0.12212372830850057
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 23.6625,
+   "median": 14.83,
+   "worst": -174.81,
+   "best": 156.94,
+   "plus100": 9,
+   "plus150": 2,
+   "minus": 12,
+   "avg_no_limit": 23.662499999999994
+  },
+  "per_month": 6.9375
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 344,
+    "hit": 0.4941860465116279,
+    "se": 0.026956370754577505,
+    "price": 2.1928016538452866,
+    "return": 1.0729613262693174,
+    "return_se": 0.05890966487434891
+   },
+   "clean": {
+    "n": 165,
+    "hit": 0.46060606060606063,
+    "se": 0.03880394524920361,
+    "price": 2.144665764376328,
+    "return": 0.9866476421632382,
+    "return_se": 0.08373025066113891
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 20.81393939393938,
+   "median": 14.28,
+   "worst": -192.22,
+   "best": 306.18,
+   "plus100": 9,
+   "plus150": 6,
+   "minus": 14,
+   "avg_no_limit": 20.813939393939393
+  },
+  "per_month": 15.424242424242424
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 191,
+    "hit": 0.5287958115183246,
+    "se": 0.03611868171446159,
+    "price": 2.1564192558241255,
+    "return": 1.1346732591971609,
+    "return_se": 0.07802806968642495
+   },
+   "clean": {
+    "n": 99,
+    "hit": 0.47474747474747475,
+    "se": 0.05018775958141311,
+    "price": 2.115620637223339,
+    "return": 1.0069874970739288,
+    "return_se": 0.10731504283170616
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 24.763437500000006,
+   "median": 20.28,
+   "worst": -148.46,
+   "best": 257.35,
+   "plus100": 9,
+   "plus150": 3,
+   "minus": 13,
+   "avg_no_limit": 24.763437499999995
+  },
+  "per_month": 9.0625
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 149,
+    "hit": 0.48322147651006714,
+    "se": 0.040938526606790385,
+    "price": 2.1536345349493553,
+    "return": 1.030327379206056,
+    "return_se": 0.08796209580336017
+   },
+   "clean": {
+    "n": 84,
+    "hit": 0.47619047619047616,
+    "se": 0.054492584311555174,
+    "price": 2.1201303410543266,
+    "return": 1.0083212186909651,
+    "return_se": 0.1164531655459906
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 4.742424242424246,
+   "median": 4.43,
+   "worst": -157.3,
+   "best": 156.07,
+   "plus100": 6,
+   "plus150": 1,
+   "minus": 16,
+   "avg_no_limit": 4.742424242424241
+  },
+  "per_month": 7.0606060606060606
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 119,
+    "hit": 0.5210084033613446,
+    "se": 0.04579444821477662,
+    "price": 2.1425156752891246,
+    "return": 1.1036560844437522,
+    "return_se": 0.0977350776565742
+   },
+   "clean": {
+    "n": 68,
+    "hit": 0.5,
+    "se": 0.06063390625908324,
+    "price": 2.1091266076194843,
+    "return": 1.0619246928852348,
+    "return_se": 0.13021522738564847
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 15.511249999999999,
+   "median": 14.83,
+   "worst": -210.0,
+   "best": 156.07,
+   "plus100": 5,
+   "plus150": 1,
+   "minus": 12,
+   "avg_no_limit": 15.511249999999999
+  },
+  "per_month": 5.84375
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 275,
+    "hit": 0.4727272727272727,
+    "se": 0.03010624811908092,
+    "price": 2.1752029549805334,
+    "return": 1.0198579587058143,
+    "return_se": 0.06536228931957976
+   },
+   "clean": {
+    "n": 146,
+    "hit": 0.4589041095890411,
+    "se": 0.04124028551375085,
+    "price": 2.1342726483124164,
+    "return": 0.9769617284259363,
+    "return_se": 0.08838095948033031
+   }
+  },
+  "money": {
+   "months": 33,
+   "avg": 1.9057575757575684,
+   "median": -0.88,
+   "worst": -162.22,
+   "best": 202.84,
+   "plus100": 8,
+   "plus150": 2,
+   "minus": 17,
+   "avg_no_limit": 1.9057575757575762
+  },
+  "per_month": 12.757575757575758
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 164,
+    "hit": 0.5182926829268293,
+    "se": 0.039017302115054414,
+    "price": 2.1497246744179708,
+    "return": 1.1053596263084142,
+    "return_se": 0.08378047533679976
+   },
+   "clean": {
+    "n": 90,
+    "hit": 0.4666666666666667,
+    "se": 0.05258737584977436,
+    "price": 2.1122835433734464,
+    "return": 0.9904145174739873,
+    "return_se": 0.1125865127531502
+   }
+  },
+  "money": {
+   "months": 32,
+   "avg": 15.390312499999991,
+   "median": 18.69,
+   "worst": -161.34,
+   "best": 257.35,
+   "plus100": 6,
+   "plus150": 2,
+   "minus": 14,
+   "avg_no_limit": 15.390312499999997
+  },
+  "per_month": 7.9375
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.65,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 24,
+    "hit": 0.4583333333333333,
+    "se": 0.10170707302692229,
+    "price": 2.2886717032054107,
+    "return": 1.0280157622263033,
+    "return_se": 0.23465177055038725
+   },
+   "clean": {
+    "n": 11,
+    "hit": 0.45454545454545453,
+    "se": 0.150131422517231,
+    "price": 2.1567821509621004,
+    "return": 0.9794231864607689,
+    "return_se": 0.3399680608309341
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": 0.6086363636363697,
+   "median": 5.85,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": 0.608636363636364
+  },
+  "per_month": 1.5909090909090908
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 23,
+    "hit": 0.4782608695652174,
+    "se": 0.10415861863104658,
+    "price": 2.2831052555186893,
+    "return": 1.0727120997144035,
+    "return_se": 0.24059855097632446
+   },
+   "clean": {
+    "n": 9,
+    "hit": 0.4444444444444444,
+    "se": 0.16563466499998442,
+    "price": 2.140237639866041,
+    "return": 0.9531907679838262,
+    "return_se": 0.3776879853097801
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": 1.7876190476190503,
+   "median": 17.11,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": 1.7876190476190472
+  },
+  "per_month": 1.5238095238095237
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 28,
+    "hit": 0.42857142857142855,
+    "se": 0.09352195295828244,
+    "price": 2.27719548983255,
+    "return": 0.9545414035131135,
+    "return_se": 0.2135225503130755
+   },
+   "clean": {
+    "n": 12,
+    "hit": 0.4166666666666667,
+    "se": 0.14231876063832774,
+    "price": 2.1694770987685463,
+    "return": 0.8978045875890381,
+    "return_se": 0.3209000327247401
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": -3.407727272727274,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": -3.4077272727272714
+  },
+  "per_month": 1.8181818181818181
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 27,
+    "hit": 0.4444444444444444,
+    "se": 0.09562921842487448,
+    "price": 2.2720286561226444,
+    "return": 0.989894788828414,
+    "return_se": 0.21852446561589609
+   },
+   "clean": {
+    "n": 10,
+    "hit": 0.4,
+    "se": 0.15491933384829668,
+    "price": 2.1571260283433817,
+    "return": 0.8578716911854436,
+    "return_se": 0.3510046976887695
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": -2.4199999999999995,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": -2.419999999999999
+  },
+  "per_month": 1.7619047619047619
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 24,
+    "hit": 0.4583333333333333,
+    "se": 0.10170707302692229,
+    "price": 2.2886717032054107,
+    "return": 1.0280157622263033,
+    "return_se": 0.23465177055038725
+   },
+   "clean": {
+    "n": 11,
+    "hit": 0.45454545454545453,
+    "se": 0.150131422517231,
+    "price": 2.1567821509621004,
+    "return": 0.9794231864607689,
+    "return_se": 0.3399680608309341
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": 0.6086363636363697,
+   "median": 5.85,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": 0.608636363636364
+  },
+  "per_month": 1.5909090909090908
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 23,
+    "hit": 0.4782608695652174,
+    "se": 0.10415861863104658,
+    "price": 2.2831052555186893,
+    "return": 1.0727120997144035,
+    "return_se": 0.24059855097632446
+   },
+   "clean": {
+    "n": 9,
+    "hit": 0.4444444444444444,
+    "se": 0.16563466499998442,
+    "price": 2.140237639866041,
+    "return": 0.9531907679838262,
+    "return_se": 0.3776879853097801
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": 1.7876190476190503,
+   "median": 17.11,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": 1.7876190476190472
+  },
+  "per_month": 1.5238095238095237
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 28,
+    "hit": 0.42857142857142855,
+    "se": 0.09352195295828244,
+    "price": 2.27719548983255,
+    "return": 0.9545414035131135,
+    "return_se": 0.2135225503130755
+   },
+   "clean": {
+    "n": 12,
+    "hit": 0.4166666666666667,
+    "se": 0.14231876063832774,
+    "price": 2.1694770987685463,
+    "return": 0.8978045875890381,
+    "return_se": 0.3209000327247401
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": -3.407727272727274,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": -3.4077272727272714
+  },
+  "per_month": 1.8181818181818181
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 27,
+    "hit": 0.4444444444444444,
+    "se": 0.09562921842487448,
+    "price": 2.2720286561226444,
+    "return": 0.989894788828414,
+    "return_se": 0.21852446561589609
+   },
+   "clean": {
+    "n": 10,
+    "hit": 0.4,
+    "se": 0.15491933384829668,
+    "price": 2.1571260283433817,
+    "return": 0.8578716911854436,
+    "return_se": 0.3510046976887695
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": -2.4199999999999995,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": -2.419999999999999
+  },
+  "per_month": 1.7619047619047619
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 24,
+    "hit": 0.4583333333333333,
+    "se": 0.10170707302692229,
+    "price": 2.2886717032054107,
+    "return": 1.0280157622263033,
+    "return_se": 0.23465177055038725
+   },
+   "clean": {
+    "n": 11,
+    "hit": 0.45454545454545453,
+    "se": 0.150131422517231,
+    "price": 2.1567821509621004,
+    "return": 0.9794231864607689,
+    "return_se": 0.3399680608309341
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": 0.6086363636363697,
+   "median": 5.85,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": 0.608636363636364
+  },
+  "per_month": 1.5909090909090908
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 23,
+    "hit": 0.4782608695652174,
+    "se": 0.10415861863104658,
+    "price": 2.2831052555186893,
+    "return": 1.0727120997144035,
+    "return_se": 0.24059855097632446
+   },
+   "clean": {
+    "n": 9,
+    "hit": 0.4444444444444444,
+    "se": 0.16563466499998442,
+    "price": 2.140237639866041,
+    "return": 0.9531907679838262,
+    "return_se": 0.3776879853097801
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": 1.7876190476190503,
+   "median": 17.11,
+   "worst": -60.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": 1.7876190476190472
+  },
+  "per_month": 1.5238095238095237
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 28,
+    "hit": 0.42857142857142855,
+    "se": 0.09352195295828244,
+    "price": 2.27719548983255,
+    "return": 0.9545414035131135,
+    "return_se": 0.2135225503130755
+   },
+   "clean": {
+    "n": 12,
+    "hit": 0.4166666666666667,
+    "se": 0.14231876063832774,
+    "price": 2.1694770987685463,
+    "return": 0.8978045875890381,
+    "return_se": 0.3209000327247401
+   }
+  },
+  "money": {
+   "months": 22,
+   "avg": -3.407727272727274,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 10,
+   "avg_no_limit": -3.4077272727272714
+  },
+  "per_month": 1.8181818181818181
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 27,
+    "hit": 0.4444444444444444,
+    "se": 0.09562921842487448,
+    "price": 2.2720286561226444,
+    "return": 0.989894788828414,
+    "return_se": 0.21852446561589609
+   },
+   "clean": {
+    "n": 10,
+    "hit": 0.4,
+    "se": 0.15491933384829668,
+    "price": 2.1571260283433817,
+    "return": 0.8578716911854436,
+    "return_se": 0.3510046976887695
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": -2.4199999999999995,
+   "median": 29.81,
+   "worst": -89.4,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": -2.419999999999999
+  },
+  "per_month": 1.7619047619047619
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 22,
+    "hit": 0.45454545454545453,
+    "se": 0.10615894693111677,
+    "price": 2.29932501214705,
+    "return": 1.0230235570317043,
+    "return_se": 0.2463669701436942
+   },
+   "clean": {
+    "n": 11,
+    "hit": 0.45454545454545453,
+    "se": 0.150131422517231,
+    "price": 2.1567821509621004,
+    "return": 0.9794231864607689,
+    "return_se": 0.3399680608309341
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": 0.4004761904761957,
+   "median": 5.85,
+   "worst": -90.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": 0.40047619047618965
+  },
+  "per_month": 1.5714285714285714
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 21,
+    "hit": 0.47619047619047616,
+    "se": 0.10898516862311035,
+    "price": 2.293735727011195,
+    "return": 1.0717389645094046,
+    "return_se": 0.2532900360402519
+   },
+   "clean": {
+    "n": 9,
+    "hit": 0.4444444444444444,
+    "se": 0.16563466499998442,
+    "price": 2.140237639866041,
+    "return": 0.9531907679838262,
+    "return_se": 0.3776879853097801
+   }
+  },
+  "money": {
+   "months": 20,
+   "avg": 1.628000000000002,
+   "median": 29.81,
+   "worst": -90.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 8,
+   "avg_no_limit": 1.627999999999999
+  },
+  "per_month": 1.5
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 26,
+    "hit": 0.4230769230769231,
+    "se": 0.09689066801072671,
+    "price": 2.2853270425237175,
+    "return": 0.9446653561397459,
+    "return_se": 0.22217970143711188
+   },
+   "clean": {
+    "n": 12,
+    "hit": 0.4166666666666667,
+    "se": 0.14231876063832774,
+    "price": 2.1694770987685463,
+    "return": 0.8978045875890381,
+    "return_se": 0.3209000327247401
+   }
+  },
+  "money": {
+   "months": 21,
+   "avg": -3.807142857142854,
+   "median": 29.81,
+   "worst": -120.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 9,
+   "avg_no_limit": -3.8071428571428565
+  },
+  "per_month": 1.8095238095238095
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 25,
+    "hit": 0.44,
+    "se": 0.09927738916792686,
+    "price": 2.280072124224666,
+    "return": 0.9824519703853357,
+    "return_se": 0.22788299075201746
+   },
+   "clean": {
+    "n": 10,
+    "hit": 0.4,
+    "se": 0.15491933384829668,
+    "price": 2.1571260283433817,
+    "return": 0.8578716911854436,
+    "return_se": 0.3510046976887695
+   }
+  },
+  "money": {
+   "months": 20,
+   "avg": -2.789999999999998,
+   "median": 30.67,
+   "worst": -120.0,
+   "best": 77.13,
+   "plus100": 0,
+   "plus150": 0,
+   "minus": 8,
+   "avg_no_limit": -2.7899999999999996
+  },
+  "per_month": 1.75
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.7,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": false,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "всеки ден",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "чет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "пет-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 1,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.0,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ },
+ {
+  "days": "съб-нед",
+  "per_day": 2,
+  "min_p": 0.75,
+  "agree": true,
+  "min_col_p": 0.5,
+  "stats": {
+   "select": {
+    "n": 0
+   },
+   "clean": {
+    "n": 0
+   }
+  },
+  "money": {},
+  "per_month": 0.0
+ }
+]
