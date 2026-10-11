@@ -1,0 +1,161 @@
+{
+ "day": "2026-10-11",
+ "idx": 3,
+ "made_at": "2026-10-11T09:29:59+00:00",
+ "first": "2026-10-11T10:30+00:00",
+ "legs": [
+  {
+   "id": "2547c0dbddd26d23fa532228e36348cb",
+   "league": "I1",
+   "kickoff": "2026-10-11T10:30+00:00",
+   "home": "Como",
+   "away": "AS Roma",
+   "sel": "U35",
+   "p": 0.7043,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.49 -> 2.35",
+    "коефициентът на 2: 2.67 -> 2.90",
+    "рисковата 1: коеф. 2.49 -> 2.35"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Como",
+    "m": "AS Roma",
+    "i": {
+     "h": [
+      [
+       "M. Kean",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "M. Bah",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Cristante",
+       "out",
+       "контузия"
+      ],
+      [
+       "K. Koulierakis",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Svilar",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-11T09:29:59+00:00"
+   }
+  },
+  {
+   "id": "86effab5c6e7bfd58c8e88b1fb7c6ba9",
+   "league": "E0",
+   "kickoff": "2026-10-11T13:00+00:00",
+   "home": "Crystal Palace",
+   "away": "Nottingham Forest",
+   "sel": "U35",
+   "p": 0.7033,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Crystal Palace",
+    "m": "Nottingham Forest",
+    "i": {
+     "h": [
+      [
+       "A. Disasi",
+       "out",
+       "наказан"
+      ],
+      [
+       "D. Henderson",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Mateta",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Riad",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Tomiyasu",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "Igor Jesus",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Milenkovic",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Savona",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Williams",
+       "doubt",
+       "болен"
+      ]
+     ]
+    },
+    "ia": "2026-10-11T09:29:59+00:00"
+   }
+  },
+  {
+   "id": "5ecd75456d38ef4c394e502ecdd8937c",
+   "league": "P1",
+   "kickoff": "2026-10-11T14:30+00:00",
+   "home": "Rio Ave FC",
+   "away": "Nacional",
+   "sel": "O15",
+   "p": 0.7057,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 2: 3.12 -> 3.33",
+    "рисковата 2: коеф. 3.12 -> 3.33",
+    "по-сигурната X2: коеф. 1.57 -> 1.65"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Rio Ave",
+    "m": "Nacional",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-11T09:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 2,
+ "absent": 2
+}
