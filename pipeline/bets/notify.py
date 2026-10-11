@@ -1,7 +1,8 @@
 """
 Известия на телефона (ntfy.sh), от облака - лаптопът не трябва да е включен.
 
-Три вида, всяко веднъж:
+Четири вида, всяко веднъж:
+  нощ (първото пускане 04:00-07:00)     ПРЕГЛЕД за предстоящия запис (не е запис) - топ шанс и предварителни колонки; сутринта се сравнява със записа
   сутрин (първото пускане след 07:00)   прогнозите за деня: колко мача, най-вероятните съвети,
                                         дербитата и първият кръг след пауза; и как мина вчера
   вечер (първото пускане след 23:00)    резултатите от деня: колко са познати, по пазари, в пари
@@ -153,6 +154,76 @@ def score_text(s, label):
     return "\n".join(parts)
 
 
+def night(conn, upcoming, now=None):
+    """Нощен ПРЕГЛЕД на предстоящия запис (собственикът, 11.10: „да ми снася информацията за утре в друго време“; „в 4 моето време, около час
+    след като излязат резултатите“). Първото пускане между 04:00 и 07:00 българско време, веднъж на ден; от 04:00 моделът на деня (обучава се
+    в 00:00 UTC = 03:00 българско) е същият като за записа в 07:00, така че разлика остава само от цените и новите мачове. НЕ Е ЗАПИС: прогнозите и колонките се записват в 07:00 и не се менят;
+    прегледът е по същите правила и от данните към момента, нищо не се записва, на сайта колонки напред няма (майсторът: ден за ден).
+    Снимката се пази в meta (night_preview:<ден>) - сутринта morning() я сравнява със записа и казва колко мача са се сменили."""
+    now = now or datetime.now(timezone.utc)
+    local = now.astimezone(SOFIA)
+    if not 4 <= local.hour < 7:
+        return False
+    target = local.date().isoformat()
+    start = local.replace(hour=7, minute=0, second=0, microsecond=0)
+    lo, hi = start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
+    day_ms = [m for m in upcoming if lo <= datetime.fromisoformat(m["kickoff"]) < hi and m.get("basis")]
+    if not day_ms:
+        return False
+
+    def build():
+        from . import columns
+        with_pred = [m for m in day_ms if m.get("one")]
+        sure_ms = [m for m in with_pred if ((m.get("flags") or {}).get("sure") or {}).get("y")]
+        cols = columns.for_days([m for m in day_ms if m.get("basis") == "model"], days=1).get(target, [])
+        db.set_meta(conn, f"night_preview:{target}", json.dumps({
+            "cols": [[{"id": l["id"], "home": l["home"], "away": l["away"], "sel": l["sel"]} for l in c["legs"]] for c in cols],
+            "star": [{"id": m["id"], "home": m.get("home_src") or m["home"], "away": m.get("away_src") or m["away"]} for m in sure_ms]},
+            ensure_ascii=False))
+        lines = ["Това е ПРЕГЛЕД, не запис: записът е в 07:00 и не се променя; тогава ще получиш потвърждение какво се е сменило. "
+                 "Моделът е същият като за записа; до 07:00 се движат само коефициентите, затова 0-2 мача от колонките могат да се сменят.",
+                 f"{len(day_ms)} мача, прогноза на робота за {len(with_pred)}; топ шанс: {len(sure_ms)}."]
+        order = sorted(sure_ms, key=lambda m: -m["one"]["p"])
+        for m in order[:TOP_SURE]:
+            x = m["one"]
+            odd = f" @{x['odds']:.2f}" if x.get("odds") else ""
+            lines.append(f"{local_time(m['kickoff'])} {name(m.get('home_src') or m['home'], m.get('away_src') or m['away'])}: "
+                         f"{robot.label(x['sel']).replace('домакинът', m.get('home_src') or m['home']).replace('гостът', m.get('away_src') or m['away'])}"
+                         f"{odd}{'' if x.get('src') == 'book' else ' (цена по робота)'} ({x['p']:.0%})")
+        if len(order) > TOP_SURE:
+            lines.append(f"... и още {len(order) - TOP_SURE} с топ шанс - на сайта след записа.")
+        if cols:
+            lines.append(f"ПРЕДВАРИТЕЛНИ КОЛОНКИ ({len(cols)}; не са записани; назад колонка минава ~29% и връща ~0.8 € от 1 €, не е сигурен залог): " + "; ".join(
+                f"{i}) " + " + ".join(f"{local_time(l['kickoff'])} {name(l['home'], l['away'])} {robot.label(l['sel'])} @{l['odds']:.2f}"
+                                      + ("" if l.get("src") == "book" else " (цена по робота)") for l in c["legs"])
+                + f" [коеф. {c['odds']:.2f}]" for i, c in enumerate(cols, 1)))
+            if any(l.get("src") != "book" for c in cols for l in c["legs"]):
+                lines.append("„Цена по робота“ е честната цена на робота (1/шанса), не на букмейкъра - провери я при него; под 1.40 не е по правилото на майстора.")
+        else:
+            lines.append("Предварителни колонки няма - не стигат 3 мача с топ шанс от различни първенства.")
+        return send(f"ПРЕГЛЕД за {local.strftime('%d.%m')} (не е запис)", "\n".join(lines), tags="mag", priority=3)
+
+    return once(conn, f"night:{target}", build)
+
+
+def night_check(snap, todays, sure_ms):
+    """Сутрин: записът срещу нощния преглед - колко от мачовете в колонките и колко от топ шанс са същите (текст за известието)."""
+    prev_legs = {l["id"]: l for c in snap.get("cols") or [] for l in c}
+    cur_legs = {l["id"]: l for c in todays for l in c["legs"]}
+    same = len(prev_legs.keys() & cur_legs.keys())
+    text = f"СПРЯМО НОЩНИЯ ПРЕГЛЕД: колонки - {same} от {len(cur_legs)} мача са същите" if cur_legs else "СПРЯМО НОЩНИЯ ПРЕГЛЕД: записът няма колонки"
+    new = [name(l["home"], l["away"]) for i, l in cur_legs.items() if i not in prev_legs]
+    gone = [name(l["home"], l["away"]) for i, l in prev_legs.items() if i not in cur_legs]
+    if new:
+        text += "; нови: " + ", ".join(new)
+    if gone:
+        text += "; отпаднали: " + ", ".join(gone)
+    prev_star = {s["id"] for s in snap.get("star") or []}
+    cur_star = {m.get("id") for m in sure_ms}
+    text += f". Топ шанс: {len(prev_star & cur_star)} от {len(cur_star)} са същите" + (f" ({len(prev_star - cur_star)} отпаднали, {len(cur_star - prev_star)} нови)" if prev_star != cur_star else "") + "."
+    return text
+
+
 def morning(conn, upcoming, now=None):
     now = now or datetime.now(timezone.utc)
     local = now.astimezone(SOFIA)
@@ -205,6 +276,9 @@ def morning(conn, upcoming, now=None):
                     + f" [коеф. {c['odds']:.2f}]" for c in todays))
             if not todays:
                 lines.append("Колонки за днес няма - не стигнаха 3 мача с топ шанс от различни първенства (ден за ден, по майстора).")
+            snap = db.get_meta(conn, f"night_preview:{today_d}")
+            if snap:
+                lines.append(night_check(json.loads(snap), todays, sure_ms))
             derbies = [m for m in today if (m.get("flags") or {}).get("derby")]
             if derbies:
                 lines.append("Дерби - без съвет: " + "; ".join(name(m.get("home_src") or m["home"], m.get("away_src") or m["away"]) for m in derbies))

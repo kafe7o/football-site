@@ -108,7 +108,8 @@ def cloud(log):
     from bets import bonus
     ok.append(step(log, "7а. Бонус анализи: поръчване за мачовете от топ 5 в следващите 2 часа",
                    bonus.schedule, conn, now))
-    ok += [step(log, "8. Известие сутрин", notify.morning, conn, upcoming, now),
+    ok += [step(log, "8а. Нощен преглед за предстоящия запис (04:00-07:00)", notify.night, conn, upcoming, now),
+           step(log, "8. Известие сутрин", notify.morning, conn, upcoming, now),
            step(log, "9. Известие вечер", notify.evening, conn, now),
            step(log, "10. Известие за седмицата", notify.weekly, conn, now)]
     conn.close()
