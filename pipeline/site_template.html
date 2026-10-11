@@ -181,12 +181,46 @@ details.pend > .inner { padding: 0 10px 10px; }
 .pred .pm { font-size: 12px; color: var(--muted); }
 .pred-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
 /* колонки */
-.col { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-.col .leg { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 10px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px; align-items: baseline; }
-.col .leg:last-of-type { border-bottom: 0; }
-.col .sum { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
-.col .sum b { color: var(--ink); }
-.col.won { border-color: var(--ok); } .col.lost { opacity: .85; }
+.col { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.col .head { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; margin-bottom: 6px; }
+.col .head .nm { font: 600 15px/1.2 "IBM Plex Sans", sans-serif; }
+.col .head .dt { color: var(--muted); font-size: 12.5px; grid-column: 1 / -1; }
+.col .head .st { grid-column: 2; grid-row: 1; justify-self: end; }
+.col .leg { display: grid; grid-template-columns: 42px 1fr auto; gap: 2px 10px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13.5px; align-items: start; }
+.col .leg .tm { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--muted); padding-top: 2px; }
+.col .leg .tms { font-weight: 500; overflow-wrap: anywhere; }
+.col .leg .lg2 { font-size: 11.5px; color: var(--muted); }
+.col .leg .pk2 { margin-top: 3px; display: inline-flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.col .leg .pk2 b { background: var(--ok-bg); color: var(--ok); border-radius: 6px; padding: 1px 7px; font-size: 13px; }
+.col .leg .pk2 .mt { font-size: 12px; color: var(--muted); }
+.col .leg .rs { text-align: right; font-size: 13px; white-space: nowrap; padding-top: 2px; }
+.col .leg .rs .num { font-weight: 600; margin-right: 4px; }
+.col .sum { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 3px 14px; font-size: 12px; color: var(--muted); }
+.col .sum b { color: var(--ink); font-weight: 600; }
+.col.won { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok-bg), var(--shadow); } .col.lost { opacity: .8; }
+.col.sys { border-left: 4px solid var(--home); }
+.col.shd { border-style: dashed; box-shadow: none; }
+.sect { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 22px 0 8px; }
+.sect h2 { margin: 0; }
+.sect .cnt { font-size: 12.5px; color: var(--muted); }
+.sect .cnt b { color: var(--ink); }
+.ktiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 6px; }
+.ktiles .tile { padding: 10px 12px; }
+.ktiles .tile .v { font-size: 20px; }
+@media (max-width: 420px) { .ktiles { grid-template-columns: 1fr 1fr; } .ktiles .tile:last-child { grid-column: 1 / -1; } }
+details.day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+details.day > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
+details.day > summary::-webkit-details-marker { display: none; }
+details.day > summary .cnt { font-weight: 500; color: var(--muted); font-size: 12.5px; margin-left: auto; }
+details.day > summary::after { content: "▸"; color: var(--muted); font-size: 12px; }
+details.day[open] > summary::after { content: "▾"; }
+details.day[open] > summary { margin-bottom: 8px; }
+details.how { margin-top: 18px; border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; }
+details.how > summary { cursor: pointer; list-style: none; font-weight: 600; font-size: 14px; }
+details.how > summary::-webkit-details-marker { display: none; }
+details.how > summary::before { content: "▸ "; color: var(--muted); }
+details.how[open] > summary::before { content: "▾ "; }
+details.how .note { margin-top: 8px; }
 /* едната прогноза на робота - главната */
 .one { margin-top: 8px; border: 2px solid var(--home); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
 .one .ol { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--home); font-weight: 700; }
@@ -1361,20 +1395,21 @@ function colCard(c, rec) {
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
   const res = !rec ? `<span class="muted">предварително</span>` : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>`
     : pstWaits(c) ? `<span class="badge warn">чака - мачът е ${esc(pstWord(c))}</span>` : `<span class="muted">чака мачовете</span>`;
-  const name = c.manual ? esc(c.name || "Играна от теб") : c.shadow ? (c.idx === "системата" ? "Системата" : "На сянка " + c.idx) : (c.idx ? "Колонка " + c.idx : "Колонка");
-  return `<div class="col ${state}"><div class="small" style="margin-bottom:4px"><b>${name}</b> · <b>за ${esc(colDay(cDay(c)))}</b> ${res}</div>
-    ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
-      <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(title(l.league))}</span><br>
-      <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
-      <span>${l.st ? `<span class="badge warn" title="Според API-Football; няма резултат">${esc(l.st[1] || "отложен")}</span>`
-        : rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
+  const sys = c.idx === "системата", name = c.manual ? esc(c.name || "Играна от теб") : c.shadow ? (sys ? "Системата" : "На сянка " + c.idx) : (c.idx ? "Колонка " + c.idx : "Колонка");
+  const kind = c.manual ? "" : c.shadow ? (sys ? " sys" : " shd") : "";
+  return `<div class="col ${state}${kind}"><div class="head"><span class="nm">${name}</span><span class="dt">за ${esc(colDay(cDay(c)))}${c.locked_at && !c.shadow ? ` · записана ${fmtTime(c.locked_at)}` : ""}</span><span class="st">${res}</span></div>
+    ${c.legs.map(l => `<div class="leg"><span class="tm">${fmtTime(l.kickoff)}</span>
+      <span><div class="tms">${esc(l.home)} – ${esc(l.away)}</div><div class="lg2">${flag(l.league)} ${esc(title(l.league))}</div>
+      <div class="pk2"><b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b><span class="mt">${pct(l.p)} · коеф. ${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : l.src === "est" ? " (оценка)" : ""}${l.late ? " · добавен след началото" : ""}</span></div></span>
+      <span class="rs">${l.st ? `<span class="badge warn" title="Според API-Football; няма резултат">${esc(l.st[1] || "отложен")}</span>`
+        : rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span>` : "") + hit(l.hit) : ""}</span></div>`).join("")}
     ${pstWaits(c) ? `<div class="note" style="margin:6px 0 0"><b>Колонката чака - не се уреждава автоматично.</b> ${pstOf(c).map(l => `${esc(l.home)} – ${esc(l.away)} е ${esc(l.st[1] || "отложен")}${l.st[3] ? ` (нов час ${fmtDate(l.st[3])} ${fmtTime(l.st[3])})` : ""}`).join("; ")} (${pstOthers(c)}).
       <b>Решение на собственика:</b> дали колонката минава с останалите мачове, ако този мач не се доиграе - правило за анулиране няма и не е измислено; ако падне друг мач, колонката пада и така.</div>` : ""}
     ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
     ${colReviewBlock(c)}
-    <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b>${c.book ? "" : " (част от коефициентите са по робота - провери истинските)"}</span>
-      <span>Роботът казва <b>${pct(c.claimed)}</b> - завишено</span>
-      <span>Назад такива колонки минават <b>${CBT ? pct(CBT.pass) : "~29%"}</b> и връщат <b>${retTxt()} €</b> от 1 €</span></div></div>`;
+    <div class="sum"><span>Коефициент <b>${c.odds.toFixed(2)}</b>${c.book ? "" : " <span title=\"част от коефициентите са по робота\">(провери истинските)</span>"}</span>
+      <span>Роботът казва <b>${pct(c.claimed)}</b>${sys ? "" : " (завишено)"}</span>
+      ${sys ? `<span>Назад: минават <b>51%</b>, връщат <b>1.09 €</b> от 1 €</span>` : `<span>Назад: минават <b>${CBT ? pct(CBT.pass) : "~29%"}</b>, връщат <b>${retTxt()} €</b> от 1 €</span>`}</div></div>`;
 }
 
 // Много колонки наведнъж (майсторът, 08.10): измерено назад от мачовете с топ шанс на деня (research/sure_matches_backtest.py)
@@ -1382,7 +1417,7 @@ function systemNote() {
   const sy = SU && SU.system;
   if (!sy || !sy.clean) return "";
   const c = sy.clean, s = sy.select || c;
-  return `<details class="an"><summary>Много колонки наведнъж - какво показват данните</summary><div class="note" style="margin-top:6px">(майсторът: да се играят около 30 колонки в събота и, ако нито една не излезе, пак на следващия ден; тук - от мачовете с топ шанс).
+  return `<details class="how"><summary>Много колонки наведнъж - какво показват данните</summary><div class="note">(майсторът: да се играят около 30 колонки в събота и, ако нито една не излезе, пак на следващия ден; тук - от мачовете с топ шанс).
     Назад във времето: във всеки ден с поне 3 мача с топ шанс - всички колонки по 3 от най-много 7-те най-вероятни (до ${c.cols_per_day.toFixed(0)} колонки на ден), ${c.days + s.days} такива дни:
     <ul style="margin:6px 0 0;padding-left:18px"><li>Ден без нито една минала колонка има рядко: ${pct(c.day_all_lost)} от дните (чиста проверка; ${pct(s.day_all_lost)} в избора). В 5 дни подред поне един ден е имал минала колонка в ${pct(1 - c.window_no_win)} от случаите.</li>
     <li>Но парите: от 1 € на колонка се връщат средно <b>${c.return_per_euro.toFixed(2)} €</b> (чиста; ${s.return_per_euro.toFixed(2)} € в избора) - тоест се губят ${pct(1 - s.return_per_euro)}-${pct(1 - c.return_per_euro)} от заложеното. В 5 дни подред общият резултат е плюс само в <b>${pct(c.window_net_positive)}</b> от случаите (чиста; ${pct(s.window_net_positive)} в избора).</li></ul>
@@ -1391,11 +1426,11 @@ function systemNote() {
 
 // Колонки на сянка с поправен шанс (bets/shadow.py): не се играят, мерят се срещу сегашните
 function shadowBlock(S) {
-  if (!S) return `<details class="an"><summary>Колонки на сянка - с поправен шанс</summary><div class="note" style="margin-top:6px">Още няма записани. От 12.10 в 07:00 се записват и колонки с поправен шанс - не се играят, само се мерят срещу сегашните.</div></details>`;
+  if (!S) return `<details class="how"><summary>Колонки на сянка - с поправен шанс</summary><div class="note">Още няма записани. От 12.10 в 07:00 се записват и колонки с поправен шанс - не се играят, само се мерят срещу сегашните.</div></details>`;
   const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
   const sh = S.shadow || {}, of = S.official || {};
-  return `<details class="an"><summary>Колонки на сянка - с поправен шанс (${S.days} ${S.days === 1 ? "ден" : "дни"} от ${esc(S.from)})</summary>
-    <div class="note" style="margin-top:6px">Не се играят - само се мерят срещу сегашните колонки, правила: ${esc(S.rule)}.
+  return `<details class="how"><summary>Колонки на сянка - с поправен шанс <span class="muted" style="font-weight:500">(${S.days} ${S.days === 1 ? "ден" : "дни"}; на сянка ${f(sh.passed, sh.settled)} срещу сегашни ${f(of.passed, of.settled)})</span></summary>
+    <div class="note">Не се играят - само се мерят срещу сегашните колонки, правила: ${esc(S.rule)}.
       <ul style="margin:6px 0 0;padding-left:18px"><li>Уредени колонки: на сянка <b>${f(sh.passed, sh.settled)}</b>; сегашни за същите дни <b>${f(of.passed, of.settled)}</b>.</li>
       <li>Мачове в колонките: на сянка <b>${f(sh.legs_hit, sh.legs)}</b>; сегашни <b>${f(of.legs_hit, of.legs)}</b>.</li></ul>
       ${S.monthly ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>На сянка (минали)</th><th>Сегашни (минали)</th></tr>${Object.entries(S.monthly).map(([m, v]) =>
@@ -1411,44 +1446,54 @@ function systemBlock(S) {
   const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
   const a = S.all || {}, ms = S.measured || {};
   const today = (S.today || []).length ? S.today.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("")
-    : `<div class="small muted" style="margin-top:6px">Днес: ${S.note ? esc(S.note) : "записът е в 07:00"}.</div>`;
-  return `<details class="an" open><summary>Системата - най-доброто от проверките назад (от ${esc(S.from)})</summary>
-    <div class="note" style="margin-top:6px">${esc(S.rule)}. Първенства: ${S.leagues.map(l => esc(title(l))).join(", ")}.
-      Назад (чиста проверка, ${ms.n} колонки): минават ${pct(ms.pass)}, връща <b>${ms.return_avg.toFixed(2)} €</b> от 1 € на средна цена и <b>${ms.return_best.toFixed(2)} €</b> при най-добрия
-      букмейкър, ~${ms.per_month} колонки на месец; грешката е ± 0.12 - нулата не е изключена. Не е сигурен залог и не е правило - мери се на живо.
-      <ul style="margin:6px 0 0;padding-left:18px"><li>На живо: колонки <b>${a.cols || 0}</b>, уредени ${f(a.passed || 0, a.settled || 0)}${a.return != null ? `, връщат <b>${a.return.toFixed(2)} €</b> от 1 €` : ""}${a.settled ? `, при 30 € на колонка: <b>${a.net30 >= 0 ? "+" : ""}${a.net30.toFixed(0)} €</b>` : ""}.</li></ul>
-      ${S.monthly ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Минали</th></tr>${Object.entries(S.monthly).map(([m, v]) => `<tr><td>${esc(m)}</td><td>${f(v.passed, v.settled)}</td></tr>`).join("")}</table>` : ""}</div>
+    : `<div class="col sys"><div class="head"><span class="nm">Днес без колонка</span><span class="dt">${S.note ? esc(S.note) : "записът е в 07:00"}</span></div></div>`;
+  const live = a.settled ? `на живо: <b>${f(a.passed, a.settled)}</b> минали${a.return != null ? `, връщат <b>${a.return.toFixed(2)} €</b>` : ""}${a.net30 != null ? `, при 30 €: <b>${a.net30 >= 0 ? "+" : ""}${a.net30.toFixed(0)} €</b>` : ""}` : "на живо: още няма уредени";
+  return `<div class="sect"><h2>Системата</h2><span class="cnt">най-доброто от проверките назад · от ${esc(fmtDate(S.from + "T12:00:00"))} · ${live}</span></div>
     ${today}
-    ${(S.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали:</p>` + S.past.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("") : ""}</details>`;
+    <details class="how"><summary>Какво е системата и колко е измерена</summary>
+      <div class="note">${esc(S.rule)}.<br>Първенства: ${S.leagues.map(l => esc(title(l))).join(", ")}.<br>
+      Назад (чиста проверка, ${ms.n} колонки): минават ${pct(ms.pass)}, връща <b>${ms.return_avg.toFixed(2)} €</b> от 1 € на средна цена и <b>${ms.return_best.toFixed(2)} €</b> при най-добрия
+      букмейкър, ~${ms.per_month} колонки на месец; грешката е ± 0.12 - нулата не е изключена. Не е сигурен залог и не е правило - мери се на живо. Дни без колонка са част от логиката.
+      ${S.monthly ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Минали</th></tr>${Object.entries(S.monthly).map(([m, v]) => `<tr><td>${esc(m)}</td><td>${f(v.passed, v.settled)}</td></tr>`).join("")}</table>` : ""}</div>
+      ${(S.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали колонки на системата:</p>` + S.past.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("") : ""}</details>`;
 }
 
 function renderColumns() {
   const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
   const pr = C.params || {};
-  let html = `<div class="note">Колонката е няколко мача, от които <b>трябва да излязат всичките</b>.
-    <b>Ден за ден</b> (майсторът): всяка сутрин в 07:00 се записват колонките <b>за същия ден</b> - от прогнозите, записани сутринта, - и после не се променят.
-    Предварителни колонки за следващите дни няма.
-    <b>Правило:</b> само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b>, без дерби, без „тото“,
-    <b>само от мачовете с топ шанс</b>; всеки мач е най-много в една колонка; до ${pr.per_day || 4} колонки на ден.
-    ${CBT ? `<br><span class="muted small">Назад: колонка минава в <b>${pct(CBT.pass)}</b> от случаите (роботът казва ${pct(CBT.claimed)} - завишава) и връща средно <b>${retTxt()} €</b> от 1 € (избор и чиста проверка) - тоест губи; маржът на букмейкъра се умножава на всеки мач. Не е „сигурен залог“.</span>` : ""}</div>`;
   const auto = rec.columns.filter(c => !c.manual);
+  const todays0 = auto.filter(c => cDay(c) === C.today);
+  const sysAll = ((C.system || {}).all) || {};
+  let html = `<div class="ktiles">
+    <div class="tile"><div class="k">Днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? "колонки, записани в 07:00" : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
+    <div class="tile"><div class="k">Минали</div><div class="v">${rec.n ? `${rec.passed}<span class="muted" style="font-size:14px">/${rec.n}</span>` : "–"}</div><div class="s">${rec.n ? `${pct(rec.passed / rec.n)} минали · назад ~${CBT ? pct(CBT.pass) : "29%"}` : "още няма уредени"}</div></div>
+    <div class="tile"><div class="k">Системата</div><div class="v">${sysAll.settled ? `${sysAll.passed}<span class="muted" style="font-size:14px">/${sysAll.settled}</span>` : "–"}</div><div class="s">${sysAll.settled ? `${pct(sysAll.passed / sysAll.settled)} минали · при 30 €: ${sysAll.net30 >= 0 ? "+" : ""}${(sysAll.net30 || 0).toFixed(0)} €` : "от четвъртък 15.10"}</div></div></div>
+  <p class="small muted" style="margin:0 0 4px">Колонка = ${pr.size || 3} мача, които <b>всичките</b> трябва да излязат. Ден за ден, записани в 07:00, после не се променят. Не е сигурен залог: назад минават ~${CBT ? pct(CBT.pass) : "29%"} и връщат ${retTxt()} € от 1 €.</p>`;
   const waits = rec.columns.filter(pstWaits).sort((a, b) => cDay(a).localeCompare(cDay(b)) || a.idx - b.idx);
   if (waits.length) html += `<div class="note"><b>Чака решение на собственика (${waits.length}):</b> колонка с мач, който не е игран докрай. Не се уреждава автоматично и не влиза в мерките, докато мачът няма резултат.
     <ul style="margin:6px 0 0;padding-left:18px">${waits.map(c => `<li>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + c.idx} за ${esc(colDay(c.manual ? c.day : cDay(c)))}: ${pstOf(c).map(l => `<b>${esc(l.home)} – ${esc(l.away)}</b> е ${esc(l.st[1] || "отложен")}`).join("; ")} (${pstOthers(c)}).</li>`).join("")}</ul>
     <span class="muted small">Въпросът е един: минава ли колонката с останалите мачове, ако този мач не се доиграе. Правило за анулиране няма - решава собственикът.</span></div>`;
-  const todays = auto.filter(c => cDay(c) === C.today).sort((a, b) => a.idx - b.idx);
-  html += `<h2>Днес - ${esc(colDay(C.today))}</h2>`;
-  if (todays.length) html += `<p class="small muted" style="margin:0 0 8px">Записани сутринта в ${esc(fmtTime(todays[0].locked_at))} - <b>не се променят</b>. Това са колонките за днес.</p>` + todays.map(c => colCard(c, true)).join("");
-  else if (C.locked) html += `<div class="empty">Днес няма колонки - не стигнаха 3 мача с топ шанс от различни първенства.</div>`;
-  else html += `<div class="empty">Колонките за днес се записват сутринта в 07:00, от записаните прогнози за деня. Ден за ден - не предварително.</div>`;
-  html += systemNote();
+  const todays = todays0.sort((a, b) => a.idx - b.idx);
+  html += `<div class="sect"><h2>Днес</h2><span class="cnt">${esc(colDay(C.today))}${todays.length ? ` · записани в <b>${esc(fmtTime(todays[0].locked_at))}</b>, не се променят` : ""}</span></div>`;
+  if (todays.length) html += todays.map(c => colCard(c, true)).join("");
+  else if (C.locked) html += `<div class="col"><div class="head"><span class="nm">Днес няма колонки</span><span class="dt">не стигнаха 3 мача с топ шанс от различни първенства</span></div></div>`;
+  else html += `<div class="col"><div class="head"><span class="nm">Записват се в 07:00</span><span class="dt">от записаните прогнози за деня - ден за ден, не предварително</span></div></div>`;
   html += systemBlock(C.system);
-  html += shadowBlock(C.shadow);
+  // миналите - по дни, последният ден отворен, останалите свити
   const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today);
-  html += `<h2>Минали колонки</h2>` + (rec.n ? `<div class="note">Записани и уредени: <b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}); роботът е казвал средно ${pct(rec.claimed)}.
-    <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки.</span></div>` : `<div class="empty">Още няма уредени колонки - записът ден за ден започва на 09.10.</div>`);
-  let last = "";
-  past.forEach(c => { const d = c.manual ? c.day : cDay(c); if (d !== last) { html += `<div class="day-h">${esc(colDay(d))}</div>`; last = d; } html += colCard(c, true); });
+  const days = [];
+  past.forEach(c => { const d = c.manual ? c.day : cDay(c); let g = days.find(x => x.d === d); if (!g) { g = {d, cols: []}; days.push(g); } g.cols.push(c); });
+  html += `<div class="sect"><h2>Минали</h2><span class="cnt">${rec.n ? `<b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}) · роботът е казвал ${pct(rec.claimed)} · малка извадка` : "още няма уредени - записът ден за ден е от 09.10"}</span></div>`;
+  days.forEach((g, i) => {
+    const settled = g.cols.filter(c => c.passed != null), won = settled.filter(c => c.passed === 1).length, waiting = g.cols.length - settled.length;
+    html += `<details class="day"${i === 0 ? " open" : ""}><summary>${esc(colDay(g.d))}<span class="cnt">${g.cols.length} ${g.cols.length === 1 ? "колонка" : "колонки"} · <span class="${won ? "y" : ""}">${won} минали</span>${settled.length - won ? ` · ${settled.length - won} паднали` : ""}${waiting ? ` · ${waiting} чака` : ""}</span></summary>${g.cols.map(c => colCard(c, true)).join("")}</details>`;
+  });
+  html += shadowBlock(C.shadow);
+  html += systemNote();
+  html += `<details class="how"><summary>Как се правят колонките - правилата</summary><div class="note"><b>Ден за ден</b> (майсторът): всяка сутрин в 07:00 се записват колонките <b>за същия ден</b> - от прогнозите, записани сутринта, - и после не се променят.
+    Предварителни колонки за следващите дни няма. <b>Правило:</b> само „Прогнозата на робота“ с шанс над ${pct(pr.min_p || .65)}, по <b>${pr.size || 3} мача</b>, най-много <b>един от първенство</b>, без дерби, без „тото“,
+    <b>само от мачовете с топ шанс</b>; всеки мач е най-много в една колонка; до ${pr.per_day || 4} колонки на ден.
+    ${CBT ? `<br><span class="muted small">Назад: колонка минава в <b>${pct(CBT.pass)}</b> от случаите (роботът казва ${pct(CBT.claimed)} - завишава) и връща средно <b>${retTxt()} €</b> от 1 € (избор и чиста проверка) - тоест губи; маржът на букмейкъра се умножава на всеки мач. Не е „сигурен залог“.</span>` : ""}</div></details>`;
   el.innerHTML = html;
 }
 
