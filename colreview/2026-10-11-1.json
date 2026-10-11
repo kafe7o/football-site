@@ -1,0 +1,126 @@
+{
+ "day": "2026-10-11",
+ "idx": 1,
+ "made_at": "2026-10-11T08:59:59+00:00",
+ "first": "2026-10-11T10:00+00:00",
+ "legs": [
+  {
+   "id": "51e0e5d3a4f8a464369caf5dd3801cfd",
+   "league": "CHN",
+   "kickoff": "2026-10-11T10:00+00:00",
+   "home": "Qingdao West Coast FC",
+   "away": "Dalian Yingbo",
+   "sel": "1X",
+   "p": 0.7547,
+   "odds": 1.42,
+   "src": "book",
+   "odds_now": 1.35,
+   "changes": [
+    "коефициентът на 1: 2.50 -> 2.23",
+    "коефициентът на 2: 2.61 -> 2.87",
+    "букмейкърите за 1: 37% -> 42%",
+    "букмейкърите за 2: 35% -> 32%",
+    "прогнозата: 1X -> над 1.5 @1.51",
+    "рисковата: 1 -> 2 @2.87",
+    "по-сигурната: 1X -> X2 @1.56"
+   ],
+   "flags": [
+    "коефициентът падна под 1.40 (1.35) - вече не е по правилото на майстора"
+   ],
+   "sq": {
+    "n": "Qingdao Youth Island",
+    "m": "Dalian Zhixing",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-11T08:59:59+00:00"
+   }
+  },
+  {
+   "id": "0d92eed5e6922c12b8e2d57fea2acdb5",
+   "league": "NOR",
+   "kickoff": "2026-10-11T12:30+00:00",
+   "home": "Fredrikstad FK",
+   "away": "Tromso",
+   "sel": "O15",
+   "p": 0.716,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Fredrikstad",
+    "m": "Tromso",
+    "i": {
+     "h": [
+      [
+       "I. Amundsen",
+       "out",
+       "наказан"
+      ],
+      [
+       "F. Ghebreyohannes",
+       "out",
+       "наказан"
+      ],
+      [
+       "S. Kvile",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Nysveen",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "C. Oyvann",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Prestmo",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Tonnessen",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-11T08:59:59+00:00"
+   }
+  },
+  {
+   "id": "8c6b3e6e11f4c22dc3bb84b7aaf0bbf2",
+   "league": "POL",
+   "kickoff": "2026-10-11T12:45+00:00",
+   "home": "Piast Gliwice",
+   "away": "Widzew Łódź",
+   "sel": "1X",
+   "p": 0.7271,
+   "odds": 1.46,
+   "src": "book",
+   "odds_now": 1.48,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Piast Gliwice",
+    "m": "Widzew Łódź",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-11T08:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 1
+}
