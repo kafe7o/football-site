@@ -1465,7 +1465,7 @@ function renderColumns() {
   const todays0 = auto.filter(c => cDay(c) === C.today);
   const sysAll = ((C.system || {}).all) || {};
   let html = `<div class="ktiles">
-    <div class="tile"><div class="k">Днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? "колонки, записани в 07:00" : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
+    <div class="tile"><div class="k">Днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? (todays0.every(c => c.passed != null || pstWaits(c)) ? "колонки, вече уредени" : "колонки, записани в 07:00") : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
     <div class="tile"><div class="k">Минали</div><div class="v">${rec.n ? `${rec.passed}<span class="muted" style="font-size:14px">/${rec.n}</span>` : "–"}</div><div class="s">${rec.n ? `${pct(rec.passed / rec.n)} минали · назад ~${CBT ? pct(CBT.pass) : "29%"}` : "още няма уредени"}</div></div>
     <div class="tile"><div class="k">Системата</div><div class="v">${sysAll.settled ? `${sysAll.passed}<span class="muted" style="font-size:14px">/${sysAll.settled}</span>` : "–"}</div><div class="s">${sysAll.settled ? `${pct(sysAll.passed / sysAll.settled)} минали · при 30 €: ${sysAll.net30 >= 0 ? "+" : ""}${(sysAll.net30 || 0).toFixed(0)} €` : "от четвъртък 15.10"}</div></div></div>
   <p class="small muted" style="margin:0 0 4px">Колонка = ${pr.size || 3} мача, които <b>всичките</b> трябва да излязат. Ден за ден, записани в 07:00, после не се променят. Не е сигурен залог: назад минават ~${CBT ? pct(CBT.pass) : "29%"} и връщат ${retTxt()} € от 1 €.</p>`;
@@ -1473,14 +1473,19 @@ function renderColumns() {
   if (waits.length) html += `<div class="note"><b>Чака решение на собственика (${waits.length}):</b> колонка с мач, който не е игран докрай. Не се уреждава автоматично и не влиза в мерките, докато мачът няма резултат.
     <ul style="margin:6px 0 0;padding-left:18px">${waits.map(c => `<li>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + c.idx} за ${esc(colDay(c.manual ? c.day : cDay(c)))}: ${pstOf(c).map(l => `<b>${esc(l.home)} – ${esc(l.away)}</b> е ${esc(l.st[1] || "отложен")}`).join("; ")} (${pstOthers(c)}).</li>`).join("")}</ul>
     <span class="muted small">Въпросът е един: минава ли колонката с останалите мачове, ако този мач не се доиграе. Правило за анулиране няма - решава собственикът.</span></div>`;
-  const todays = todays0.sort((a, b) => a.idx - b.idx);
+  // „денят“ на колонките е 07:00-07:00; щом всички днешни са уредени (или чакат отложен мач), слизат при миналите, а горе остава само равносметката
+  const todaysAll = todays0.sort((a, b) => a.idx - b.idx);
+  const doneDay = todaysAll.length > 0 && todaysAll.every(c => c.passed != null || pstWaits(c));
+  const todays = doneDay ? [] : todaysAll;
   html += `<div class="sect"><h2>Днес</h2><span class="cnt">${esc(colDay(C.today))}${todays.length ? ` · записани в <b>${esc(fmtTime(todays[0].locked_at))}</b>, не се променят` : ""}</span></div>`;
-  if (todays.length) html += todays.map(c => colCard(c, true)).join("");
+  if (doneDay) { const w = todaysAll.filter(c => c.passed === 1).length, l = todaysAll.filter(c => c.passed === 0).length;
+    html += `<div class="col"><div class="head"><span class="nm">Колонките за ${esc(colDay(C.today))} са уредени</span><span class="st"><span class="${w ? "y" : "muted"}">${w} минали</span>${l ? ` · <span class="n">${l} паднали</span>` : ""}${todaysAll.length - w - l ? ` · ${todaysAll.length - w - l} чака` : ""}</span><span class="dt">Следващите се записват в 07:00. Подробно - в „Минали“ по-долу.</span></div></div>`; }
+  else if (todays.length) html += todays.map(c => colCard(c, true)).join("");
   else if (C.locked) html += `<div class="col"><div class="head"><span class="nm">Днес няма колонки</span><span class="dt">не стигнаха 3 мача с топ шанс от различни първенства</span></div></div>`;
   else html += `<div class="col"><div class="head"><span class="nm">Записват се в 07:00</span><span class="dt">от записаните прогнози за деня - ден за ден, не предварително</span></div></div>`;
   html += systemBlock(C.system);
   // миналите - по дни, последният ден отворен, останалите свити
-  const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today);
+  const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today || doneDay);
   const days = [];
   past.forEach(c => { const d = c.manual ? c.day : cDay(c); let g = days.find(x => x.d === d); if (!g) { g = {d, cols: []}; days.push(g); } g.cols.push(c); });
   html += `<div class="sect"><h2>Минали</h2><span class="cnt">${rec.n ? `<b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}) · роботът е казвал ${pct(rec.claimed)} · малка извадка` : "още няма уредени - записът ден за ден е от 09.10"}</span></div>`;
