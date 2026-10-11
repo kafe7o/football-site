@@ -1,0 +1,140 @@
+{
+ "day": "2026-10-11",
+ "idx": 2,
+ "made_at": "2026-10-11T10:29:59+00:00",
+ "first": "2026-10-11T11:30+00:00",
+ "legs": [
+  {
+   "id": "dd98d812853191c7a812d5952d934882",
+   "league": "D3",
+   "kickoff": "2026-10-11T11:30+00:00",
+   "home": "FC Ingolstadt 04",
+   "away": "Wehen Wiesbaden",
+   "sel": "U35",
+   "p": 0.7099,
+   "odds": 1.41,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "FC Ingolstadt 04",
+    "m": "SV Wehen",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-11T10:29:59+00:00"
+   }
+  },
+  {
+   "id": "b9a6c24970eaa831a75bee26d9c12931",
+   "league": "G1",
+   "kickoff": "2026-10-11T16:00+00:00",
+   "home": "Aris Thessaloniki",
+   "away": "Volos FC",
+   "sel": "O15",
+   "p": 0.715,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Aris Thessalonikis",
+    "m": "Volos NFC",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-11T10:29:59+00:00"
+   }
+  },
+  {
+   "id": "f2040431dc177b95d1c125535b9541d4",
+   "league": "BRA",
+   "kickoff": "2026-10-11T19:00+00:00",
+   "home": "Atletico Mineiro",
+   "away": "Santos",
+   "sel": "U35",
+   "p": 0.7136,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.00 -> 2.11",
+    "коефициентът на 2: 3.52 -> 3.24",
+    "рисковата 2: коеф. 3.52 -> 3.24"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Atletico-MG",
+    "m": "Santos",
+    "i": {
+     "h": [
+      [
+       "M. Cassierra",
+       "out",
+       "контузия"
+      ],
+      [
+       "Cuello",
+       "out",
+       "наказан"
+      ],
+      [
+       "Everson",
+       "out",
+       "контузия"
+      ],
+      [
+       "Gustavo Scarpa",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "T. Perez",
+       "out",
+       "наказан"
+      ],
+      [
+       "Ruan Tressoldi",
+       "out",
+       "контузия"
+      ],
+      [
+       "Fred",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "Arthur Melo",
+       "out",
+       "контузия"
+      ],
+      [
+       "Everton",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "Gabriel Brazao",
+       "out",
+       "контузия"
+      ],
+      [
+       "Vinicius Lira",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-11T10:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 1
+}
