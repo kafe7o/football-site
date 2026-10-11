@@ -130,9 +130,55 @@ def monthly(variants, names=("L0", "L1")):
     return dict(sorted(out.items()))
 
 
+def bank(variants, start=500.0, stake=30.0, margin=0.06, names=("L0", "L1")):
+    """Банка start €, по stake € на всяка колонка по 3, хронологично (собственикът, 11.10: „ако сме почнали с 500 € и сме слагали по 30 - колко ще имаме сега“).
+    Цена на мач: от букмейкъра, ако я има; иначе честната на робота 1/шанс (без марж) - сценарий А (най-оптимистичен), и същата минус margin (6%) - сценарий Б (реалистичен).
+    Спира, щом банката падне под залога. Описателно - нищо не се избира."""
+    from bets import columns
+    out = {}
+    for name in names:
+        res = {}
+        for scen, cut in (("A", 0.0), ("B", margin)):
+            money, low, ruin, n, won, staked, net = start, start, None, 0, 0, 0.0, 0.0
+            for day, ms in sorted(variants[name].items()):
+                if day < EVAL_FROM:
+                    continue
+                ms = [{**m, "flags": dict(m["flags"])} for m in ms]
+                by_id = {m["id"]: m for m in ms}
+                cb.mark_sure(ms)
+                for col in columns.build(columns.candidates(ms, 0.65, need_sure=True), size=3, max_columns=4, diversify="league"):
+                    odds = 1.0
+                    for c in col:
+                        odds *= c["odds"] if c.get("src") == "book" else c["odds"] * (1 - cut)
+                    ok = all(robot.hit_any(c["sel"], by_id[c["id"]]["hg"], by_id[c["id"]]["ag"]) for c in col)
+                    pnl = stake * (odds - 1) if ok else -stake
+                    n += 1
+                    won += ok
+                    staked += stake
+                    net += pnl
+                    if ruin is None:
+                        if money < stake:
+                            ruin = day
+                        else:
+                            money += pnl
+                            low = min(low, money)
+            res[scen] = {"cols": n, "won": won, "staked": staked, "net_unlimited": round(net, 2), "return": round((staked + net) / staked, 3),
+                         "bank_end": round(money, 2), "ruin": ruin, "low": round(low, 2)}
+        out[name] = res
+    return out
+
+
 def main():
     days = cb.load()
     variants, rows = learn(days)
+    if "--bank" in sys.argv:
+        b = bank(variants)
+        for name, lab in (("L0", "сегашните"), ("L1", "вариант 2")):
+            for scen, txt in (("A", "цена по робота без марж"), ("B", "цена по робота минус 6% марж")):
+                x = b[name][scen]
+                print(f"{lab:10} | {txt:28} | колонки {x['cols']}, минали {x['won']} | връща {x['return']:.2f} € от 1 € | "
+                      f"без лимит на банката: {x['net_unlimited']:+.0f} € | с банка 500 €: " + (f"свършва на {x['ruin']}" if x["ruin"] else f"накрая {x['bank_end']:.0f} € (най-ниско {x['low']:.0f} €)"))
+        return
     if "--monthly" in sys.argv:
         mon = monthly(variants)
         print("месец   | сегашните: колонки минали      единични    | вариант 2: колонки минали      единични")
