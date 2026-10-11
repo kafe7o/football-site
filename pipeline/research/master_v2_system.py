@@ -44,8 +44,8 @@ PER_DAY = (1, 2, 4, 8)
 MIN_COLS = 150
 
 
-def top_picks(rows, picks):
-    """Топ шанс (третината на първенството за деня) и шанс >= 65% -> {ден: [номера на мачове, най-вероятните първи]}."""
+def top_picks(rows, picks, min_p=0.65):
+    """Топ шанс (третината на първенството за деня) и шанс >= min_p (65%) -> {ден: [номера на мачове, най-вероятните първи]}."""
     by_group = defaultdict(list)
     for i, (e, s, r, h) in picks.items():
         by_group[(rows[i]["league"], rows[i]["day"])].append((i, s))
@@ -54,7 +54,7 @@ def top_picks(rows, picks):
         keep |= vb.top_third(items)
     by_day = defaultdict(list)
     for i in keep:
-        if picks[i][1] >= 0.65:
+        if picks[i][1] >= min_p:
             by_day[rows[i]["day"]].append(i)
     return {d: sorted(ids, key=lambda i: -picks[i][1]) for d, ids in by_day.items()}
 
@@ -123,11 +123,15 @@ def money(months, bank=BANK, stake=STAKE):
 def main():
     rows = vb.build()
     print("мачове:", len(rows))
+    arg = [a for a in sys.argv if a.startswith("--min-p=")]
+    min_p = float(arg[0][8:]) if arg else 0.65
+    out_path = OUT if min_p == 0.65 else OUT.with_name(f"master_v2_system_p{int(min_p * 100)}.json")
+    print("праг на шанса:", f"{min_p:.0%}")
     res = {"legs": {}, "variants": []}
     pick_sets = {}
     for floor, agree in product(FLOORS, (False, True)):
         picks = mr.master_picks(rows, "вариант 2", agree, False, floor=floor)
-        by_day = top_picks(rows, picks)
+        by_day = top_picks(rows, picks, min_p)
         pick_sets[(floor, agree)] = (picks, by_day)
     # къде работи най-добре - мачовете по първенство и по вид (праг 1.30, без съгласие)
     picks, by_day = pick_sets[(1.30, False)]
@@ -171,8 +175,8 @@ def main():
               f" | средно {m['avg']:+.0f}/мес, +100 в {m['plus100']}/{m['months']}, +150 в {m['plus150']}, минус в {m['minus']}, най-лош {m['worst']:+.0f}, най-добър {m['best']:+.0f}")
     for v in res["variants"]:
         v["money"] = {k: x for k, x in (v["money"] or {}).items() if k != "by_month"}
-    OUT.write_text(json.dumps(res, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
-    print("записано:", OUT)
+    out_path.write_text(json.dumps(res, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
+    print("записано:", out_path)
 
 
 if __name__ == "__main__":
