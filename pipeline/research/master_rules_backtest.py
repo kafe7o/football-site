@@ -34,11 +34,40 @@ OUT = ROOT / "data" / "master_rules_backtest.json"
 SELECT_END = vb.SELECT_END
 
 
+def calibrated(rows):
+    """Вариант 2 (поправеният шанс) за всички 14 събития: p - сбор/(n + 50) по вид избор, ден по ден САМО от предишните дни (едната прогноза на робота и излязло ли е) -
+    както слой L1 в research/online_learning_backtest.py."""
+    from bets.shadow import kind
+    A = vb.arrays(rows)
+    if "PC" in A:
+        return A["PC"]
+    kinds = [kind(e) for e in vb.EV]
+    sums = defaultdict(lambda: [0.0, 0])
+    PC = A["P"].copy()
+    by_day = defaultdict(list)
+    for i, row in enumerate(rows):
+        by_day[row["day"]].append(i)
+    for day in sorted(by_day):
+        for i in by_day[day]:
+            for k in range(len(vb.EV)):
+                sm, n = sums[kinds[k]]
+                PC[i, k] = min(max(A["P"][i, k] - sm / (n + 50), 0.01), 0.99)
+        for i in by_day[day]:                       # резултатите стават известни след деня
+            one = rows[i]["current"]
+            if not one or one["sel"] not in vb.EV:
+                continue
+            k = vb.EV.index(one["sel"])
+            sums[kinds[k]][0] += one["p"] - float(A["H"][i, k])
+            sums[kinds[k]][1] += 1
+    A["PC"] = PC
+    return PC
+
+
 def master_picks(rows, src, agree, weekend):
     """Най-вероятното събитие по правилата на майстора (цена >= 1.40 истинска, без „тото“, без дерби); шанс >= 0.5 за групата на топ шанс."""
     A = vb.arrays(rows)
     P, Q, R = A["P"], A["Q"], A["R"]
-    S = P if src == "робот" else Q if src == "пазар" else (P + Q) / 2
+    S = P if src == "робот" else Q if src == "пазар" else calibrated(rows) if src == "вариант 2" else (P + Q) / 2
     with np.errstate(invalid="ignore"):
         valid = ~np.isnan(R) & (R >= robot.FLOOR) & ~np.isnan(S) & (S >= 0.5)
         if agree:
@@ -95,7 +124,8 @@ def main():
     cur = cs.money(cs.current_months(rows))
     print(f"СЕГАШНИТЕ (цена от 1.40 върху цената на робота): средно {cur['avg']:+.0f} €/месец, +200 € в {cur['plus200']}/{cur['months']}, минус в {cur['minus']}/{cur['months']}")
     res = []
-    for src, agree, weekend, size in product(("робот", "смес", "пазар"), (False, True), (False, True), (3, 2, 4)):
+    srcs = ("вариант 2",) if "--v2" in sys.argv else ("робот", "смес", "пазар", "вариант 2")
+    for src, agree, weekend, size in product(srcs, (False, True), (False, True), (3, 2, 4)):
         picks = master_picks(rows, src, agree, weekend)
         st, mon = columns_of(rows, picks, size)
         res.append({"src": src, "agree": agree, "weekend": weekend, "size": size, "stats": st, "money": {k: v for k, v in (mon or {}).items() if k != "by_month"}})

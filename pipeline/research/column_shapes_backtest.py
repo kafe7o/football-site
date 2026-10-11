@@ -132,11 +132,31 @@ def current_months(rows):
     return months
 
 
+def pool_v2_rules(rows):
+    """Същият пул, но: шансът е ВАРИАНТ 2 (поправеният, research/master_rules_backtest.calibrated) и всички правила на майстора - истинска цена от 1.40, без тото,
+    без дерби, топ шанс по поправения шанс, шанс >= 65% (един мач на първенство - в build_cols с per_league = 1)."""
+    from research import master_rules_backtest as mr
+    picks = mr.master_picks(rows, "вариант 2", False, False)
+    by_group = defaultdict(list)
+    for i, (e, s, r, h) in picks.items():
+        by_group[(rows[i]["league"], rows[i]["day"])].append((i, s))
+    keep = set()
+    for items in by_group.values():
+        keep |= vb.top_third(items)
+    out = defaultdict(list)
+    for i in keep:
+        e, s, r, h = picks[i]
+        if s >= 0.65:
+            out[rows[i]["day"]].append((i, e, s, r, h, rows[i]["league"], rows[i]["wd"]))
+    return out
+
+
 def main():
     rows = vb.build()
-    days_pool = pool(rows)
+    v2 = "--v2-rules" in sys.argv
+    days_pool = pool_v2_rules(rows) if v2 else pool(rows)
     res = []
-    for size, comp, per_league, weekend in product((2, 3, 4), COMPS, (1, 2), (False, True)):
+    for size, comp, per_league, weekend in product((2, 3, 4), COMPS, (1,) if v2 else (1, 2), (False, True)):
         stats, months = run(days_pool, size, comp, per_league, weekend)
         res.append({"size": size, "comp": comp, "per_league": per_league, "weekend": weekend, "stats": stats, "money": money(months)})
     name = lambda v: f"по {v['size']}, {v['comp']}, {'един' if v['per_league'] == 1 else 'до 2'} от първенство{', само пет-нед' if v['weekend'] else ''}"
@@ -150,10 +170,11 @@ def main():
         s, c, m = v["stats"]["select"], v["stats"]["clean"], v["money"]
         print(f"  {name(v):58} | избор {s['hit']:.0%} коеф {s['price']:.2f} връща {s['return']:.3f} | чиста {c.get('hit', 0):.0%} коеф {c.get('price', 0):.2f} "
               f"връща {c.get('return', 0):.3f} | 600 €/30 €: средно {m['avg']:+.0f}/мес, +200 в {m['plus200']}/{m['months']}, минус в {m['minus']}/{m['months']}")
-    OUT.write_text(json.dumps({"current_money": cur, "variants": [{**{k: v[k] for k in ("size", "comp", "per_league", "weekend", "stats")},
-                                                                     "money": {k: x for k, x in v["money"].items() if k != "by_month"}} for v in res]},
+    out_path = OUT.with_name("column_shapes_v2_rules.json") if v2 else OUT
+    out_path.write_text(json.dumps({"current_money": cur, "variants": [{**{k: v[k] for k in ("size", "comp", "per_league", "weekend", "stats")},
+                                                                     "money": {k: x for k, x in (v["money"] or {}).items() if k != "by_month"}} for v in res]},
                               ensure_ascii=False, indent=1, default=float), encoding="utf-8")
-    print("записано:", OUT)
+    print("записано:", out_path)
 
 
 if __name__ == "__main__":
