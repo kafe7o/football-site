@@ -487,6 +487,8 @@ const isPending = m => new Date(m.k).getTime() + LIVE_AFTER <= Date.now();
 const UP = ALL.filter(m => !isPending(m));
 // само записаните (честният запис) и само с прогноза на робота - без собствена оценка мачът е само в „Прогнози“
 const PEND = ALL.filter(m => isPending(m) && m.lk && (m.b === "model" || m.t));
+// отложени, прекъснати, спрени, прекратени, отменени, пренасрочени (API-Football, bets/tips.py mark_status): не чакат резултат и не са в мерките
+const PSTL = (DATA.postponed || []).filter(m => !SETTLED.has(m.i));
 const OLD_RULES = ["market_likely", "likely"];     // главният съвет до 30.09 (1/X/2, двоен шанс, над/под 2.5)
 const SUREDAYS = new Set((DATA.upcoming || []).concat(DATA.pending || []).filter(m => m.su).map(m => dayKey(m.k)));    // (след tz и dayKey - иначе е преди инициализацията им)
 const fc = {day: null, q: "", league: "", tip: false, sort: "time", sure: store("fc-sure") !== "0"};
@@ -1007,6 +1009,17 @@ function pendingBox() {
     ${xs.map(m => `<div class="small muted" style="margin:10px 2px 3px">${flag(m.l)} ${esc(title(m.l))} · започна ${fmtDate(m.k)} ${fmtTime(m.k)}</div>` + matchCard(m)).join("")}</div></details>`;
 }
 
+// „Отложени или прекъснати“: свито, като „Чакат резултат“, но отделно - тези мачове не чакат резултат и не влизат в мерките
+function postponedBox() {
+  if (!PSTL.length) return "";
+  const xs = PSTL.slice().sort((a, b) => a.k.localeCompare(b.k));
+  return `<details class="pend" id="rs-pst"><summary><span>Отложени или прекъснати: <b>${xs.length}</b> ${xs.length === 1 ? "мач" : "мача"}</span><span class="arr" aria-hidden="true">▾</span></summary>
+    <div class="inner"><div class="muted small" style="margin:0 2px 6px">Според API-Football тези мачове са отложени, прекъснати, спрени, прекратени, отменени или пренасрочени - не са играни докрай, затова не чакат резултат
+    и не влизат в мерките (✓/✗, проценти, пари). Щом получат резултат, минават в „Мач по мач“. Ако мачът е в колонка, виж таб Колонки.</div>
+    ${xs.map(m => `<div class="small muted" style="margin:10px 2px 3px">${flag(m.l)} ${esc(title(m.l))} · трябваше да започне ${fmtDate(m.k)} ${fmtTime(m.k)}
+      · <span class="badge warn">${esc((m.st && m.st[1]) || "отложен")}</span>${m.st && m.st[3] ? ` · нов час ${fmtDate(m.st[3])} ${fmtTime(m.st[3])}` : ""}${m.st && m.st[2] ? ` · отбелязано ${fmtDate(m.st[2])} ${fmtTime(m.st[2])}` : ""}</div>` + matchCard(m)).join("")}</div></details>`;
+}
+
 function renderResults() {
   const since = new Date(Date.now() - (+rs.period) * 864e5).toISOString();
   let rows = REC.filter(r => r.k >= since);
@@ -1021,9 +1034,10 @@ function renderResults() {
       Тук ще се трупа всяка прогноза, записана преди мача, и дали е излязла - по лиги и по пазари.
       Докато се натрупа, в таба <b>Лиги</b> е проверката назад във времето (симулация на същия робот за 2023-2026).</div>`;
   }
-  html += pendingBox();
-  const keepOpen = () => { const pd = document.getElementById("rs-pend");
-    if (pd) { pd.open = !!rs.pendOpen; pd.ontoggle = () => { rs.pendOpen = pd.open; }; } };
+  html += pendingBox() + postponedBox();
+  const keepOpen = () => { const pd = document.getElementById("rs-pend"), ps = document.getElementById("rs-pst");
+    if (pd) { pd.open = !!rs.pendOpen; pd.ontoggle = () => { rs.pendOpen = pd.open; }; }
+    if (ps) { ps.open = !!rs.pstOpen; ps.ontoggle = () => { rs.pstOpen = ps.open; }; } };
   if (!rows.length) {
     el.innerHTML = html + (rs.filter === "sure" ? `<div class="empty">Още няма уредени мачове с топ шанс: белегът „топ шанс“ се записва от 08.10 в 07:00 - тук ще се трупат, щом свършат.</div>`
       : REC.length ? `<div class="empty">Няма уредени мачове за този период.</div>` : "");
@@ -1332,16 +1346,30 @@ const retTxt = () => CBT && CBT.book_return != null ? (CBTS && CBTS.book_return 
 const winLbl = ds => ds && ds.length ? (ds.length > 1 ? `${colDay(ds[0])} – ${colDay(ds[ds.length - 1])}` : colDay(ds[0])) : "";
 const cDay = c => c.cday || dayKey(c.legs[0].kickoff);                    // за кой ден е колонката
 
+// мач на колонката, който е отложен/прекъснат/спрян/прекратен/отменен/пренасрочен (API-Football, bets/tips.py mark_status): l.st = [код, етикет, от кога, нов час]
+const pstOf = c => (c.legs || []).filter(l => l.st);
+const pstWord = c => [...new Set(pstOf(c).map(l => l.st[1] || "отложен"))].join("/");
+// колонка, която чака поради такъв мач: автоматично не се уреждава; дали минава с останалите е решение на собственика (правило няма)
+const pstWaits = c => c.passed == null && pstOf(c).length > 0;
+function pstOthers(c) {
+  const rest = c.legs.filter(l => !l.st), ok = rest.filter(l => l.hit === true).length, bad = rest.filter(l => l.hit === false).length, wait = rest.length - ok - bad;
+  return `останалите ${rest.length} мача: ${ok} излезли${bad ? `, ${bad} не излезли` : ""}${wait ? `, ${wait} чакат` : ""}`;
+}
+
 function colCard(c, rec) {
   const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
-  const res = !rec ? `<span class="muted">предварително</span>` : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>` : `<span class="muted">чака мачовете</span>`;
+  const res = !rec ? `<span class="muted">предварително</span>` : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>`
+    : pstWaits(c) ? `<span class="badge warn">чака - мачът е ${esc(pstWord(c))}</span>` : `<span class="muted">чака мачовете</span>`;
   const name = c.manual ? esc(c.name || "Играна от теб") : (c.idx ? "Колонка " + c.idx : "Колонка");
   return `<div class="col ${state}"><div class="small" style="margin-bottom:4px"><b>${name}</b> · <b>за ${esc(colDay(cDay(c)))}</b> ${res}</div>
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
       <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(title(l.league))}</span><br>
       <b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b> <span class="muted small">${pct(l.p)} @${l.odds.toFixed(2)}${l.src === "robot" ? " (по робота)" : ""}${l.late ? " · добавен след началото на мача" : ""}</span></span>
-      <span>${rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
+      <span>${l.st ? `<span class="badge warn" title="Според API-Football; няма резултат">${esc(l.st[1] || "отложен")}</span>`
+        : rec ? (l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span> ` : "") + hit(l.hit) : ""}</span></div>`).join("")}
+    ${pstWaits(c) ? `<div class="note" style="margin:6px 0 0"><b>Колонката чака - не се уреждава автоматично.</b> ${pstOf(c).map(l => `${esc(l.home)} – ${esc(l.away)} е ${esc(l.st[1] || "отложен")}${l.st[3] ? ` (нов час ${fmtDate(l.st[3])} ${fmtTime(l.st[3])})` : ""}`).join("; ")} (${pstOthers(c)}).
+      <b>Решение на собственика:</b> дали колонката минава с останалите мачове, ако този мач не се доиграе - правило за анулиране няма и не е измислено; ако падне друг мач, колонката пада и така.</div>` : ""}
     ${c.note ? `<div class="small muted" style="margin-top:6px">${esc(c.note)}</div>` : ""}
     ${colReviewBlock(c)}
     <div class="sum"><span>Коефициент на колонката <b>${c.odds.toFixed(2)}</b>${c.book ? "" : " (част от коефициентите са по робота - провери истинските)"}</span>
@@ -1371,6 +1399,10 @@ function renderColumns() {
     <b>само от мачовете с топ шанс</b>; всеки мач е най-много в една колонка; до ${pr.per_day || 4} колонки на ден.
     ${CBT ? `<br><span class="muted small">Назад: колонка минава в <b>${pct(CBT.pass)}</b> от случаите (роботът казва ${pct(CBT.claimed)} - завишава) и връща средно <b>${retTxt()} €</b> от 1 € (избор и чиста проверка) - тоест губи; маржът на букмейкъра се умножава на всеки мач. Не е „сигурен залог“.</span>` : ""}</div>`;
   const auto = rec.columns.filter(c => !c.manual);
+  const waits = rec.columns.filter(pstWaits).sort((a, b) => cDay(a).localeCompare(cDay(b)) || a.idx - b.idx);
+  if (waits.length) html += `<div class="note"><b>Чака решение на собственика (${waits.length}):</b> колонка с мач, който не е игран докрай. Не се уреждава автоматично и не влиза в мерките, докато мачът няма резултат.
+    <ul style="margin:6px 0 0;padding-left:18px">${waits.map(c => `<li>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + c.idx} за ${esc(colDay(c.manual ? c.day : cDay(c)))}: ${pstOf(c).map(l => `<b>${esc(l.home)} – ${esc(l.away)}</b> е ${esc(l.st[1] || "отложен")}`).join("; ")} (${pstOthers(c)}).</li>`).join("")}</ul>
+    <span class="muted small">Въпросът е един: минава ли колонката с останалите мачове, ако този мач не се доиграе. Правило за анулиране няма - решава собственикът.</span></div>`;
   const todays = auto.filter(c => cDay(c) === C.today).sort((a, b) => a.idx - b.idx);
   html += `<h2>Днес - ${esc(colDay(C.today))}</h2>`;
   if (todays.length) html += `<p class="small muted" style="margin:0 0 8px">Записани сутринта в ${esc(fmtTime(todays[0].locked_at))} - <b>не се променят</b>. Това са колонките за днес.</p>` + todays.map(c => colCard(c, true)).join("");

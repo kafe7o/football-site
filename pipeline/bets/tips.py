@@ -334,14 +334,59 @@ def locked_entry(conn, ctx, fx, t, fitted):
             "tip_best": t["tip_best"], "why": why, "flags": flags}
 
 
-def started(conn, now=None):
-    """Записаните прогнози за започнали мачове без резултат - „Чакат резултат“ на сайта, със
-    всичко, което мачът имаше в „Прогнози“ (собственикът, 2026-10-01)."""
+def is_postponed(flags):
+    """Мачът е отложен, прекъснат, спрян, прекратен, отменен или пренасрочен (белегът от mark_status)."""
+    return bool((flags or {}).get("postponed"))
+
+
+def mark_status(conn, seen, now=None):
+    """Статусът на неуредените мачове (bets/apifootball.refresh_status) -> белег във флаговете на прогнозата: postponed = True и
+    status = {c: код на API-Football, bg: отложен/прекъснат/..., at: последна проверка, since: от кога, to: нов начален час, ако е
+    известен}. САМО допълнение във флаговете - записът (шансове, цени, прогнози, белегът „топ шанс“) не се пипа. Ключове:
+    seen = {fixture_id: (код, етикет или None, нов начален час или None)}. Етикет -> белег; без етикет (играе се / свършил / още не
+    е започнал) белегът се маха (status.cleared). Мач, получил резултат, също се чисти. Правилото за колонките не се променя
+    (виж columns.py). Връща броя неуредени мачове с белег."""
     now = now or datetime.now(timezone.utc)
+    stamp = now.isoformat(timespec="seconds")
+    for fid, (code, label, moved) in seen.items():
+        t = conn.execute("SELECT home, away, hg, flags_json FROM tips WHERE fixture_id = ?", (fid,)).fetchone()
+        if t is None or t["hg"] is not None:
+            continue
+        flags = json.loads(t["flags_json"] or "{}")
+        old = flags.get("status") or {}
+        if label:
+            st = {"c": code, "bg": label, "at": stamp, "since": old.get("since") if flags.get("postponed") else stamp, "src": "api-football"}
+            if moved:
+                st["to"] = moved
+            if not flags.get("postponed") or old.get("c") != code or old.get("to") != moved:
+                log.info("Мач със статус „%s“ (%s): %s - %s%s", label, code, t["home"], t["away"], f", нов час {moved}" if moved else "")
+            flags["postponed"], flags["status"] = True, st
+        elif flags.get("postponed"):
+            flags.pop("postponed")
+            flags["status"] = {"c": code, "bg": None, "at": stamp, "was": old.get("c"), "since": old.get("since"), "cleared": stamp, "src": "api-football"}
+            log.info("Мачът пак е обикновен (%s): %s - %s", code, t["home"], t["away"])
+        else:
+            continue
+        conn.execute("UPDATE tips SET flags_json = ? WHERE fixture_id = ?", (json.dumps(flags), fid))
+    for t in conn.execute("SELECT fixture_id, home, away, flags_json FROM tips WHERE hg IS NOT NULL AND flags_json LIKE '%\"postponed\"%'").fetchall():
+        flags = json.loads(t["flags_json"] or "{}")
+        if flags.pop("postponed", None):
+            old = flags.get("status") or {}
+            flags["status"] = {**old, "bg": None, "cleared": stamp, "played": True}          # получи резултат - вече не е отложен
+            conn.execute("UPDATE tips SET flags_json = ? WHERE fixture_id = ?", (json.dumps(flags), t["fixture_id"]))
+            log.info("Отложеният мач получи резултат: %s - %s", t["home"], t["away"])
+    conn.commit()
+    return conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND flags_json LIKE '%\"postponed\": true%'").fetchone()[0]
+
+
+def _unsettled(conn, now, postponed):
+    """Записаните прогнози за започнали мачове без резултат: postponed=False - тези, които чакат резултат; True - отложените/прекъснатите."""
     ctx = analysis.Context(conn, now)
     models, out = {}, []
     for t in conn.execute("SELECT * FROM tips WHERE hg IS NULL AND kickoff <= ? ORDER BY kickoff",
                           (now.isoformat(),)).fetchall():
+        if is_postponed(json.loads(t["flags_json"] or "{}")) != postponed:
+            continue
         fx = conn.execute("SELECT * FROM fixtures WHERE id = ?", (t["fixture_id"],)).fetchone()
         if fx is None:
             log.warning("Записана прогноза без мача в разписанието (без анализ): %s %s - %s",
@@ -350,6 +395,19 @@ def started(conn, now=None):
             models[fx["league"]] = fitted_model(conn, fx["league"], now)
         out.append(locked_entry(conn, ctx, fx, t, models.get(t["league"])))
     return out
+
+
+def started(conn, now=None):
+    """Записаните прогнози за започнали мачове без резултат - „Чакат резултат“ на сайта, със
+    всичко, което мачът имаше в „Прогнози“ (собственикът, 2026-10-01). Отложените и прекъснатите (mark_status) не са тук -
+    те не чакат резултат, а са отделно (postponed)."""
+    return _unsettled(conn, now or datetime.now(timezone.utc), False)
+
+
+def postponed(conn, now=None):
+    """Отложените, прекъснатите, спрените, прекратените, отменените и пренасрочените мачове без резултат (белегът от mark_status):
+    сайтът ги показва отделно, не в „Чакат резултат“ и не в мерките."""
+    return _unsettled(conn, now or datetime.now(timezone.utc), True)
 
 
 # ---------- уреждане ----------

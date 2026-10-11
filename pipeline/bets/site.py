@@ -71,6 +71,9 @@ def compact_forecast(m):
     out = {"i": m["id"], "l": m["league"], "k": m["kickoff"],
            "h": m.get("home_src") or m["home"], "a": m.get("away_src") or m["away"],
            "lk": m.get("locked")}
+    st = (m.get("flags") or {}).get("status")
+    if st and (m.get("flags") or {}).get("postponed"):
+        out["st"] = [st.get("c"), st.get("bg"), st.get("since"), st.get("to")]      # отложен/прекъснат/...: код, етикет, от кога, нов час
     if not m.get("basis"):
         out["w"] = m.get("why")
         return out
@@ -309,6 +312,8 @@ def build(conn, now=None, upcoming=None):
     upcoming = upcoming if upcoming is not None else tips.preview(conn, now)
     squads = apifootball.load(conn, [m["id"] for m in upcoming] + [r["fixture_id"] for r in conn.execute(
         "SELECT fixture_id FROM tips WHERE hg IS NULL AND kickoff <= ?", (now.isoformat(),))])
+    # 2026-10-11: отложен/прекъснат мач не чака резултат и не е в мерките - показва се отделно (bets/tips.py mark_status)
+    postponed = [m for m in tips.postponed(conn, now) if m.get("basis") == "model" or m.get("tip")]
     data = {
         "generated": now.isoformat(timespec="seconds"),
         "credits": db.get_meta(conn, "credits_remaining"),
@@ -323,6 +328,7 @@ def build(conn, now=None, upcoming=None):
         # по пазара); „Без прогноза на робота“ - само в „Прогнози“
         "pending": with_squads([compact_forecast(m) for m in tips.started(conn, now)
                                 if m.get("basis") == "model" or m.get("tip")], squads),
+        "postponed": with_squads([compact_forecast(m) for m in postponed], squads),
         "first_tip": db.get_meta(conn, "first_tip"),
         "backtest": backtest_summary(),
         "analysis": analysis_summary(),

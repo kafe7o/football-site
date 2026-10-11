@@ -228,7 +228,10 @@ def sync_manual(conn):
 
 
 def settle(conn):
-    """Уреждане: колонка пада щом един мач не излезе; минава, когато всичките са уредени и излезли."""
+    """Уреждане: колонка пада щом един мач не излезе; минава, когато всичките са уредени и излезли.
+    Колонка с отложен/прекъснат мач (tips.mark_status) НЕ се уреждава автоматично: мачът няма резултат, затова колонката не минава
+    и с останалите - дали минава без него е решение на собственика, правило за анулиране няма (2026-10-11). Падне ли друг неин мач,
+    колонката пада и така - това не зависи от отложения."""
     done = 0
     for r in conn.execute("SELECT day, idx, legs_json FROM columns WHERE idx > 0 AND idx < ? AND passed IS NULL", (WITHDRAWN,)).fetchall():
         legs, state = json.loads(r["legs_json"]), []
@@ -254,9 +257,14 @@ def record(conn, days=30):
     for r in conn.execute("SELECT * FROM columns WHERE idx > 0 AND idx < ? AND day >= ? ORDER BY day DESC, idx", (WITHDRAWN, since)).fetchall():
         legs, s = json.loads(r["legs_json"]), json.loads(r["summary_json"])
         for leg in legs:
-            t = conn.execute("SELECT hg, ag FROM tips WHERE fixture_id = ?", (leg["id"],)).fetchone()
+            t = conn.execute("SELECT hg, ag, flags_json FROM tips WHERE fixture_id = ?", (leg["id"],)).fetchone()
             leg["hit"] = None if not t or t["hg"] is None else bool(robot.hit_any(leg["sel"], t["hg"], t["ag"]))
             leg["score"] = None if not t or t["hg"] is None else [t["hg"], t["ag"]]
+            fl = json.loads(t["flags_json"] or "{}") if t and t["hg"] is None else {}
+            if fl.get("postponed"):
+                # отложен/прекъснат мач (tips.mark_status): [код на API-Football, етикет, от кога, нов начален час]
+                st = fl.get("status") or {}
+                leg["st"] = [st.get("c"), st.get("bg"), st.get("since"), st.get("to")]
         out.append({"day": r["day"], "idx": r["idx"], "legs": legs, "passed": r["passed"], "locked_at": r["locked_at"], **s})
         if r["passed"] is not None and not s.get("manual"):
             total += 1

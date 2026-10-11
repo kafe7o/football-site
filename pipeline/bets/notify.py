@@ -234,9 +234,12 @@ def evening(conn, now=None):
         if not rows:
             return False
         s = score(rows)
-        waiting = conn.execute("SELECT COUNT(*) FROM tips WHERE hg IS NULL AND (basis = 'model' OR tip IS NOT NULL) AND kickoff >= ? AND kickoff < ?",
-                               (start.isoformat(), now.isoformat())).fetchone()[0]
-        text = score_text(s, "Днес") + (f"\nЧакат резултат: {waiting}." if waiting else "")
+        # отложените и прекъснатите (tips.mark_status) не чакат резултат - броят се отделно
+        flags = [json.loads(r[0] or "{}") for r in conn.execute(
+            "SELECT flags_json FROM tips WHERE hg IS NULL AND (basis = 'model' OR tip IS NOT NULL) AND kickoff >= ? AND kickoff < ?",
+            (start.isoformat(), now.isoformat()))]
+        waiting, off = sum(1 for f in flags if not f.get("postponed")), sum(1 for f in flags if f.get("postponed"))
+        text = score_text(s, "Днес") + (f"\nЧакат резултат: {waiting}." if waiting else "") + (f"\nОтложени или прекъснати: {off}." if off else "")
         return send(f"Резултати {local.strftime('%d.%m')}", text, tags="bar_chart")
 
     return once(conn, f"evening:{day}", build)

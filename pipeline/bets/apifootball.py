@@ -12,7 +12,11 @@
   - refresh_injuries: контузени и наказани за мачовете до 30 часа напред - на 6 ч, а в последните 90 минути - на 90 минути;
   - refresh_lineups: в последните 90 минути преди мача на всеки 7 минути, докато се обяви съставът;
   - бюджет: в базата се брои на ден (meta apif:<ден>), най-много DAILY_CAP от 7 500 - запасът е за ръчни проби; под 800 останали (заглавката
-    x-ratelimit-requests-remaining на API-Football) - спира всичко освен съставите на мачовете до 45 минути.
+    x-ratelimit-requests-remaining на API-Football) - спира всичко освен съставите на мачовете до 45 минути;
+  - refresh_status (2026-10-11): статусът на мачовете, започнали преди над 3 часа и още без резултат - отложен (PST), спрян (SUSP), прекъснат (INT),
+    прекратен (ABD), отменен (CANC) или пренасрочен (върнат на „не е започнал“ с по-късен час). Такъв мач иначе стои завинаги „чака резултат“ и държи
+    колонката (Rayo - Athletic 10.10 беше INT при 0:0, Walsall - Crawley 03.10 - PST). Белегът е само допълнение във флаговете на прогнозата
+    (bets/tips.py mark_status); записът, шансовете и правилата не се пипат.
 Данните са в таблицата squads (един ред на мач); сайтът ги взима от там (bets/site.py), а наблюдателят на резултатите (bets/live.py) пише
 по-често състави в squads/live.json - за минути след обявяването, преди часовото пускане.
 """
@@ -41,6 +45,16 @@ INJ_AHEAD = timedelta(hours=30)
 LINEUP_FROM, LINEUP_RETRY = timedelta(minutes=90), timedelta(minutes=7)
 KICKOFF_TOLERANCE = timedelta(hours=4)
 KEEP_LIVE = timedelta(days=2)
+
+# статус на неуредени мачове (refresh_status)
+STATUS_AFTER = timedelta(hours=3)                # мачът е започнал преди над 3 часа и още няма резултат
+STATUS_WINDOW = timedelta(days=30)               # по-старите неуредени мачове се оставят за ръчен преглед
+STATUS_EVERY_NEW, STATUS_EVERY_OLD = timedelta(hours=3), timedelta(hours=24)     # колко често се пита за един мач (по-нов / по-стар от 2 дни)
+STATUS_MAP_EVERY = timedelta(hours=6)            # наново „всички мачове на деня“ за несвързаните
+STATUS_MAX_REQUESTS = 12                         # най-много заявки за статус при едно пускане
+STATUS_CAP = DAILY_CAP - 300                     # над това за деня статус не се пита - остава за съставите и контузените
+STATUS_BATCH = 20                                # fixtures?ids= приема до 20 номера
+STATUS_BG = {"PST": "отложен", "SUSP": "спрян", "INT": "прекъснат", "ABD": "прекратен", "CANC": "отменен"}
 
 # наши кодове -> номер на първенството в API-Football (проверени срещу leagues?current=true на 2026-10-10)
 LEAGUE_IDS = {
@@ -74,6 +88,8 @@ _session = {"used": 0, "remaining": None}       # без база (наблюд�
 
 def ensure(conn):
     conn.executescript(SCHEMA)
+    if "status_at" not in {r[1] for r in conn.execute("PRAGMA table_info(squads)")}:
+        conn.execute("ALTER TABLE squads ADD COLUMN status_at TEXT")          # кога за последно е питан статусът на мача (refresh_status)
 
 
 def enabled():
@@ -345,6 +361,116 @@ def refresh(conn, now=None):
     l = refresh_lineups(conn, now)
     log.info("API-Football: нови връзки %d, контузени обновени %d, състави проверени %d; заявки днес %d", m, i, l, used_today(conn, now))
     return m + i + l
+
+
+# ---------- статус на неуредени мачове (отложен / прекъснат / ...) ----------
+
+def match_state(a, our_kickoff, now):
+    """(код, етикет или None, нов начален час или None) за мача a на API-Football. Етикет има само за мач, който не се е играл както е
+    уговорено: PST, SUSP, INT, ABD, CANC, или „не е започнал“ с начален час по-късно от сега (пренасрочен). Нищо друго не се брои."""
+    fx = a.get("fixture") or {}
+    code = (fx.get("status") or {}).get("short")
+    moved = None
+    if fx.get("date") and _kick(fx["date"]) > now and _kick(fx["date"]) - _kick(our_kickoff) > KICKOFF_TOLERANCE:
+        moved = fx["date"]
+    if code in STATUS_BG:
+        return code, STATUS_BG[code], moved
+    if code in ("NS", "TBD") and moved:
+        return code, "пренасрочен", moved
+    return code, None, None
+
+
+def _status_candidates(conn, now):
+    """Записаните прогнози без резултат, започнали преди над STATUS_AFTER (и не по-стари от STATUS_WINDOW), в първенства на API-Football."""
+    rows = conn.execute(
+        """SELECT t.fixture_id, t.league, t.kickoff, t.home, t.away, f.home_src, f.away_src, s.apif_id, s.status_at
+             FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id LEFT JOIN squads s ON s.fixture_id = t.fixture_id
+            WHERE t.hg IS NULL AND t.kickoff < ? AND t.kickoff >= ? ORDER BY t.kickoff""",
+        ((now - STATUS_AFTER).isoformat(), (now - STATUS_WINDOW).isoformat())).fetchall()
+    return [dict(r) for r in rows if r["league"] in LEAGUE_IDS]
+
+
+def _status_due(r, now):
+    if not r["status_at"]:
+        return True
+    every = STATUS_EVERY_NEW if now - _kick(r["kickoff"]) < timedelta(days=2) else STATUS_EVERY_OLD
+    return now - datetime.fromisoformat(r["status_at"]) >= every
+
+
+def refresh_status(conn, now=None):
+    """Статусът на мачовете, започнали преди над 3 часа и още без резултат: свързаните (таблица squads) - по номер, до 20 в заявка; още
+    несвързаните (старите мачове, записани преди API-Football) - с една заявка „всички мачове на деня“, с което се свързват както в
+    map_fixtures. Резултатът се записва като допълнение във флаговете на прогнозата (tips.mark_status): записът не се пипа.
+    Бюджет: най-много STATUS_MAX_REQUESTS заявки на пускане, нищо над STATUS_CAP за деня; един мач се пита на 3 часа (на 24 - след 2 дни).
+    Връща броя мачове с белег (отложен/прекъснат/...). Без ключ - нищо (не е грешка)."""
+    from . import tips
+    ensure(conn)
+    now = now or datetime.now(timezone.utc)
+    stamp = now.isoformat(timespec="seconds")
+    seen, asked = {}, 0
+    cands = _status_candidates(conn, now) if enabled() else []
+    if not enabled():
+        log.info("API-Football: няма ключ - статусът на неуредените мачове не се проверява")
+    due = [r for r in cands if _status_due(r, now)]
+
+    def can_ask():
+        if asked >= STATUS_MAX_REQUESTS:
+            return False
+        if used_today(conn, now) >= STATUS_CAP:
+            log.warning("API-Football: над %d заявки днес - статусът на неуредените мачове чака до утре", STATUS_CAP)
+            return False
+        return True
+
+    # 1. свързаните - по номер
+    linked = [r for r in due if r["apif_id"]]
+    for i in range(0, len(linked), STATUS_BATCH):
+        if not can_ask():
+            break
+        chunk = linked[i:i + STATUS_BATCH]
+        api = request("fixtures", {"ids": "-".join(str(r["apif_id"]) for r in chunk)}, conn, now)
+        asked += 1
+        if api is None:
+            break                                          # мрежа / бюджет - следващото пускане
+        by_id = {a["fixture"]["id"]: a for a in api}
+        for r in chunk:
+            conn.execute("UPDATE squads SET status_at = ? WHERE fixture_id = ?", (stamp, r["fixture_id"]))
+            a = by_id.get(r["apif_id"])
+            if a is not None:
+                seen[r["fixture_id"]] = match_state(a, r["kickoff"], now)
+            else:
+                log.warning("API-Football: мач %s не е върнат за статус (номер %s)", r["fixture_id"], r["apif_id"])
+    # 2. несвързаните - по ден (UTC): свързват се с мачовете на деня
+    by_day = {}
+    for r in due:
+        if not r["apif_id"]:
+            by_day.setdefault(_kick(r["kickoff"]).astimezone(timezone.utc).date().isoformat(), []).append(r)
+    for day, rs in sorted(by_day.items(), reverse=True):
+        if not can_ask():
+            break
+        api = request("fixtures", {"date": day}, conn, now)
+        asked += 1
+        if api is None:
+            break
+        api = [a for a in api if a["league"]["id"] in ID_TO_CODE]
+        taken = {x[0] for x in conn.execute("SELECT apif_id FROM squads WHERE apif_id IS NOT NULL")}
+        for r in rs:
+            a = _best(r, api)
+            if a is None or a["fixture"]["id"] in taken:
+                # не е намерен: пазим кога е питан (ред без номер), за да не се пита на всеки час
+                conn.execute("INSERT INTO squads (fixture_id, status_at) VALUES (?, ?) ON CONFLICT(fixture_id) DO UPDATE SET status_at = excluded.status_at",
+                             (r["fixture_id"], stamp))
+                continue
+            taken.add(a["fixture"]["id"])
+            conn.execute("INSERT INTO squads (fixture_id, apif_id, apif_home, apif_away, mapped_at, status_at) VALUES (?, ?, ?, ?, ?, ?) "
+                         "ON CONFLICT(fixture_id) DO UPDATE SET apif_id = excluded.apif_id, apif_home = excluded.apif_home, "
+                         "apif_away = excluded.apif_away, mapped_at = excluded.mapped_at, status_at = excluded.status_at",
+                         (r["fixture_id"], a["fixture"]["id"], a["teams"]["home"]["name"], a["teams"]["away"]["name"], stamp, stamp))
+            seen[r["fixture_id"]] = match_state(a, r["kickoff"], now)
+    conn.commit()
+    flagged = tips.mark_status(conn, seen, now)
+    log.info("API-Football: статус на неуредени мачове - за проверка %d от %d, получени %d, заявки %d (днес общо %d); с белег отложен/прекъснат: %d",
+             len(due), len(cands), len(seen), asked, used_today(conn, now), flagged)
+    return flagged
 
 
 # ---------- за сайта и известията ----------

@@ -102,6 +102,8 @@ def cloud(log):
     ok.append(step(log, "6а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))))
     # състави, контузени и наказани (API-Football) - информация за анализа и бонус прегледа; преди сайта, за да влязат в него
     ok.append(step(log, "6б. Състави и отсъствия (API-Football)", apifootball.refresh, conn, now))
+    # мач, започнал преди над 3 часа и още без резултат: отложен/прекъснат ли е - белег във флаговете, преди сайта (bets/apifootball.py)
+    ok.append(step(log, "6в. Статус на неуредени мачове (API-Football)", apifootball.refresh_status, conn, now))
     ok.append(step(log, "7. Сайт", site.build, conn, now, upcoming))
     from bets import bonus
     ok.append(step(log, "7а. Бонус анализи: поръчване за мачовете от топ 5 в следващите 2 часа",
