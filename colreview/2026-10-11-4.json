@@ -37,7 +37,132 @@
       ]
      ]
     },
-    "ia": "2026-10-11T12:59:59+00:00"
+    "ia": "2026-10-11T13:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "Thomas Nörgaard",
+      "xi": [
+       [
+        1,
+        "P. Pentz",
+        "G"
+       ],
+       [
+        2,
+        "O. Villadsen",
+        "D"
+       ],
+       [
+        32,
+        "F. Alves",
+        "D"
+       ],
+       [
+        4,
+        "L. Binks",
+        "D"
+       ],
+       [
+        24,
+        "M. Divković",
+        "D"
+       ],
+       [
+        29,
+        "M. Frøkjær-Jensen",
+        "M"
+       ],
+       [
+        18,
+        "M. Ejdum",
+        "M"
+       ],
+       [
+        21,
+        "M. Younis",
+        "M"
+       ],
+       [
+        99,
+        "B. Slisz",
+        "M"
+       ],
+       [
+        7,
+        "O. Hyseni",
+        "M"
+       ],
+       [
+        38,
+        "J. Ambæk",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-4-2",
+      "c": "Mikkel Jespersen",
+      "xi": [
+       [
+        31,
+        "D. Kochen",
+        "G"
+       ],
+       [
+        2,
+        "O. Buur",
+        "D"
+       ],
+       [
+        12,
+        "David Helgi Aronsson",
+        "D"
+       ],
+       [
+        24,
+        "M. Garananga",
+        "D"
+       ],
+       [
+        25,
+        "R. Tytens",
+        "D"
+       ],
+       [
+        5,
+        "Oliver Højer",
+        "M"
+       ],
+       [
+        14,
+        "L. Sandgrav",
+        "M"
+       ],
+       [
+        18,
+        "J. Thomasen",
+        "M"
+       ],
+       [
+        19,
+        "G. Fraulo",
+        "M"
+       ],
+       [
+        26,
+        "F. Gytkjær",
+        "F"
+       ],
+       [
+        10,
+        "Í. Þorvaldsson",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-11T13:39:59+00:00"
    }
   },
   {
@@ -103,5 +228,6 @@
   }
  ],
  "changed": 3,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-11T13:39:59+00:00"
 }
