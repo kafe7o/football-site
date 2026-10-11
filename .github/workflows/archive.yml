@@ -43,6 +43,7 @@ jobs:
       - name: Седмичният анализ
         env:
           ARCHIVE_KEY: ${{ secrets.ARCHIVE_KEY }}
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           GH_TOKEN: ${{ github.token }}
           FOOTBALL_DB: ${{ runner.temp }}/football.db

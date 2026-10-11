@@ -177,7 +177,9 @@ def weekly(log, backtest=False, keep_local=False):
     before = count()
     steps = [("новите мачове", step(log, "1. Новите мачове: 22 лиги, 16 държави, 3. Бундеслига",
                                     refresh_results, conn, 2)),
-             ("xG", step(log, "2. xG от Understat", xg.update, conn))]
+             ("xG", step(log, "2. xG от Understat", xg.update, conn)),
+             # съдиите за всички първенства в архива (API-Football, ~1 заявка на първенство и сезон, веднъж) - за research/league_analysis.py
+             ("съдиите", step(log, "2а. Съдиите от API-Football в архива", apifootball.fill_referees, conn))]
     after = count()
     conn.close()
     out = {}

@@ -88,8 +88,11 @@ _session = {"used": 0, "remaining": None}       # без база (наблюд�
 
 def ensure(conn):
     conn.executescript(SCHEMA)
-    if "status_at" not in {r[1] for r in conn.execute("PRAGMA table_info(squads)")}:
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(squads)")}
+    if "status_at" not in cols:
         conn.execute("ALTER TABLE squads ADD COLUMN status_at TEXT")          # кога за последно е питан статусът на мача (refresh_status)
+    if "referee" not in cols:
+        conn.execute("ALTER TABLE squads ADD COLUMN referee TEXT")            # съдията от API-Football (за лигите без съдия във football-data)
 
 
 def enabled():
@@ -218,6 +221,10 @@ def map_fixtures(conn, now=None):
     by_day = {}
     for r in rows:
         by_day.setdefault(_kick(r["kickoff"]).astimezone(timezone.utc).date().isoformat(), []).append(r)
+    # вече свързани мачове в следващите 48 ч без съдия: съдията се обявява 1-3 дни преди мача - денят се пита пак (същата заявка, на MAP_EVERY)
+    for r in conn.execute("SELECT f.kickoff FROM squads s JOIN fixtures f ON f.id = s.fixture_id WHERE s.apif_id IS NOT NULL AND s.referee IS NULL "
+                          "AND f.kickoff > ? AND f.kickoff <= ?", (now.isoformat(), (now + timedelta(hours=48)).isoformat())):
+        by_day.setdefault(_kick(r["kickoff"]).astimezone(timezone.utc).date().isoformat(), [])
     new = 0
     for day, fs in sorted(by_day.items()):
         last = db.get_meta(conn, f"apif_map:{day}")
@@ -241,12 +248,18 @@ def map_fixtures(conn, now=None):
             if a is None:
                 continue
             matched += 1
-            conn.execute("INSERT INTO squads (fixture_id, apif_id, apif_home, apif_away, mapped_at) VALUES (?, ?, ?, ?, ?) "
+            conn.execute("INSERT INTO squads (fixture_id, apif_id, apif_home, apif_away, mapped_at, referee) VALUES (?, ?, ?, ?, ?, ?) "
                          "ON CONFLICT(fixture_id) DO UPDATE SET apif_id = excluded.apif_id, apif_home = excluded.apif_home, "
-                         "apif_away = excluded.apif_away, mapped_at = excluded.mapped_at",
-                         (f["id"], a["fixture"]["id"], a["teams"]["home"]["name"], a["teams"]["away"]["name"], now.isoformat(timespec="seconds")))
+                         "apif_away = excluded.apif_away, mapped_at = excluded.mapped_at, referee = COALESCE(excluded.referee, squads.referee)",
+                         (f["id"], a["fixture"]["id"], a["teams"]["home"]["name"], a["teams"]["away"]["name"], now.isoformat(timespec="seconds"),
+                          referee_name(a["fixture"].get("referee"))))
             new += 1
-        log.info("API-Football %s: %d мача в нашите първенства, свързани %d от %d наши", day, len(api_fixtures), matched, len(fs))
+        refs = 0
+        for a in api_fixtures:                                 # съдията за вече свързаните мачове на деня
+            ref = referee_name(a["fixture"].get("referee"))
+            if ref:
+                refs += conn.execute("UPDATE squads SET referee = ? WHERE apif_id = ? AND referee IS NULL", (ref, a["fixture"]["id"])).rowcount
+        log.info("API-Football %s: %d мача в нашите първенства, свързани %d от %d наши, съдии %d", day, len(api_fixtures), matched, len(fs), refs)
     conn.commit()
     return new
 
@@ -359,8 +372,76 @@ def refresh(conn, now=None):
     m = map_fixtures(conn, now)
     i = refresh_injuries(conn, now)
     l = refresh_lineups(conn, now)
-    log.info("API-Football: нови връзки %d, контузени обновени %d, състави проверени %d; заявки днес %d", m, i, l, used_today(conn, now))
+    r, pairs = fill_referees(conn, now)
+    log.info("API-Football: нови връзки %d, контузени обновени %d, състави проверени %d, съдии в историята %d (%d сезона); заявки днес %d",
+             m, i, l, r, pairs, used_today(conn, now))
     return m + i + l
+
+
+
+
+# ---------- съдиите за всички мачове (собственикът, 2026-10-12: „данни за всички мачове за всички съдии, за които можеш да вадиш инфо“) ----------
+# football-data дава съдията само за Англия и Шотландия; API-Football го дава за всеки мач (fixture.referee, понякога „Име, Държава“).
+# Предстоящите: при свързването (map_fixtures / squads_for) името отива в squads.referee, а tips.referee_of го ползва, когато football-data няма.
+# Историята: веднъж на първенство и сезон (fixtures?league&season - 1 заявка) имената се пишат в matches.referee, където е празно, по дата и имена на
+# отборите; така analysis.referee_profile (последните 10 мача на съдията, картоните от match_stats) работи за всичките 22 първенства с картони.
+REF_SEASONS = (2023, 2024, 2025, 2026)
+REF_MIN_REMAINING = 1200                                     # назад по сезони само при достатъчно квота за деня
+
+
+def referee_name(raw):
+    """„M. Oliver, England“ -> „M. Oliver“; празно -> None."""
+    if not raw:
+        return None
+    name = str(raw).split(",")[0].strip()
+    return name or None
+
+
+def fill_referees(conn, now=None):
+    """(а) предстоящите: squads.referee за свързаните мачове без име; (б) историята: по едно първенство и сезон на пускане (1 заявка), докато всички са минати.
+    Връща (мачове с ново име в историята, обработени двойки първенство-сезон)."""
+    from . import db, teams
+    from .leagues import LEAGUES
+    ensure(conn)
+    now = now or datetime.now(timezone.utc)
+    done_hist = pairs = 0
+    # (а) предстоящите: съдия от свързаните мачове (ако при свързването още не е бил обявен - ще се вземе при следващото свързване)
+    for r in conn.execute("SELECT s.fixture_id, s.referee, f.match_id FROM squads s JOIN fixtures f ON f.id = s.fixture_id WHERE s.referee IS NOT NULL AND f.match_id IS NOT NULL"):
+        conn.execute("UPDATE matches SET referee = ? WHERE id = ? AND (referee IS NULL OR referee = '')", (r["referee"], r["match_id"]))
+    # (б) историята: ВСИЧКИ първенства с история (собственикът, 12.10: „данни за всички мачове за всички съдии“); без картони профилът е само голове
+    leagues = [code for code in LEAGUE_IDS if code in LEAGUES and LEAGUES[code].has_history
+               and conn.execute("SELECT 1 FROM matches WHERE league = ? AND fthg IS NOT NULL LIMIT 1", (code,)).fetchone()]
+    for code in leagues:
+        for season in REF_SEASONS:
+            key = f"apif_ref:{code}:{season}"
+            if db.get_meta(conn, key):
+                continue
+            if _session["remaining"] is not None and _session["remaining"] < REF_MIN_REMAINING:
+                return done_hist, pairs
+            rows = request("fixtures", {"league": LEAGUE_IDS[code], "season": season}, conn, now)
+            if rows is None:
+                return done_hist, pairs
+            by_day = {}
+            for x in rows:
+                ref = referee_name(x["fixture"].get("referee"))
+                if ref and x["fixture"]["status"]["short"] in ("FT", "AET", "PEN"):
+                    by_day.setdefault(_kick(x["fixture"]["date"]).date().isoformat(), []).append((x["teams"]["home"]["name"], x["teams"]["away"]["name"], ref))
+            n = 0
+            for m in conn.execute("SELECT id, date, home_team, away_team FROM matches WHERE league = ? AND (referee IS NULL OR referee = '') AND fthg IS NOT NULL", (code,)).fetchall():
+                d = datetime.fromisoformat(m["date"]).date()
+                cands = [c for dd in (-1, 0, 1) for c in by_day.get((d + timedelta(days=dd)).isoformat(), [])]
+                best = max(((teams.similar(m["home_team"], h) + teams.similar(m["away_team"], a), h, a, ref) for h, a, ref in cands
+                            if teams.similar(m["home_team"], h) >= 0.5 and teams.similar(m["away_team"], a) >= 0.5), default=None)
+                if best:
+                    conn.execute("UPDATE matches SET referee = ? WHERE id = ?", (best[3], m["id"]))
+                    n += 1
+            db.set_meta(conn, key, now.isoformat(timespec="seconds"))
+            conn.commit()
+            done_hist += n
+            pairs += 1
+            log.info("Съдии от API-Football: %s %s - %d мача с име (%d в списъка)", code, season, n, len(rows))
+    conn.commit()
+    return done_hist, pairs
 
 
 # ---------- статус на неуредени мачове (отложен / прекъснат / ...) ----------
@@ -532,9 +613,11 @@ def squads_for(conn, fx, now=None, fresh=True):
         a = _best(fx, [x for x in (fixtures or []) if x["league"]["id"] in ID_TO_CODE])
         if a is None:
             return None
-        conn.execute("INSERT INTO squads (fixture_id, apif_id, apif_home, apif_away, mapped_at) VALUES (?, ?, ?, ?, ?) "
-                     "ON CONFLICT(fixture_id) DO UPDATE SET apif_id = excluded.apif_id, apif_home = excluded.apif_home, apif_away = excluded.apif_away",
-                     (fx["id"], a["fixture"]["id"], a["teams"]["home"]["name"], a["teams"]["away"]["name"], now.isoformat(timespec="seconds")))
+        conn.execute("INSERT INTO squads (fixture_id, apif_id, apif_home, apif_away, mapped_at, referee) VALUES (?, ?, ?, ?, ?, ?) "
+                     "ON CONFLICT(fixture_id) DO UPDATE SET apif_id = excluded.apif_id, apif_home = excluded.apif_home, apif_away = excluded.apif_away, "
+                     "referee = COALESCE(excluded.referee, squads.referee)",
+                     (fx["id"], a["fixture"]["id"], a["teams"]["home"]["name"], a["teams"]["away"]["name"], now.isoformat(timespec="seconds"),
+                      referee_name(a["fixture"].get("referee"))))
         conn.commit()
         row = conn.execute("SELECT * FROM squads WHERE fixture_id = ?", (fx["id"],)).fetchone()
     if fresh:

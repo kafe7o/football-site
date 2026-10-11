@@ -114,10 +114,17 @@ def league_dates(conn, code):
 
 
 def referee_of(conn, fx):
-    if not fx["match_id"]:
+    """Съдията: от football-data (Англия, Шотландия), иначе от API-Football (squads.referee - всички останали първенства)."""
+    if fx["match_id"]:
+        row = conn.execute("SELECT referee FROM matches WHERE id = ?", (fx["match_id"],)).fetchone()
+        if row and row[0]:
+            return row[0]
+    import sqlite3
+    try:
+        row = conn.execute("SELECT referee FROM squads WHERE fixture_id = ?", (fx["id"],)).fetchone()
+    except sqlite3.OperationalError:                         # таблицата / колоната я няма преди първото пускане с API-Football
         return None
-    row = conn.execute("SELECT referee FROM matches WHERE id = ?", (fx["match_id"],)).fetchone()
-    return row[0] if row else None
+    return row[0] if row and row[0] else None
 
 
 def match_analysis(ctx, fx, fitted, flags):
