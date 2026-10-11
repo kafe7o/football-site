@@ -1302,7 +1302,7 @@ function colRevNote(m) {
   return `<div class="bonus"><b class="t">Мачът е в колонка ${c.idx}</b> - отделен преглед няма; прегледът е на цялата колонка, час преди най-ранния ѝ мач (${fmtTime(new Date(colFirst(c)).toISOString())}). Виж таб Колонки.</div>`;
 }
 function colReviewBlock(c) {
-  if (c.manual || c.idx >= 200 || !c.legs.length) return "";
+  if (c.manual || c.shadow || c.idx >= 200 || !c.legs.length) return "";
   const first = colFirst(c), rv = COLREV[`${c.day}-${c.idx}`];
   if (!rv || !rv.legs) {
     if (c.passed != null || first < Date.now() - 3600e3) return "";
@@ -1361,7 +1361,7 @@ function colCard(c, rec) {
   const state = !rec ? "" : c.passed === 1 ? "won" : c.passed === 0 ? "lost" : "";
   const res = !rec ? `<span class="muted">предварително</span>` : c.passed === 1 ? `<span class="y">✓ МИНА</span>` : c.passed === 0 ? `<span class="n">✗ падна</span>`
     : pstWaits(c) ? `<span class="badge warn">чака - мачът е ${esc(pstWord(c))}</span>` : `<span class="muted">чака мачовете</span>`;
-  const name = c.manual ? esc(c.name || "Играна от теб") : (c.idx ? "Колонка " + c.idx : "Колонка");
+  const name = c.manual ? esc(c.name || "Играна от теб") : c.shadow ? "На сянка " + c.idx : (c.idx ? "Колонка " + c.idx : "Колонка");
   return `<div class="col ${state}"><div class="small" style="margin-bottom:4px"><b>${name}</b> · <b>за ${esc(colDay(cDay(c)))}</b> ${res}</div>
     ${c.legs.map(l => `<div class="leg"><span class="muted num">${fmtTime(l.kickoff)}</span>
       <span>${esc(l.home)} – ${esc(l.away)} <span class="muted small">${flag(l.league)} ${esc(title(l.league))}</span><br>
@@ -1389,6 +1389,19 @@ function systemNote() {
     <span class="muted small">Мачовете с топ шанс намаляват случайността, но не премахват маржа на букмейкъра, който се умножава на всеки мач. Не е „сигурен залог“.</span></div></details>`;
 }
 
+// Колонки на сянка с поправен шанс (bets/shadow.py): не се играят, мерят се срещу сегашните
+function shadowBlock(S) {
+  if (!S) return `<details class="an"><summary>Колонки на сянка - с поправен шанс</summary><div class="note" style="margin-top:6px">Още няма записани. От 12.10 в 07:00 се записват и колонки с поправен шанс - не се играят, само се мерят срещу сегашните.</div></details>`;
+  const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
+  const sh = S.shadow || {}, of = S.official || {};
+  return `<details class="an"><summary>Колонки на сянка - с поправен шанс (${S.days} ${S.days === 1 ? "ден" : "дни"} от ${esc(S.from)})</summary>
+    <div class="note" style="margin-top:6px">Не се играят - само се мерят срещу сегашните колонки, правила: ${esc(S.rule)}.
+      <ul style="margin:6px 0 0;padding-left:18px"><li>Уредени колонки: на сянка <b>${f(sh.passed, sh.settled)}</b>; сегашни за същите дни <b>${f(of.passed, of.settled)}</b>.</li>
+      <li>Мачове в колонките: на сянка <b>${f(sh.legs_hit, sh.legs)}</b>; сегашни <b>${f(of.legs_hit, of.legs)}</b>.</li></ul>
+      <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки. Назад (проверка 11.10) на сянка минават 34-35% срещу 29%, но подборът се мести към избори без цена от букмейкър (над 1.5, под 3.5), затова парите не са измерени.</span></div>
+    ${(S.today || []).length ? `<p class="small muted" style="margin:8px 0 4px">Днес на сянка:</p>` + S.today.map(c => colCard({...c, shadow: true}, true)).join("") : ""}</details>`;
+}
+
 function renderColumns() {
   const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
   const pr = C.params || {};
@@ -1409,6 +1422,7 @@ function renderColumns() {
   else if (C.locked) html += `<div class="empty">Днес няма колонки - не стигнаха 3 мача с топ шанс от различни първенства.</div>`;
   else html += `<div class="empty">Колонките за днес се записват сутринта в 07:00, от записаните прогнози за деня. Ден за ден - не предварително.</div>`;
   html += systemNote();
+  html += shadowBlock(C.shadow);
   const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today);
   html += `<h2>Минали колонки</h2>` + (rec.n ? `<div class="note">Записани и уредени: <b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}); роботът е казвал средно ${pct(rec.claimed)}.
     <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки.</span></div>` : `<div class="empty">Още няма уредени колонки - записът ден за ден започва на 09.10.</div>`);

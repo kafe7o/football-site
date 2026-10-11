@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from bets import apifootball, columns, config, db, fixtures, notify, odds_api, prices, results, rules, site, tips, xg
+from bets import apifootball, columns, config, db, fixtures, notify, odds_api, prices, results, rules, shadow, site, tips, xg
 from bets.leagues import LEAGUES
 
 RESULTS_EVERY = timedelta(hours=11)     # football-data е безплатен сървър - два пъти на ден стига
@@ -92,6 +92,7 @@ def cloud(log):
            step(log, "4в. Най-сигурните мачове на деня", tips.mark_sure, conn, now),
            step(log, "5. Уреждане", tips.settle, conn, now),
            step(log, "5б. Уреждане на колонките", columns.settle, conn),
+           step(log, "5б2. Уреждане на колонките на сянка", shadow.settle, conn),
            step(log, "5в. Проверка на правилата на майстора", rules.check_and_alert, conn, now),
            step(log, "5а. Стари мачове без прогноза", fixtures.prune, conn, now)]
     if conn.execute("SELECT 1 FROM tips LIMIT 1").fetchone() and not db.get_meta(conn, "first_tip"):
@@ -100,6 +101,8 @@ def cloud(log):
     ok.append(step(log, "6. Прогнозите напред", lambda: upcoming.extend(tips.preview(conn, now))))
     # колонките за деня - ден за ден (майсторът, 09.10), от записаните сутринта прогнози
     ok.append(step(log, "6а. Колонките на деня", lambda: (columns.lock(conn, now), columns.sync_manual(conn))))
+    # колонки на сянка с поправен шанс (bets/shadow.py): от същите записани прогнози, не се играят, само се мерят срещу сегашните
+    ok.append(step(log, "6а2. Колонки на сянка (поправен шанс)", shadow.lock, conn, now))
     # състави, контузени и наказани (API-Football) - информация за анализа и бонус прегледа; преди сайта, за да влязат в него
     ok.append(step(log, "6б. Състави и отсъствия (API-Football)", apifootball.refresh, conn, now))
     # мач, започнал преди над 3 часа и още без резултат: отложен/прекъснат ли е - белег във флаговете, преди сайта (bets/apifootball.py)
@@ -160,7 +163,7 @@ def weekly(log, backtest=False, keep_local=False):
     същите като заключените в bets/robot.py, идва известие и собственикът решава.
     """
     from bets import archive
-    from research import (extras_backtest, handicap_corners_backtest, league_analysis, one_pick_backtest,
+    from research import (calibration_build, extras_backtest, handicap_corners_backtest, league_analysis, one_pick_backtest,
                           robot_backtest, signs_backtest, sure_matches_backtest)
     path = config.DB_PATH
     if not keep_local:
@@ -189,6 +192,8 @@ def weekly(log, backtest=False, keep_local=False):
                                                            lambda: out.update(hc=handicap_corners_backtest.main()))))
         steps.append(("най-сигурните мачове назад", step(log, "4д. Най-сигурните мачове назад (веднъж месечно)",
                                                          lambda: out.update(su=sure_matches_backtest.main()))))
+        steps.append(("поправката на шансовете", step(log, "4е. Поправка на шансовете за колонките на сянка (веднъж месечно)",
+                                                      lambda: out.update(cal=calibration_build.main()))))
     if steps[0][1] and not keep_local:
         steps.append(("качването на архива", step(log, "5. Качване на архива", archive.push_db, path)))
     failed = [name for name, good in steps if not good]

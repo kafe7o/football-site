@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import apifootball, config, db, live, robot, rules, season, sure, tips
+from . import apifootball, config, db, live, robot, rules, season, shadow, sure, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -177,7 +177,9 @@ def columns_data(conn, upcoming, now):
             "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION,
                        "per_day": columns.MAX_COLUMNS},
             # измереното назад: колонки по 3, по една на ден, само с топ шанс
-            "bt": bt.get("p0.65_n3_league_sure") or bt.get("p0.65_n3_league")}
+            "bt": bt.get("p0.65_n3_league_sure") or bt.get("p0.65_n3_league"),
+            # колонки на сянка с поправен шанс (bets/shadow.py) - не се играят, мерят се срещу сегашните
+            "shadow": shadow.for_site(conn, now)}
 
 
 def backtest_summary():
