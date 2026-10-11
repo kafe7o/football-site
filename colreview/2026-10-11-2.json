@@ -24,7 +24,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-11T10:29:59+00:00"
+    "ia": "2026-10-11T11:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "5-4-1",
+      "c": "A. Beierlorzer",
+      "xi": [
+       [
+        47,
+        "D. Klein",
+        "G"
+       ],
+       [
+        20,
+        "Y. Deichmann",
+        "D"
+       ],
+       [
+        6,
+        "G. Antzoulas",
+        "D"
+       ],
+       [
+        15,
+        "J. Scholz",
+        "D"
+       ],
+       [
+        10,
+        "D. Kaygin",
+        "D"
+       ],
+       [
+        19,
+        "L. Rosenlöcher",
+        "D"
+       ],
+       [
+        18,
+        "K. Bennetts",
+        "M"
+       ],
+       [
+        8,
+        "F. Carlsen",
+        "M"
+       ],
+       [
+        41,
+        "V. Šapina",
+        "M"
+       ],
+       [
+        28,
+        "N. Velupillay",
+        "M"
+       ],
+       [
+        13,
+        "L. Lokotsch",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-4-2",
+      "c": "J. Seitz",
+      "xi": [
+       [
+        16,
+        "F. Stritzel",
+        "G"
+       ],
+       [
+        17,
+        "Ben Nink",
+        "D"
+       ],
+       [
+        6,
+        "G. Fechner",
+        "D"
+       ],
+       [
+        19,
+        "F. Hübner",
+        "D"
+       ],
+       [
+        15,
+        "J. Janitzek",
+        "D"
+       ],
+       [
+        18,
+        "F. Greilinger",
+        "M"
+       ],
+       [
+        22,
+        "R. Massimo",
+        "M"
+       ],
+       [
+        37,
+        "M. Brandt",
+        "M"
+       ],
+       [
+        32,
+        "R. Paula",
+        "M"
+       ],
+       [
+        21,
+        "M. Müller",
+        "F"
+       ],
+       [
+        7,
+        "L. Schleimer",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-11T11:09:59+00:00"
    }
   },
   {
@@ -136,5 +261,6 @@
   }
  ],
  "changed": 1,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-11T11:09:59+00:00"
 }
