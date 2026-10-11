@@ -168,4 +168,8 @@ def for_site(conn, now=None):
         settled = [r for r in rows if r["passed"] is not None]
         ln, lh = _legs_hits(conn, [json.loads(r["legs_json"]) for r in rows])
         out[name] = {"cols": len(rows), "settled": len(settled), "passed": sum(r["passed"] for r in settled), "legs": ln, "legs_hit": lh}
+        # по месеци - уредените колонки (собственикът, 11.10: „сравни помесечно как ще се развиват нещата и при двете“)
+        q = f"SELECT substr(day, 1, 7) AS m, COUNT(*) AS n, SUM(passed) AS p FROM {table_name} WHERE idx > 0{extra} AND passed IS NOT NULL "             f"AND day IN ({','.join('?' * len(days))}) GROUP BY m ORDER BY m"
+        for r in conn.execute(q, days):
+            out.setdefault("monthly", {}).setdefault(r["m"], {})[name] = {"settled": r["n"], "passed": r["p"]}
     return out

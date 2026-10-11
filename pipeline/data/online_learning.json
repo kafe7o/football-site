@@ -218,5 +218,385 @@
    "hit": 0.655367231638418,
    "n": 885
   }
+ },
+ "monthly": {
+  "2024-07": {
+   "L0": {
+    "cols": 42,
+    "pass": 13,
+    "singles": 88,
+    "hit": 56
+   },
+   "L1": {
+    "cols": 34,
+    "pass": 13,
+    "singles": 76,
+    "hit": 51
+   }
+  },
+  "2024-08": {
+   "L0": {
+    "cols": 61,
+    "pass": 16,
+    "singles": 95,
+    "hit": 57
+   },
+   "L1": {
+    "cols": 52,
+    "pass": 10,
+    "singles": 81,
+    "hit": 52
+   }
+  },
+  "2024-09": {
+   "L0": {
+    "cols": 62,
+    "pass": 20,
+    "singles": 96,
+    "hit": 60
+   },
+   "L1": {
+    "cols": 49,
+    "pass": 16,
+    "singles": 87,
+    "hit": 53
+   }
+  },
+  "2024-10": {
+   "L0": {
+    "cols": 59,
+    "pass": 16,
+    "singles": 93,
+    "hit": 63
+   },
+   "L1": {
+    "cols": 51,
+    "pass": 24,
+    "singles": 91,
+    "hit": 66
+   }
+  },
+  "2024-11": {
+   "L0": {
+    "cols": 67,
+    "pass": 20,
+    "singles": 96,
+    "hit": 70
+   },
+   "L1": {
+    "cols": 53,
+    "pass": 15,
+    "singles": 93,
+    "hit": 64
+   }
+  },
+  "2024-12": {
+   "L0": {
+    "cols": 72,
+    "pass": 19,
+    "singles": 103,
+    "hit": 70
+   },
+   "L1": {
+    "cols": 60,
+    "pass": 29,
+    "singles": 97,
+    "hit": 65
+   }
+  },
+  "2025-01": {
+   "L0": {
+    "cols": 69,
+    "pass": 19,
+    "singles": 106,
+    "hit": 66
+   },
+   "L1": {
+    "cols": 58,
+    "pass": 10,
+    "singles": 100,
+    "hit": 64
+   }
+  },
+  "2025-02": {
+   "L0": {
+    "cols": 76,
+    "pass": 21,
+    "singles": 104,
+    "hit": 73
+   },
+   "L1": {
+    "cols": 65,
+    "pass": 21,
+    "singles": 101,
+    "hit": 67
+   }
+  },
+  "2025-03": {
+   "L0": {
+    "cols": 68,
+    "pass": 22,
+    "singles": 93,
+    "hit": 64
+   },
+   "L1": {
+    "cols": 62,
+    "pass": 22,
+    "singles": 88,
+    "hit": 67
+   }
+  },
+  "2025-04": {
+   "L0": {
+    "cols": 86,
+    "pass": 21,
+    "singles": 111,
+    "hit": 76
+   },
+   "L1": {
+    "cols": 73,
+    "pass": 24,
+    "singles": 109,
+    "hit": 79
+   }
+  },
+  "2025-05": {
+   "L0": {
+    "cols": 68,
+    "pass": 22,
+    "singles": 105,
+    "hit": 67
+   },
+   "L1": {
+    "cols": 63,
+    "pass": 30,
+    "singles": 98,
+    "hit": 72
+   }
+  },
+  "2025-06": {
+   "L0": {
+    "cols": 11,
+    "pass": 4,
+    "singles": 58,
+    "hit": 41
+   },
+   "L1": {
+    "cols": 10,
+    "pass": 3,
+    "singles": 51,
+    "hit": 38
+   }
+  },
+  "2025-07": {
+   "L0": {
+    "cols": 38,
+    "pass": 17,
+    "singles": 72,
+    "hit": 49
+   },
+   "L1": {
+    "cols": 31,
+    "pass": 10,
+    "singles": 66,
+    "hit": 44
+   }
+  },
+  "2025-08": {
+   "L0": {
+    "cols": 67,
+    "pass": 16,
+    "singles": 89,
+    "hit": 62
+   },
+   "L1": {
+    "cols": 60,
+    "pass": 21,
+    "singles": 87,
+    "hit": 58
+   }
+  },
+  "2025-09": {
+   "L0": {
+    "cols": 59,
+    "pass": 22,
+    "singles": 87,
+    "hit": 57
+   },
+   "L1": {
+    "cols": 49,
+    "pass": 21,
+    "singles": 79,
+    "hit": 60
+   }
+  },
+  "2025-10": {
+   "L0": {
+    "cols": 64,
+    "pass": 25,
+    "singles": 102,
+    "hit": 81
+   },
+   "L1": {
+    "cols": 49,
+    "pass": 16,
+    "singles": 96,
+    "hit": 75
+   }
+  },
+  "2025-11": {
+   "L0": {
+    "cols": 62,
+    "pass": 21,
+    "singles": 92,
+    "hit": 66
+   },
+   "L1": {
+    "cols": 60,
+    "pass": 23,
+    "singles": 90,
+    "hit": 67
+   }
+  },
+  "2025-12": {
+   "L0": {
+    "cols": 66,
+    "pass": 21,
+    "singles": 98,
+    "hit": 72
+   },
+   "L1": {
+    "cols": 62,
+    "pass": 17,
+    "singles": 96,
+    "hit": 69
+   }
+  },
+  "2026-01": {
+   "L0": {
+    "cols": 64,
+    "pass": 18,
+    "singles": 105,
+    "hit": 65
+   },
+   "L1": {
+    "cols": 55,
+    "pass": 21,
+    "singles": 98,
+    "hit": 73
+   }
+  },
+  "2026-02": {
+   "L0": {
+    "cols": 80,
+    "pass": 23,
+    "singles": 103,
+    "hit": 65
+   },
+   "L1": {
+    "cols": 67,
+    "pass": 24,
+    "singles": 102,
+    "hit": 72
+   }
+  },
+  "2026-03": {
+   "L0": {
+    "cols": 76,
+    "pass": 22,
+    "singles": 105,
+    "hit": 70
+   },
+   "L1": {
+    "cols": 70,
+    "pass": 20,
+    "singles": 103,
+    "hit": 71
+   }
+  },
+  "2026-04": {
+   "L0": {
+    "cols": 80,
+    "pass": 22,
+    "singles": 102,
+    "hit": 61
+   },
+   "L1": {
+    "cols": 71,
+    "pass": 28,
+    "singles": 99,
+    "hit": 72
+   }
+  },
+  "2026-05": {
+   "L0": {
+    "cols": 63,
+    "pass": 16,
+    "singles": 102,
+    "hit": 61
+   },
+   "L1": {
+    "cols": 59,
+    "pass": 18,
+    "singles": 100,
+    "hit": 65
+   }
+  },
+  "2026-06": {
+   "L0": {
+    "cols": 1,
+    "pass": 0,
+    "singles": 19,
+    "hit": 13
+   },
+   "L1": {
+    "cols": 1,
+    "pass": 0,
+    "singles": 15,
+    "hit": 10
+   }
+  },
+  "2026-07": {
+   "L0": {
+    "cols": 21,
+    "pass": 4,
+    "singles": 68,
+    "hit": 45
+   },
+   "L1": {
+    "cols": 15,
+    "pass": 6,
+    "singles": 62,
+    "hit": 49
+   }
+  },
+  "2026-08": {
+   "L0": {
+    "cols": 66,
+    "pass": 19,
+    "singles": 94,
+    "hit": 65
+   },
+   "L1": {
+    "cols": 55,
+    "pass": 21,
+    "singles": 83,
+    "hit": 68
+   }
+  },
+  "2026-09": {
+   "L0": {
+    "cols": 57,
+    "pass": 11,
+    "singles": 90,
+    "hit": 60
+   },
+   "L1": {
+    "cols": 53,
+    "pass": 16,
+    "singles": 88,
+    "hit": 59
+   }
+  }
  }
 }

@@ -105,9 +105,49 @@ def paired(rows, a, b):
     return m, sd / math.sqrt(n), n
 
 
+def monthly(variants, names=("L0", "L1")):
+    """По месеци (описателно, без нов избор): колонки по 3 - колко, колко минали; единични - колко, колко излезли; за всеки вариант."""
+    from bets import columns
+    out = defaultdict(dict)
+    for name in names:
+        for day, ms in sorted(variants[name].items()):
+            if day < EVAL_FROM:
+                continue
+            mon = day[:7]
+            st = out[mon].setdefault(name, {"cols": 0, "pass": 0, "singles": 0, "hit": 0})
+            ms = [{**m, "flags": dict(m["flags"])} for m in ms]
+            by_id = {m["id"]: m for m in ms}
+            cb.mark_sure(ms)
+            cands = columns.candidates(ms, 0.65, need_sure=True)
+            for col in columns.build(cands, size=3, max_columns=4, diversify="league"):
+                st["cols"] += 1
+                st["pass"] += all(robot.hit_any(c["sel"], by_id[c["id"]]["hg"], by_id[c["id"]]["ag"]) for c in col)
+            for col in columns.build(cands, size=1, max_columns=4, diversify="league"):
+                h = robot.hit_any(col[0]["sel"], by_id[col[0]["id"]]["hg"], by_id[col[0]["id"]]["ag"])
+                if h is not None:
+                    st["singles"] += 1
+                    st["hit"] += bool(h)
+    return dict(sorted(out.items()))
+
+
 def main():
     days = cb.load()
     variants, rows = learn(days)
+    if "--monthly" in sys.argv:
+        mon = monthly(variants)
+        print("месец   | сегашните: колонки минали      единични    | вариант 2: колонки минали      единични")
+        tot = {"L0": [0, 0, 0, 0], "L1": [0, 0, 0, 0]}
+        for m, v in mon.items():
+            a, b = v["L0"], v["L1"]
+            for k, x in (("L0", a), ("L1", b)):
+                tot[k] = [tot[k][0] + x["cols"], tot[k][1] + x["pass"], tot[k][2] + x["singles"], tot[k][3] + x["hit"]]
+            f = lambda n, d: f"{n:>3}/{d:<3} ({n / d:4.0%})" if d else "   -        "
+            print(f"{m} | {f(a['pass'], a['cols'])}  {f(a['hit'], a['singles'])} | {f(b['pass'], b['cols'])}  {f(b['hit'], b['singles'])}")
+        print("ОБЩО  ", {k: f"колонки {v[1]}/{v[0]} ({v[1] / v[0]:.1%}), единични {v[3]}/{v[2]} ({v[3] / v[2]:.1%})" for k, v in tot.items()})
+        data = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}
+        data["monthly"] = mon
+        OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+        return
     res = {"periods": {}}
     for label, sel in (("A", lambda r: r[0] < SPLIT), ("B", lambda r: r[0] >= SPLIT)):
         rs = [r for r in rows if sel(r)]

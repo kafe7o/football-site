@@ -1398,6 +1398,9 @@ function shadowBlock(S) {
     <div class="note" style="margin-top:6px">Не се играят - само се мерят срещу сегашните колонки, правила: ${esc(S.rule)}.
       <ul style="margin:6px 0 0;padding-left:18px"><li>Уредени колонки: на сянка <b>${f(sh.passed, sh.settled)}</b>; сегашни за същите дни <b>${f(of.passed, of.settled)}</b>.</li>
       <li>Мачове в колонките: на сянка <b>${f(sh.legs_hit, sh.legs)}</b>; сегашни <b>${f(of.legs_hit, of.legs)}</b>.</li></ul>
+      ${S.monthly ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>На сянка (минали)</th><th>Сегашни (минали)</th></tr>${Object.entries(S.monthly).map(([m, v]) =>
+        `<tr><td>${esc(m)}</td><td>${v.shadow ? f(v.shadow.passed, v.shadow.settled) : "-"}</td><td>${v.official ? f(v.official.passed, v.official.settled) : "-"}</td></tr>`).join("")}</table>` : ""}
+      <span class="muted small">Назад по месеци (07.2024-09.2026): на сянка минават 34.5% (479 от 1387), сегашните 29.3% (470 от 1605); по-добри в 18 от 27 месеца, по-лоши в 7.</span>
       <span class="muted small">Малка извадка - не прави изводи преди поне 100 колонки. Назад (проверка 11.10) на сянка минават 34-35% срещу 29%, но подборът се мести към избори без цена от букмейкър (над 1.5, под 3.5), затова парите не са измерени.</span></div>
     ${(S.today || []).length ? `<p class="small muted" style="margin:8px 0 4px">Днес на сянка:</p>` + S.today.map(c => colCard({...c, shadow: true}, true)).join("") : ""}</details>`;
 }
