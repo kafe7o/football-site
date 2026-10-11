@@ -56,7 +56,7 @@ def build():
             lh, la = lam * share, lam * (1 - share)
             q["GG"] = (1 - math.exp(-lh)) * (1 - math.exp(-la))
             q["NG"] = 1 - q["GG"]
-            rows.append({"day": day, "wd": wd, "league": m["league"], "derby": bool(m["flags"].get("derby")),
+            rows.append({"day": day, "wd": wd, "league": m["league"], "home": m["home"], "away": m["away"], "derby": bool(m["flags"].get("derby")),
                          "p": [m["p"][e] for e in EV], "q": [q.get(e, np.nan) for e in EV],
                          "r": [m["real"].get(e, np.nan) for e in EV],
                          "hit": [bool(robot.hit_any(e, m["hg"], m["ag"])) for e in EV],
