@@ -27,7 +27,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-12T14:59:59+00:00"
+    "ia": "2026-10-12T15:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-4-2",
+      "c": "M. Isokangas",
+      "xi": [
+       [
+        13,
+        "Miguel Santos",
+        "G"
+       ],
+       [
+        16,
+        "O. Kemppainen",
+        "D"
+       ],
+       [
+        5,
+        "M. Pitkänen",
+        "D"
+       ],
+       [
+        66,
+        "J. Pirinen",
+        "D"
+       ],
+       [
+        22,
+        "T. Kaukua",
+        "D"
+       ],
+       [
+        36,
+        "J. Lotvonen",
+        "M"
+       ],
+       [
+        25,
+        "M. Arsalo",
+        "M"
+       ],
+       [
+        21,
+        "I. Mendolin",
+        "M"
+       ],
+       [
+        27,
+        "E. Kallio",
+        "M"
+       ],
+       [
+        7,
+        "R. Karjalainen",
+        "F"
+       ],
+       [
+        10,
+        "C. Triana",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-3-3",
+      "c": "J. Rantanen",
+      "xi": [
+       [
+        1,
+        "J. Öst",
+        "G"
+       ],
+       [
+        17,
+        "N. Alho",
+        "D"
+       ],
+       [
+        31,
+        "M. Bogićević",
+        "D"
+       ],
+       [
+        6,
+        "V. Tikkanen",
+        "D"
+       ],
+       [
+        14,
+        "L. Montano",
+        "D"
+       ],
+       [
+        22,
+        "L. Möller",
+        "M"
+       ],
+       [
+        4,
+        "A. Ring",
+        "M"
+       ],
+       [
+        8,
+        "P. Mentu",
+        "M"
+       ],
+       [
+        29,
+        "S. Haarala",
+        "F"
+       ],
+       [
+        9,
+        "M. Borchers",
+        "F"
+       ],
+       [
+        7,
+        "Alfie Cicale",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-12T15:39:59+00:00"
    }
   },
   {
@@ -147,5 +272,6 @@
   }
  ],
  "changed": 1,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-12T15:39:59+00:00"
 }
