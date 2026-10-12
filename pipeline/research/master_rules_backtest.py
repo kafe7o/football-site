@@ -63,14 +63,17 @@ def calibrated(rows):
     return PC
 
 
-def master_picks(rows, src, agree, weekend, floor=None):
-    """Най-вероятното събитие по правилата на майстора (цена >= floor (1.40) истинска, без „тото“, без дерби); шанс >= 0.5 за групата на топ шанс."""
+def master_picks(rows, src, agree, weekend, floor=None, events=None):
+    """Най-вероятното събитие по правилата на майстора (цена >= floor (1.40) истинска, без „тото“, без дерби); шанс >= 0.5 за групата на топ шанс.
+    events - само тези събития (напр. {"1", "X", "2"} или двоен шанс), иначе всичките 14."""
     A = vb.arrays(rows)
     P, Q, R = A["P"], A["Q"], A["R"]
     S = P if src == "робот" else Q if src == "пазар" else calibrated(rows) if src == "вариант 2" else (P + Q) / 2
     floor = robot.FLOOR if floor is None else floor
     with np.errstate(invalid="ignore"):
-        valid = ~np.isnan(R) & (R >= floor) & ~np.isnan(S) & (S >= 0.5)
+        valid = ~np.isnan(R) & (R >= floor)
+        if events is not None:
+            valid &= np.array([e in events for e in vb.EV])[None, :] & ~np.isnan(S) & (S >= 0.5)
         if agree:
             valid &= ~np.isnan(Q) & (np.abs(P - Q) <= 0.05)
     valid &= ~A["derby"][:, None]
