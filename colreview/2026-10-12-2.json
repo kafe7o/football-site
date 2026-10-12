@@ -29,7 +29,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-12T15:29:59+00:00"
+    "ia": "2026-10-12T16:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-4-2",
+      "c": "Julián Calero",
+      "xi": [
+       [
+        13,
+        "Aarón Escandell",
+        "G"
+       ],
+       [
+        21,
+        "David Jiménez",
+        "D"
+       ],
+       [
+        12,
+        "Dani Calvo",
+        "D"
+       ],
+       [
+        15,
+        "S. Rodriguez",
+        "D"
+       ],
+       [
+        23,
+        "Carlos Domínguez",
+        "D"
+       ],
+       [
+        8,
+        "Mikel Goti",
+        "M"
+       ],
+       [
+        16,
+        "Aritz Aldasoro",
+        "M"
+       ],
+       [
+        5,
+        "Y. Didi",
+        "M"
+       ],
+       [
+        10,
+        "Alberto Reina",
+        "M"
+       ],
+       [
+        32,
+        "Enzo Perez",
+        "F"
+       ],
+       [
+        18,
+        "V. Mingo",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "Jokin Arambarri",
+      "xi": [
+       [
+        13,
+        "Jon Mikel",
+        "G"
+       ],
+       [
+        22,
+        "Álvaro Rodríguez",
+        "D"
+       ],
+       [
+        4,
+        "Unai Elgezabal",
+        "D"
+       ],
+       [
+        23,
+        "Anaitz Arbilla",
+        "D"
+       ],
+       [
+        24,
+        "Juan Bernat",
+        "D"
+       ],
+       [
+        8,
+        "Ander Madariaga",
+        "M"
+       ],
+       [
+        30,
+        "Aleix Garrido",
+        "M"
+       ],
+       [
+        7,
+        "Malcom Adu",
+        "M"
+       ],
+       [
+        11,
+        "Jon Magunazelaia",
+        "M"
+       ],
+       [
+        10,
+        "Jon Guruzeta",
+        "M"
+       ],
+       [
+        9,
+        "Jon Bautista",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-12T16:09:59+00:00"
    }
   },
   {
@@ -148,5 +273,6 @@
   }
  ],
  "changed": 3,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-12T16:09:59+00:00"
 }
