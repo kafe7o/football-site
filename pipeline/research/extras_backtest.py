@@ -80,7 +80,7 @@ def run_league(code):
                             "away": r["away_team"], "line": pr["line"], "he": pr["home"], "ae": pr["away"],
                             "p": pr["over"], "base": base, "exp": pr["total"], "mean": league_mean,
                             "total": total, "over": int(total > pr["line"]), "pick": pr["pick"],
-                            "ref": bool(r["referee"]) and factor != 1.0})
+                            "ref": bool(r["referee"]) and factor != 1.0, "lines": pr["lines"]})   # и съседните линии (за колонките, 13.10)
     conn.close()
     print(f"{code}: {len(out)} прогнози", flush=True)
     return out
@@ -111,6 +111,7 @@ def main(codes=None):
     rows = [r for p in parts for r in p]
     global LAST_ROWS
     LAST_ROWS = rows
+    (ROOT / "data" / "extras_rows.json").write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")   # мач по мач - за research/cards_columns_backtest.py
     out = {"generated": date.today().isoformat(), "start": START, "select_end": SELECT_END, "kinds": {}}
     for kind in extras.KINDS:
         ks = [r for r in rows if r["kind"] == kind]
