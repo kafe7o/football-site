@@ -308,7 +308,7 @@ def system_for_site(conn, now=None):
             settled = bool(t and t["hg"] is not None)
             leg["hit"] = bool(robot.hit_any(leg["sel"], t["hg"], t["ag"])) if settled else None
             leg["score"] = [t["hg"], t["ag"]] if settled else None
-        out["today"].append({"idx": r["idx"], "legs": legs, "passed": r["passed"], "locked_at": r["locked_at"], **json.loads(r["summary_json"])})
+        out["today"].append({"idx": r["idx"], "day": today, "legs": legs, "passed": r["passed"], "locked_at": r["locked_at"], **json.loads(r["summary_json"])})
     rows = conn.execute("SELECT day, legs_json, summary_json, passed FROM columns_system WHERE idx > 0 ORDER BY day DESC").fetchall()
     settled = [r for r in rows if r["passed"] is not None]
     ret = sum(json.loads(r["summary_json"])["odds"] if r["passed"] else 0.0 for r in settled)

@@ -66,6 +66,11 @@ def column_leg_ids(conn, now):
     ids = set()
     for r in conn.execute("SELECT legs_json FROM columns WHERE idx > 0 AND idx < 200 AND day >= ?", (since,)):
         ids.update(l["id"] for l in json.loads(r["legs_json"]))
+    try:
+        for r in conn.execute("SELECT legs_json FROM columns_system WHERE idx > 0 AND day >= ?", (since,)):
+            ids.update(l["id"] for l in json.loads(r["legs_json"]))
+    except Exception as e:                                   # noqa: BLE001 - таблицата я няма преди първото пускане със системата
+        log.warning("columns_system: %s", e)
     return ids
 
 
@@ -99,20 +104,25 @@ def schedule(conn, now=None):
             log.info("Бонус анализ поръчан за %s (%d мача)", start, len(rows))
     # преглед на колонките: ЕДНА задача на колонка, час преди най-ранния ѝ мач (веднага, ако колонката е записана по-късно)
     since = (now - timedelta(days=1)).date().isoformat()
-    for r in conn.execute("SELECT day, idx, legs_json FROM columns WHERE idx > 0 AND idx < 200 AND passed IS NULL AND day >= ?", (since,)).fetchall():
+    pending = [(r, "") for r in conn.execute("SELECT day, idx, legs_json FROM columns WHERE idx > 0 AND idx < 200 AND passed IS NULL AND day >= ?", (since,)).fetchall()]
+    try:                                                     # и колонката на системата (bets/shadow.py) - ключ sys:<ден>:<номер>
+        pending += [(r, "sys:") for r in conn.execute("SELECT day, idx, legs_json FROM columns_system WHERE idx > 0 AND passed IS NULL AND day >= ?", (since,)).fetchall()]
+    except Exception as e:                                   # noqa: BLE001
+        log.warning("columns_system: %s", e)
+    for r, pre in pending:
         legs = json.loads(r["legs_json"])
         if not legs:
             continue
         first = column_first(legs)
         if first - now < LATE_LIMIT or first - now > DISPATCH_AHEAD:
             continue
-        key = f"bonus_dispatched:col:{r['day']}:{r['idx']}"
+        key = f"bonus_dispatched:col:{pre}{r['day']}:{r['idx']}"
         if db.get_meta(conn, key):
             continue
-        if dispatch(first.isoformat(timespec="minutes"), column=f"{r['day']}:{r['idx']}"):
+        if dispatch(first.isoformat(timespec="minutes"), column=f"{pre}{r['day']}:{r['idx']}"):
             db.set_meta(conn, key, now.isoformat(timespec="seconds"))
             ordered += 1
-            log.info("Преглед на колонка %s #%s поръчан - най-ранният мач е %s", r["day"], r["idx"], first.isoformat(timespec="minutes"))
+            log.info("Преглед на колонка %s%s #%s поръчан - най-ранният мач е %s", pre, r["day"], r["idx"], first.isoformat(timespec="minutes"))
     return ordered
 
 
@@ -298,8 +308,15 @@ def notify_slot(out, prefix=""):
 
 # ---------- преглед на цяла колонка ----------
 
-def review_path(day, idx):
-    return config.SITE_DIR / REVIEW_DIR / f"{day}-{idx}.json"
+def review_path(day, idx, system=False):
+    return config.SITE_DIR / REVIEW_DIR / f"{'sys-' if system else ''}{day}-{idx}.json"
+
+
+def parse_column(spec):
+    """„2026-10-15:1“ -> (ден, номер, False); „sys:2026-10-15:1“ -> (ден, номер, True) - колонката на системата."""
+    system = spec.startswith("sys:")
+    day, idx = spec[4:].split(":") if system else spec.split(":")
+    return day, int(idx), system
 
 
 def column_first(legs):
@@ -307,12 +324,12 @@ def column_first(legs):
     return min(datetime.fromisoformat(l["kickoff"]).astimezone(timezone.utc) for l in legs)
 
 
-def run_column(conn, day, idx, now=None, send=True, write=True, prefix=""):
+def run_column(conn, day, idx, now=None, send=True, write=True, prefix="", system=False):
     """Прегледът на колонка (ден, номер): САМО на мачовете ѝ - пресни цени (odds API: 2 кредита на първенство, а в колонката е
     най-много един мач на първенство), отсъстващи и състави (API-Football: заявки само за тези мачове) и сравнение със сутрешния
     запис. Пише colreview/<ден>-<номер>.json."""
     now = now or datetime.now(timezone.utc)
-    row = conn.execute("SELECT * FROM columns WHERE day = ? AND idx = ?", (day, idx)).fetchone()
+    row = conn.execute(f"SELECT * FROM {'columns_system' if system else 'columns'} WHERE day = ? AND idx = ?", (day, idx)).fetchone()
     legs = json.loads(row["legs_json"]) if row else []
     if not legs:
         log.warning("Преглед на колонка %s #%s: няма такава колонка", day, idx)
@@ -322,7 +339,7 @@ def run_column(conn, day, idx, now=None, send=True, write=True, prefix=""):
     for sport in {LEAGUES[l["league"]].sport for l in legs if LEAGUES[l["league"]].sport}:
         fresh.update(fresh_prices(sport))
     ctx = analysis.Context(conn, now)
-    out = {"day": day, "idx": idx, "made_at": now.isoformat(timespec="seconds"),
+    out = {"day": day, "idx": idx, "system": system, "made_at": now.isoformat(timespec="seconds"),
            "first": column_first(legs).isoformat(timespec="minutes"), "legs": []}
     for l in legs:
         f = fixtures[l["id"]]
@@ -347,7 +364,7 @@ def run_column(conn, day, idx, now=None, send=True, write=True, prefix=""):
     out["changed"] = sum(1 for x in out["legs"] if x["flags"] or x["changes"])
     out["absent"] = sum(1 for x in out["legs"] if any(((x["sq"] or {}).get("i") or {}).get(s) for s in ("h", "a")))
     if write:
-        path = review_path(day, idx)
+        path = review_path(day, idx, system)
         path.parent.mkdir(exist_ok=True)
         path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     elif not send:
@@ -370,15 +387,15 @@ def notify_column(out, prefix=""):
         lines += ["   " + t for t in apifootball.describe(x["sq"], x["home"], x["away"])]
     state = (f"промени в {out['changed']} от {len(out['legs'])} мача" if out["changed"]
              else f"отсъстващи в {out['absent']} от {len(out['legs'])} мача" if out["absent"] else "без промени")
-    title = prefix + f"Колонка {out['idx']} - преглед преди първия мач ({first}): {state}"
+    title = prefix + (f"СИСТЕМАТА - преглед преди първия мач ({first}): {state}" if out.get("system") else f"Колонка {out['idx']} - преглед преди първия мач ({first}): {state}")
     lines.append("Шансовете на робота не се менят от съставите. Не е сигурен залог.")
     return notify.send(title, "\n".join(lines), tags="stopwatch", priority=4 if any(x["flags"] for x in out["legs"]) else 3)
 
 
-def column_lineups(conn, day, idx, now=None, send=True, write=True):
+def column_lineups(conn, day, idx, now=None, send=True, write=True, system=False):
     """20 минути преди най-ранния мач: допълва прегледа със съставите, които вече са обявени (мачовете до 90 минути напред)."""
     now = now or datetime.now(timezone.utc)
-    path = review_path(day, idx)
+    path = review_path(day, idx, system)
     if not path.exists():
         log.warning("Съставите на колонка %s #%s: няма преглед, към който да се добавят", day, idx)
         return None

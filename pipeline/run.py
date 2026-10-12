@@ -291,7 +291,7 @@ def main():
         if not args.slot:
             raise SystemExit("--slot е задължителен")
         if args.column:
-            day, idx = args.column.split(":")
+            day, idx, system = bonus.parse_column(args.column)
             test = args.test or args.demo
             wait = 0 if test else (bonus.lineup_wait_seconds(args.slot) if args.lineups else bonus.wait_seconds(args.slot))
             log.info("Преглед на колонка %s: чакане %d мин. (%s)", args.column, wait // 60,
@@ -299,9 +299,9 @@ def main():
             time.sleep(wait)
             conn = db.init()
             if args.lineups:
-                out = bonus.column_lineups(conn, day, int(idx), send=not args.test, write=not test)
+                out = bonus.column_lineups(conn, day, idx, send=not args.test, write=not test, system=system)
             else:
-                out = bonus.run_column(conn, day, int(idx), send=not args.test, write=not test, prefix="ПРОБА - " if args.demo else "")
+                out = bonus.run_column(conn, day, idx, send=not args.test, write=not test, prefix="ПРОБА - " if args.demo else "", system=system)
             conn.close()
             return 0 if out is not None else 1
         wait = 0 if (args.test or args.demo) else bonus.wait_seconds(args.slot)
