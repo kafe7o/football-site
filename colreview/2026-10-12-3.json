@@ -1,0 +1,187 @@
+{
+ "day": "2026-10-12",
+ "idx": 3,
+ "system": false,
+ "made_at": "2026-10-12T15:59:59+00:00",
+ "first": "2026-10-12T17:00+00:00",
+ "legs": [
+  {
+   "id": "966d2e2d25447561201d5c4c2efdb8f1",
+   "league": "DNK",
+   "kickoff": "2026-10-12T17:00+00:00",
+   "home": "AGF Aarhus",
+   "away": "SonderjyskE",
+   "sel": "O",
+   "p": 0.6528,
+   "odds": 1.47,
+   "src": "book",
+   "odds_now": 1.44,
+   "changes": [
+    "коефициентът на 2: 4.95 -> 5.53"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Aarhus",
+    "m": "Sonderjyske",
+    "i": {
+     "h": [
+      [
+       "N. Poulsen",
+       "out",
+       "контузия"
+      ],
+      [
+       "K. Yakob",
+       "out",
+       "контузия"
+      ],
+      [
+       "O. Haugstrup",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "T. Kristjansson",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "G. Links",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "C. McCowatt",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": null
+    },
+    "ia": "2026-10-12T15:59:59+00:00"
+   }
+  },
+  {
+   "id": "1629edf1896c89bbb5bc3187bc3a6163",
+   "league": "ARG",
+   "kickoff": "2026-10-12T19:00+00:00",
+   "home": "Lanus",
+   "away": "Velez Sarsfield BA",
+   "sel": "U",
+   "p": 0.6781,
+   "odds": 1.5,
+   "src": "book",
+   "odds_now": 1.51,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Lanus",
+    "m": "Velez Sarsfield",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-12T15:59:59+00:00"
+   }
+  },
+  {
+   "id": "acd5bd945dd953ad1e300df5bfe696f9",
+   "league": "E0",
+   "kickoff": "2026-10-12T19:00+00:00",
+   "home": "Coventry City",
+   "away": "Newcastle United",
+   "sel": "1X",
+   "p": 0.6669,
+   "odds": 1.69,
+   "src": "book",
+   "odds_now": 1.74,
+   "changes": [
+    "рисковата 1: коеф. 3.19 -> 3.35"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Coventry",
+    "m": "Newcastle",
+    "i": {
+     "h": [
+      [
+       "A. Amenda",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Awoniyi",
+       "out",
+       "наказан"
+      ],
+      [
+       "J. Eccles",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Woolfenden",
+       "out",
+       "контузия"
+      ],
+      [
+       "H. Wright",
+       "out",
+       "контузия"
+      ],
+      [
+       "K. Kesler-Hayden",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "J. Latibeaudiere",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "A. Elanga",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. Jaouen",
+       "out",
+       "контузия"
+      ],
+      [
+       "D. Burn",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "Joelinton",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "V. Livramento",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "W. Osula",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "J. Ramsey",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-12T15:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 2,
+ "absent": 2
+}
