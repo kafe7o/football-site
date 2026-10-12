@@ -1,0 +1,151 @@
+{
+ "day": "2026-10-12",
+ "idx": 1,
+ "system": false,
+ "made_at": "2026-10-12T14:59:59+00:00",
+ "first": "2026-10-12T16:00+00:00",
+ "legs": [
+  {
+   "id": "6f457791325c15b7bf3bc57309a64796",
+   "league": "FIN",
+   "kickoff": "2026-10-12T16:00+00:00",
+   "home": "AC Oulu",
+   "away": "HJK Helsinki",
+   "sel": "U35",
+   "p": 0.715,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "съдия: Antti Munukka"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "AC Oulu",
+    "m": "HJK Helsinki",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-12T14:59:59+00:00"
+   }
+  },
+  {
+   "id": "f4a28510bb0c835280a2aca709c19d50",
+   "league": "I1",
+   "kickoff": "2026-10-12T18:45+00:00",
+   "home": "Torino",
+   "away": "Udinese",
+   "sel": "U35",
+   "p": 0.7069,
+   "odds": 1.41,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Torino",
+    "m": "Udinese",
+    "i": {
+     "h": [
+      [
+       "F. Israel",
+       "out",
+       "контузия"
+      ],
+      [
+       "P. Pellegri",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Casadei",
+       "doubt",
+       "не е в групата"
+      ]
+     ],
+     "a": [
+      [
+       "I. Gueye",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Piotrowski",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Zaniolo",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-12T14:59:59+00:00"
+   }
+  },
+  {
+   "id": "529fc26c7774d5b469932e275c668921",
+   "league": "SP1",
+   "kickoff": "2026-10-12T19:00+00:00",
+   "home": "Levante",
+   "away": "Sevilla",
+   "sel": "1X",
+   "p": 0.7463,
+   "odds": 1.48,
+   "src": "book",
+   "odds_now": 1.47,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Levante",
+    "m": "Sevilla",
+    "i": {
+     "h": [
+      [
+       "K. Etta Eyong",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Primo",
+       "out",
+       "контузия"
+      ],
+      [
+       "H. Sotelo",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "N. Guillen",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "Marcao",
+       "out",
+       "контузия"
+      ],
+      [
+       "I. Munoz",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "L. Stassin",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-12T14:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 2
+}
