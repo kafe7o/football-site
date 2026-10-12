@@ -58,7 +58,132 @@
      ],
      "a": null
     },
-    "ia": "2026-10-12T15:59:59+00:00"
+    "ia": "2026-10-12T16:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "3-4-2-1",
+      "c": "J. Poulsen",
+      "xi": [
+       [
+        1,
+        "J. Hansen",
+        "G"
+       ],
+       [
+        14,
+        "T. Mølgaard",
+        "D"
+       ],
+       [
+        5,
+        "F. Tingager",
+        "D"
+       ],
+       [
+        3,
+        "D. Grétarsson",
+        "D"
+       ],
+       [
+        29,
+        "R. Carstensen",
+        "M"
+       ],
+       [
+        4,
+        "M. Knudsen",
+        "M"
+       ],
+       [
+        10,
+        "Kristian Fredrik Malt Arnstad",
+        "M"
+       ],
+       [
+        39,
+        "Frederik Emmery",
+        "M"
+       ],
+       [
+        31,
+        "T. Bech",
+        "M"
+       ],
+       [
+        23,
+        "M. Anderson",
+        "M"
+       ],
+       [
+        13,
+        "J. Serra",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "Fatah Abdirahman",
+      "xi": [
+       [
+        24,
+        "N. Shinton",
+        "G"
+       ],
+       [
+        3,
+        "A. Munksgaard",
+        "D"
+       ],
+       [
+        12,
+        "M. Soulas",
+        "D"
+       ],
+       [
+        25,
+        "B. Bjarnason",
+        "D"
+       ],
+       [
+        19,
+        "P. Kristensen",
+        "D"
+       ],
+       [
+        7,
+        "S. Emini",
+        "M"
+       ],
+       [
+        10,
+        "M. Olesen",
+        "M"
+       ],
+       [
+        31,
+        "I. Seydi",
+        "M"
+       ],
+       [
+        8,
+        "M. Haidara",
+        "M"
+       ],
+       [
+        17,
+        "A. Hoeg",
+        "M"
+       ],
+       [
+        11,
+        "O. De Rosario",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-12T16:39:59+00:00"
    }
   },
   {
@@ -183,5 +308,6 @@
   }
  ],
  "changed": 2,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-12T16:39:59+00:00"
 }
