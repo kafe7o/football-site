@@ -1336,6 +1336,8 @@ const COLOF = {};
 ((DATA.columns || {}).record || {columns: []}).columns.filter(c => !c.manual && c.idx < 200).forEach(c => c.legs.forEach(l => { COLOF[l.id] = c; }));
 (((DATA.columns || {}).system || {}).today || []).forEach(c => c.legs.forEach(l => { COLOF[l.id] = {...c, label: "колонката на системата"}; }));
 (((((DATA.columns || {}).addon || {}).today) || {}).legs || []).forEach((l, _, legs) => { COLOF[l.id] = {legs, label: "надстройката"}; });
+const AM = () => ((DATA.columns || {}).addon || {}).measured || {unit: "колонка", unit_pl: "колонки", form: ""};
+const cap1 = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 const COLREV = {};
 const colFirst = c => Math.min(...c.legs.map(l => new Date(l.kickoff).getTime()));
 function colRevNote(m) {
@@ -1360,7 +1362,7 @@ function colReviewBlock(c) {
         ${squadBlock({i: x.id, h: x.home, a: x.away, sq: x.sq}, true)}</div>`; }).join("")}
     <div class="small muted" style="margin-top:6px">Само информация: шансовете на робота не се менят от съставите. Не е сигурен залог.</div></div>`;
 }
-// всичко с преглед час преди първия мач: колонките, колонката на системата (sys-), надстройката (add- - един преглед на четирите мача)
+// всичко с преглед час преди първия мач: колонките, колонката на системата (sys-), надстройката (add- - един преглед на всичките ѝ мачове)
 function revItems() {
   const C = DATA.columns || {};
   const out = ((C.record || {columns: []}).columns).filter(c => !c.manual && c.idx < 200 && c.legs.length).map(c => ({...c, revKey: `${c.day}-${c.idx}`}));
@@ -1475,52 +1477,54 @@ function systemBlock(S) {
       ${(S.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали колонки на системата:</p>` + S.past.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("") : ""}</details>`;
 }
 
-// НАДСТРОЙКАТА (bets/addon.py): голове, система 3 от 4 - най-доброто от ~9.6 млн. варианта назад; извън правилата на майстора (решение на собственика 13.10)
+// НАДСТРОЙКАТА (bets/addon.py): голове, система 4 от 5 (от 14.10; до тогава 3 от 4) - най-доброто от проверките назад; извън правилата на майстора (решение на собственика)
 function addonCard(D) {
+  const M = AM();
   const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
   const no = id => D.legs.findIndex(l => l.id === id) + 1;
   const settled = D.trebles.filter(t => t.passed != null), won = settled.filter(t => t.passed === 1).length;
-  const SK = D.stake != null ? D.stake : 7.5;
+  const SK = D.stake != null ? D.stake : (M.stake || 6);
   const net = settled.reduce((s, t) => s + (t.passed ? (t.odds - 1) * t.stake : -t.stake), 0);
   const st = settled.length < D.trebles.length ? `<span class="muted">${settled.length ? `уредени ${settled.length} от 4` : "чака мачовете"}</span>`
-    : `<span class="${won ? "y" : "n"}">${won} от 4 тройки минаха</span>`;
-  return `<div class="col add ${settled.length === 4 ? (won ? "won" : "lost") : ""}"><div class="head"><span class="nm">Надстройката</span><span class="dt">за ${esc(colDay(D.day))} · записана ${fmtTime(D.locked_at)}</span><span class="st">${st}</span></div>
+    : `<span class="${won ? "y" : "n"}">${won} от ${D.trebles.length} ${M.unit_pl} минаха</span>`;
+  return `<div class="col add ${settled.length === D.trebles.length ? (won ? "won" : "lost") : ""}"><div class="head"><span class="nm">Надстройката</span><span class="dt">за ${esc(colDay(D.day))} · записана ${fmtTime(D.locked_at)}</span><span class="st">${st}</span></div>
     ${D.legs.map((l, i) => `<div class="leg"><span class="tm">${fmtTime(l.kickoff)}</span>
       <span><div class="tms"><span class="no">${i + 1}</span>${esc(l.home)} – ${esc(l.away)}</div><div class="lg2">${flag(l.league)} ${esc(title(l.league))}</div>
       <div class="pk2"><b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b><span class="mt">${pct(l.p)} (робот ${pct(l.p_robot)}, пазар ${pct(l.p_market)}) · коеф. ${l.odds.toFixed(2)}${l.odds_avg && l.odds_avg !== l.odds ? ` <span title="средната на букмейкърите">ср. ${l.odds_avg.toFixed(2)}</span>` : ""}${l.src === "est" ? " (оценка - провери)" : ""}</span></div></span>
       <span class="rs">${l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span>` : ""}${hit(l.hit)}</span></div>`).join("")}
-    <div class="trh">Четирите тройки (система 3 от 4)</div>
-    ${D.trebles.map(t => `<div class="tr"><span>Тройка ${t.idx}: мачове ${t.ids.map(no).join(", ")}</span><span class="od">коеф. ${t.odds.toFixed(2)}</span><span>${t.passed === 1 ? `<span class="y">✓ МИНА</span>` : t.passed === 0 ? `<span class="n">✗</span>` : `<span class="muted">чака</span>`}</span></div>`).join("")}
+    <div class="trh">${cap1(M.unit_pl)}: ${D.trebles.length} (система ${D.trebles.length && D.trebles[0].ids.length === 3 ? "3 от 4" : M.form}) - ако падне един мач, една пак минава</div>
+    ${D.trebles.map(t => `<div class="tr"><span>${cap1(t.ids.length === 3 ? "тройка" : M.unit)} ${t.idx}: мачове ${t.ids.map(no).join(", ")}</span><span class="od">коеф. ${t.odds.toFixed(2)}</span><span>${t.passed === 1 ? `<span class="y">✓ МИНА</span>` : t.passed === 0 ? `<span class="n">✗</span>` : `<span class="muted">чака</span>`}</span></div>`).join("")}
     ${colReviewBlock({legs: D.legs, day: D.day, locked_at: D.locked_at, passed: settled.length === 4 ? 1 : null, revKey: `add-${D.day}-0`})}
-    <div class="sum">${SK > 0 ? `<span>залог по правилото: 4 тройки по <b>${SK.toFixed(2)} €</b> = <b>${(4 * SK).toFixed(2)} €</b>${D.room != null ? ` (до -30 € за месеца остават ${D.room.toFixed(2)} €)` : ""}</span>`
+    <div class="sum">${SK > 0 ? `<span>залог по правилото: ${D.trebles.length} ${M.unit_pl} по <b>${SK.toFixed(2)} €</b> = <b>${(D.trebles.length * SK).toFixed(2)} €</b>${D.room != null ? ` (до -30 € за месеца остават ${D.room.toFixed(2)} €)` : ""}</span>`
         : `<span class="n"><b>Днес без залог</b> - месецът е на границата -30 €; записва се само за мерене</span>`}${settled.length && SK > 0 ? `<span>за деня: <b>${net >= 0 ? "+" : ""}${net.toFixed(2)} €</b></span>` : ""}
-      <span>Назад: тройка минава <b>40%</b>, връща <b>1.14 €</b> от 1 € само при най-добрия коефициент</span></div></div>`;
+      <span>Назад: ${M.unit} минава <b>${pct(M.pass)}</b>, връща <b>${(M.return_best || 0).toFixed(2)} €</b> от 1 € при най-добрия коефициент (${(M.return_avg || 0).toFixed(2)} при средния)</span></div></div>`;
 }
 function addonBlock(A) {
   if (!A) return "";
   const m = A.measured || {}, a = A.all || {}, T = A.today;
   const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
   const mo = A.month || {};
-  const live = a.settled ? `на живо: <b>${f(a.passed, a.settled)}</b> тройки, по правилото: <b>${a.net >= 0 ? "+" : ""}${a.net.toFixed(2)} €</b>` : "на живо: още няма уредени";
+  const live = a.settled ? `на живо: <b>${f(a.passed, a.settled)}</b> колонки, по правилото: <b>${a.net >= 0 ? "+" : ""}${a.net.toFixed(2)} €</b>` : "на живо: още няма уредени";
   const monthLine = `<div class="note" style="margin:0 0 8px"><b>Този месец:</b> ${mo.net >= 0 ? "+" : ""}${(mo.net || 0).toFixed(2)} €${mo.pending ? ` (още ${mo.pending.toFixed(2)} € чакат мачовете)` : ""} ·
     до границата -30 € остават <b>${Math.max(mo.room || 0, 0).toFixed(2)} €</b>${(mo.room || 0) < 2 ? ` - <b class="n">до края на месеца без залог</b>` : ""}.
-    <span class="muted small">Правило (твое решение, 13.10): 30 € в ден с надстройка, по 7.50 € на тройка; щом месецът стигне -30 €, до края му - без залог; залогът за деня никога не е повече от остатъка.</span></div>`;
+    <span class="muted small">Правило (твое решение, 13.10): 30 € в ден с надстройка, по ${m.stake.toFixed(2)} € на ${m.unit}; щом месецът стигне -30 €, до края му - без залог; залогът за деня никога не е повече от остатъка.</span></div>`;
   const today = T && T.legs && T.legs.length ? addonCard(T)
     : `<div class="col add"><div class="head"><span class="nm">Днес без надстройка</span><span class="dt">${T && T.note ? esc(T.note) : "записът е след 07:00"}. Назад надстройка има в ~${m.days_per_month} дни на месец - дните без нея са част от правилото.</span></div></div>`;
-  return `<div class="sect"><h2>Надстройката</h2><span class="cnt">най-доброто от ~9.6 млн. варианта назад · система 3 от 4 · извън правилата на майстора · ${live}</span></div>
+  return `<div class="sect"><h2>Надстройката</h2><span class="cnt">най-доброто от всички проверки назад · система ${m.form} · извън правилата на майстора · ${live}</span></div>
     ${monthLine}
     ${today}
     <details class="how"><summary>Какво е надстройката и колко е измерена</summary><div class="note">
       <b>Правило:</b> ${esc(A.rule)}.<br>Първенства: ${A.leagues.map(l => esc(title(l))).join(", ")}.<br>
-      <b>Назад</b> (последните 12 месеца, ${m.n} тройки, избрано само по двете години преди тях): тройка минава ${pct(m.pass)}, ср. коеф. ${m.odds.toFixed(2)}, връща <b>${m.return_best.toFixed(2)} ± ${m.se.toFixed(2)} €</b>
-      от 1 € при <b>най-добрия букмейкър</b>; при средната цена - <b>${m.return_avg.toFixed(2)} €</b>, тоест около нулата. Разликата от нулата е 1.8 грешки - не е потвърдено.
-      <b>Парите (твое решение, 13.10): ${m.stake_day} € в ден с надстройка</b> (по ${m.stake.toFixed(2)} € на тройка); щом месецът стигне ${-m.cap} €, до края му - без залог. Назад така най-лошият месец е <b>${m.worst} €</b>:
-      средно +${m.avg_month} € на месец в последните 12 месеца (+${m.avg_month_all} € за всичките ${m.months_all}), на плюс в ${m.months_plus} от ${m.months} (${m.months_plus_all} от ${m.months_all}), най-добър +${m.best} €.
-      При 30 € на ВСЯКА тройка (120 € на ден) най-лошият месец е -300 € - един лош ден е -120 €, затова -30 € на месец не може с такъв залог.<br>
+      <b>Назад</b> (последните ${m.months} месеца, ${m.n} ${m.unit_pl} в ${m.days} дни): ${m.unit} минава ${pct(m.pass)}, ср. коеф. ${m.odds.toFixed(2)}, връща <b>${m.return_best.toFixed(2)} ± ${m.se.toFixed(2)} €</b>
+      от 1 € при <b>най-добрия букмейкър</b> и <b>${m.return_avg.toFixed(2)} €</b> при средната цена; в ${pct(m.day_any)} от дните поне една ${m.unit} минава.
+      ${m.form} е единственото от 678 варианта, което е на плюс във всеки период и при двете цени; не е потвърдено с над 2 грешки - мери се на живо. До 14.10 беше 3 от 4.<br>
+      <b>Парите (твое решение, 13.10): ${m.stake_day} € в ден с надстройка</b> (по ${m.stake.toFixed(2)} € на ${m.unit}); щом месецът стигне ${-m.cap} €, до края му - без залог. Назад така най-лошият месец е <b>${m.worst} €</b>:
+      средно +${m.avg_month} € на месец в последните ${m.months} месеца (+${m.avg_month_avg} € при средната цена; +${m.avg_month_all} € за всичките ${m.months_all}), на плюс в ${m.months_plus} от ${m.months} (${m.months_plus_all} от ${m.months_all}), най-добър +${m.best_all} €.
+      При 30 € на ВСЯКА ${m.unit} (${m.cols * 30} € на ден) един лош ден е -${m.cols * 30} €, затова -30 € на месец не може с такъв залог.<br>
       <b>Извън правилата на майстора</b> (решение на собственика, 13.10): коефициент от 1.30 (той казва от 1.40) и шансът е смес на робота и пазара (той казва процентът да не е от коефициентите).
       Без дерби и без „тото“ - както навсякъде.<br>
       <span class="muted small">Цените на над/под 1.5 и 3.5 са оценка от пазара на 2.5 (назад грешка до 0.06) - провери истинските. Залагай при най-добрия коефициент, който намериш - на средна цена методът е на нула. Не е сигурен залог.</span>
-      ${Object.keys(A.monthly || {}).length ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Тройки минали</th><th>По правилото</th></tr>${Object.entries(A.monthly).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${f(v.passed, v.settled)}</td><td>${v.net >= 0 ? "+" : ""}${v.net.toFixed(2)} €</td></tr>`).join("")}</table>` : ""}</div>
+      ${Object.keys(A.monthly || {}).length ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Колонки минали</th><th>По правилото</th></tr>${Object.entries(A.monthly).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${f(v.passed, v.settled)}</td><td>${v.net >= 0 ? "+" : ""}${v.net.toFixed(2)} €</td></tr>`).join("")}</table>` : ""}</div>
       ${(A.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали дни на надстройката:</p>` + A.past.map(addonCard).join("") : ""}</details>`;
 }
 
@@ -1531,7 +1535,7 @@ function renderColumns() {
   const todays0 = auto.filter(c => cDay(c) === C.today);
   const sysAll = ((C.system || {}).all) || {}, ad = C.addon || {}, adAll = ad.all || {}, adT = ad.today;
   let html = `<div class="ktiles">
-    <div class="tile add"><div class="k">Надстройката</div><div class="v">${adAll.settled ? `${adAll.passed}<span class="muted" style="font-size:14px">/${adAll.settled}</span>` : adT && adT.legs && adT.legs.length ? "4" : "–"}</div><div class="s">${adAll.settled ? `тройки минали · по правилото: ${adAll.net >= 0 ? "+" : ""}${adAll.net.toFixed(2)} €` : adT && adT.legs && adT.legs.length ? "днес: 4 мача, 4 тройки" : "днес няма"}</div></div>
+    <div class="tile add"><div class="k">Надстройката</div><div class="v">${adAll.settled ? `${adAll.passed}<span class="muted" style="font-size:14px">/${adAll.settled}</span>` : adT && adT.legs && adT.legs.length ? adT.trebles.length : "–"}</div><div class="s">${adAll.settled ? `колонки минали · по правилото: ${adAll.net >= 0 ? "+" : ""}${adAll.net.toFixed(2)} €` : adT && adT.legs && adT.legs.length ? `днес: ${adT.legs.length} мача, ${adT.trebles.length} ${AM().unit_pl}` : "днес няма"}</div></div>
     <div class="tile"><div class="k">Колонки днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? (todays0.every(c => c.passed != null || pstWaits(c)) ? "колонки, вече уредени" : "колонки, записани в 07:00") : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
     <div class="tile"><div class="k">Колонки досега</div><div class="v">${rec.n ? `${rec.passed}<span class="muted" style="font-size:14px">/${rec.n}</span>` : "–"}</div><div class="s">${rec.n ? `${pct(rec.passed / rec.n)} минали · назад ~${CBT ? pct(CBT.pass) : "29%"}` : "още няма уредени"}</div></div>
     <div class="tile"><div class="k">Системата</div><div class="v">${sysAll.settled ? `${sysAll.passed}<span class="muted" style="font-size:14px">/${sysAll.settled}</span>` : "–"}</div><div class="s">${sysAll.settled ? `${pct(sysAll.passed / sysAll.settled)} минали · при 30 €: ${sysAll.net30 >= 0 ? "+" : ""}${(sysAll.net30 || 0).toFixed(0)} €` : "от четвъртък 15.10"}</div></div></div>
