@@ -126,6 +126,10 @@ def lock(conn, now=None):
         lgs.add(c["league"])
         if len(legs) == TOP_N:
             break
+    if not rows:
+        mark("днес няма записани мачове в 10-те първенства")
+        log.info("Надстройката %s: без - няма мачове в първенствата", day)
+        return 0
     if len(legs) < TOP_N:
         mark(f"само {len(legs)} мача по правилото от {len(rows)} записани в 10-те първенства - трябват 4 от различни първенства")
         log.info("Надстройката %s: без - %d мача по правилото", day, len(legs))
