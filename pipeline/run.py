@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from bets import apifootball, columns, config, db, fixtures, notify, odds_api, prices, results, rules, shadow, site, tips, xg
+from bets import addon, apifootball, columns, config, db, fixtures, notify, odds_api, prices, results, rules, shadow, site, tips, xg
 from bets.leagues import LEAGUES
 
 RESULTS_EVERY = timedelta(hours=11)     # football-data е безплатен сървър - два пъти на ден стига
@@ -94,6 +94,7 @@ def cloud(log):
            step(log, "5б. Уреждане на колонките", columns.settle, conn),
            step(log, "5б2. Уреждане на колонките на сянка", shadow.settle, conn),
            step(log, "5б3. Уреждане на колонката на системата", shadow.settle_system, conn),
+           step(log, "5б4. Уреждане на надстройката", addon.settle, conn),
            step(log, "5в. Проверка на правилата на майстора", rules.check_and_alert, conn, now),
            step(log, "5а. Стари мачове без прогноза", fixtures.prune, conn, now)]
     if conn.execute("SELECT 1 FROM tips LIMIT 1").fetchone() and not db.get_meta(conn, "first_tip"):
@@ -108,6 +109,8 @@ def cloud(log):
     ok.append(step(log, "6а2. Колонки на сянка (поправен шанс)", shadow.lock, conn, now))
     # СИСТЕМАТА (bets/shadow.py): най-доброто от проверките назад - по 2, най-много една на ден при шанс >= 50%, чет-нед, 11 първенства, истинска цена; само се мери
     ok.append(step(log, "6а3. Колонката на системата", shadow.system_lock, conn, now))
+    # НАДСТРОЙКАТА (bets/addon.py, собственикът 13.10): най-доброто от ~9.6 млн. варианта - голове, система 3 от 4; извън правилата на майстора
+    ok.append(step(log, "6а4. Надстройката", addon.lock, conn, now))
     # мач, започнал преди над 3 часа и още без резултат: отложен/прекъснат ли е - белег във флаговете, преди сайта (bets/apifootball.py)
     ok.append(step(log, "6в. Статус на неуредени мачове (API-Football)", apifootball.refresh_status, conn, now))
     ok.append(step(log, "7. Сайт", site.build, conn, now, upcoming))

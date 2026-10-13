@@ -276,6 +276,10 @@ def morning(conn, upcoming, now=None):
                     + f" [коеф. {c['odds']:.2f}]" for c in todays))
             if not todays:
                 lines.append("Колонки за днес няма - не стигнаха 3 мача с топ шанс от различни първенства (ден за ден, по майстора).")
+            from . import addon
+            ad = addon.day_text(conn, today_d, name, local_time)
+            if ad:
+                lines.append(ad)
             snap = db.get_meta(conn, f"night_preview:{today_d}")
             if snap:
                 lines.append(night_check(json.loads(snap), todays, sure_ms))

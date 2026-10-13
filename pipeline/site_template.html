@@ -204,10 +204,16 @@ details.pend > .inner { padding: 0 10px 10px; }
 .sect h2 { margin: 0; }
 .sect .cnt { font-size: 12.5px; color: var(--muted); }
 .sect .cnt b { color: var(--ink); }
-.ktiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 6px; }
+.ktiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 6px; }
 .ktiles .tile { padding: 10px 12px; }
 .ktiles .tile .v { font-size: 20px; }
-@media (max-width: 420px) { .ktiles { grid-template-columns: 1fr 1fr; } .ktiles .tile:last-child { grid-column: 1 / -1; } }
+.ktiles .tile.add { border-color: var(--ok); }
+@media (max-width: 640px) { .ktiles { grid-template-columns: 1fr 1fr; } }
+.col.add { border-left: 4px solid var(--ok); }
+.col .leg .no { display: inline-block; min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 9px; background: var(--chip); font-size: 11px; font-weight: 600; margin-right: 4px; }
+.col .tr { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px; align-items: baseline; }
+.col .tr .od { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+.col .trh { margin-top: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 details.day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
 details.day > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
 details.day > summary::-webkit-details-marker { display: none; }
@@ -1328,16 +1334,18 @@ const CBTS = ((DATA.columns || {}).bt || {}).select || null;
 // мач -> колонка (за днес и последните дни): за тях няма отделен преглед - прегледът е на цялата колонка, час преди най-ранния ѝ мач
 const COLOF = {};
 ((DATA.columns || {}).record || {columns: []}).columns.filter(c => !c.manual && c.idx < 200).forEach(c => c.legs.forEach(l => { COLOF[l.id] = c; }));
+(((DATA.columns || {}).system || {}).today || []).forEach(c => c.legs.forEach(l => { COLOF[l.id] = {...c, label: "колонката на системата"}; }));
+(((((DATA.columns || {}).addon || {}).today) || {}).legs || []).forEach((l, _, legs) => { COLOF[l.id] = {legs, label: "надстройката"}; });
 const COLREV = {};
 const colFirst = c => Math.min(...c.legs.map(l => new Date(l.kickoff).getTime()));
 function colRevNote(m) {
   const c = COLOF[m.i];
   if (!c || new Date(m.k).getTime() <= Date.now()) return "";
-  return `<div class="bonus"><b class="t">Мачът е в колонка ${c.idx}</b> - отделен преглед няма; прегледът е на цялата колонка, час преди най-ранния ѝ мач (${fmtTime(new Date(colFirst(c)).toISOString())}). Виж таб Колонки.</div>`;
+  return `<div class="bonus"><b class="t">Мачът е в ${c.label || "колонка " + c.idx}</b> - отделен преглед няма; прегледът е общ, час преди най-ранния мач (${fmtTime(new Date(colFirst(c)).toISOString())}). Виж таб Колонки.</div>`;
 }
 function colReviewBlock(c) {
-  if (c.manual || c.shadow || c.idx >= 200 || !c.legs.length) return "";
-  const first = colFirst(c), rv = COLREV[`${c.day}-${c.idx}`];
+  if (c.manual || (c.shadow && !c.revKey) || (!c.revKey && c.idx >= 200) || !c.legs.length) return "";
+  const first = colFirst(c), rv = COLREV[c.revKey || `${c.day}-${c.idx}`];
   if (!rv || !rv.legs) {
     if (c.passed != null || first < Date.now() - 3600e3) return "";
     const at = Math.max(first - 3600e3, new Date(c.locked_at).getTime());
@@ -1352,14 +1360,23 @@ function colReviewBlock(c) {
         ${squadBlock({i: x.id, h: x.home, a: x.away, sq: x.sq}, true)}</div>`; }).join("")}
     <div class="small muted" style="margin-top:6px">Само информация: шансовете на робота не се менят от съставите. Не е сигурен залог.</div></div>`;
 }
+// всичко с преглед час преди първия мач: колонките, колонката на системата (sys-), надстройката (add- - един преглед на четирите мача)
+function revItems() {
+  const C = DATA.columns || {};
+  const out = ((C.record || {columns: []}).columns).filter(c => !c.manual && c.idx < 200 && c.legs.length).map(c => ({...c, revKey: `${c.day}-${c.idx}`}));
+  for (const c of ((C.system || {}).today || [])) out.push({...c, revKey: `sys-${c.day}-${c.idx}`});
+  const T = (C.addon || {}).today;
+  if (T && T.legs && T.legs.length) out.push({legs: T.legs, day: T.day, locked_at: T.locked_at, passed: T.trebles.every(t => t.passed != null) ? 1 : null, revKey: `add-${T.day}-0`});
+  return out;
+}
 async function fetchColReviews() {
   // прегледите на днешните колонки: от 62 мин. преди първия мач (или 2 мин. след записа на колонката, ако е по-късно) до 3 ч след него;
   // наново на 2 мин., докато могат да се появят състави - иначе файл още няма и не се пита
   const now = Date.now();
   let got = 0;
-  for (const c of ((DATA.columns || {}).record || {columns: []}).columns) {
-    if (c.manual || c.idx >= 200 || !c.legs.length || c.passed != null) continue;
-    const first = colFirst(c), key = `${c.day}-${c.idx}`, prev = COLREV[key] || {};
+  for (const c of revItems()) {
+    if (c.passed != null) continue;
+    const first = colFirst(c), key = c.revKey, prev = COLREV[key] || {};
     if (now < Math.max(first - 62 * 60e3, new Date(c.locked_at).getTime() + 2 * 60e3) || now - first > 3 * 3600e3) continue;
     // още няма файл: преди първия мач на минута, после на 10 мин. (колонка без преглед - записана твърде късно или с повредена задача)
     if (prev.checked && now - prev.checked < (prev.made_at ? (now < first + 90 * 60e3 ? 120e3 : 600e3) : (now < first ? 60e3 : 600e3))) continue;
@@ -1445,7 +1462,7 @@ function systemBlock(S) {
   if (!S) return "";
   const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
   const a = S.all || {}, ms = S.measured || {};
-  const today = (S.today || []).length ? S.today.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("")
+  const today = (S.today || []).length ? S.today.map(c => colCard({...c, shadow: true, idx: "системата", revKey: `sys-${c.day}-${c.idx}`}, true)).join("")
     : `<div class="col sys"><div class="head"><span class="nm">Днес без колонка</span><span class="dt">${S.note ? esc(S.note) : "записът е в 07:00"}</span></div></div>`;
   const live = a.settled ? `на живо: <b>${f(a.passed, a.settled)}</b> минали${a.return != null ? `, връщат <b>${a.return.toFixed(2)} €</b>` : ""}${a.net30 != null ? `, при 30 €: <b>${a.net30 >= 0 ? "+" : ""}${a.net30.toFixed(0)} €</b>` : ""}` : "на живо: още няма уредени";
   return `<div class="sect"><h2>Системата</h2><span class="cnt">най-доброто от проверките назад · от ${esc(fmtDate(S.from + "T12:00:00"))} · ${live}</span></div>
@@ -1458,17 +1475,59 @@ function systemBlock(S) {
       ${(S.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали колонки на системата:</p>` + S.past.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("") : ""}</details>`;
 }
 
+// НАДСТРОЙКАТА (bets/addon.py): голове, система 3 от 4 - най-доброто от ~9.6 млн. варианта назад; извън правилата на майстора (решение на собственика 13.10)
+function addonCard(D) {
+  const hit = h => h == null ? `<span class="muted">чака</span>` : h ? `<span class="y">✓</span>` : `<span class="n">✗</span>`;
+  const no = id => D.legs.findIndex(l => l.id === id) + 1;
+  const settled = D.trebles.filter(t => t.passed != null), won = settled.filter(t => t.passed === 1).length;
+  const net = settled.reduce((s, t) => s + (t.passed ? (t.odds - 1) * 30 : -30), 0);
+  const st = settled.length < D.trebles.length ? `<span class="muted">${settled.length ? `уредени ${settled.length} от 4` : "чака мачовете"}</span>`
+    : `<span class="${won ? "y" : "n"}">${won} от 4 тройки минаха</span>`;
+  return `<div class="col add ${settled.length === 4 ? (won ? "won" : "lost") : ""}"><div class="head"><span class="nm">Надстройката</span><span class="dt">за ${esc(colDay(D.day))} · записана ${fmtTime(D.locked_at)}</span><span class="st">${st}</span></div>
+    ${D.legs.map((l, i) => `<div class="leg"><span class="tm">${fmtTime(l.kickoff)}</span>
+      <span><div class="tms"><span class="no">${i + 1}</span>${esc(l.home)} – ${esc(l.away)}</div><div class="lg2">${flag(l.league)} ${esc(title(l.league))}</div>
+      <div class="pk2"><b>${esc(labT(l.sel, {h: l.home, a: l.away}))}</b><span class="mt">${pct(l.p)} (робот ${pct(l.p_robot)}, пазар ${pct(l.p_market)}) · коеф. ${l.odds.toFixed(2)}${l.odds_avg && l.odds_avg !== l.odds ? ` <span title="средната на букмейкърите">ср. ${l.odds_avg.toFixed(2)}</span>` : ""}${l.src === "est" ? " (оценка - провери)" : ""}</span></div></span>
+      <span class="rs">${l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span>` : ""}${hit(l.hit)}</span></div>`).join("")}
+    <div class="trh">Четирите тройки (система 3 от 4)</div>
+    ${D.trebles.map(t => `<div class="tr"><span>Тройка ${t.idx}: мачове ${t.ids.map(no).join(", ")}</span><span class="od">коеф. ${t.odds.toFixed(2)}</span><span>${t.passed === 1 ? `<span class="y">✓ МИНА</span>` : t.passed === 0 ? `<span class="n">✗</span>` : `<span class="muted">чака</span>`}</span></div>`).join("")}
+    ${colReviewBlock({legs: D.legs, day: D.day, locked_at: D.locked_at, passed: settled.length === 4 ? 1 : null, revKey: `add-${D.day}-0`})}
+    <div class="sum"><span>4 тройки по 30 € = <b>120 €</b> за деня</span>${settled.length ? `<span>досега за деня при 30 €: <b>${net >= 0 ? "+" : ""}${net.toFixed(0)} €</b></span>` : ""}
+      <span>Назад: тройка минава <b>40%</b>, връща <b>1.14 €</b> от 1 € само при най-добрия коефициент</span></div></div>`;
+}
+function addonBlock(A) {
+  if (!A) return "";
+  const m = A.measured || {}, a = A.all || {}, T = A.today;
+  const f = (n, d) => d ? `${n} от ${d} (${pct(n / d)})` : "още няма";
+  const live = a.settled ? `на живо: <b>${f(a.passed, a.settled)}</b> тройки, при 30 €: <b>${a.net30 >= 0 ? "+" : ""}${a.net30.toFixed(0)} €</b>` : "на живо: още няма уредени";
+  const today = T && T.legs && T.legs.length ? addonCard(T)
+    : `<div class="col add"><div class="head"><span class="nm">Днес без надстройка</span><span class="dt">${T && T.note ? esc(T.note) : "записът е след 07:00"}. Назад надстройка има в ~${m.days_per_month} дни на месец - дните без нея са част от правилото.</span></div></div>`;
+  return `<div class="sect"><h2>Надстройката</h2><span class="cnt">най-доброто от ~9.6 млн. варианта назад · система 3 от 4 · извън правилата на майстора · ${live}</span></div>
+    ${today}
+    <details class="how"><summary>Какво е надстройката и колко е измерена</summary><div class="note">
+      <b>Правило:</b> ${esc(A.rule)}.<br>Първенства: ${A.leagues.map(l => esc(title(l))).join(", ")}.<br>
+      <b>Назад</b> (последните 12 месеца, ${m.n} тройки, избрано само по двете години преди тях): тройка минава ${pct(m.pass)}, ср. коеф. ${m.odds.toFixed(2)}, връща <b>${m.return_best.toFixed(2)} ± ${m.se.toFixed(2)} €</b>
+      от 1 € при <b>най-добрия букмейкър</b>; при средната цена - <b>${m.return_avg.toFixed(2)} €</b>, тоест около нулата. Разликата от нулата е 1.8 грешки - не е потвърдено.
+      При 300 € и 30 € на тройка: средно ${m.avg_month >= 0 ? "+" : ""}${m.avg_month} € на месец, но на плюс в ${m.months_plus} от ${m.months} месеца; най-лош месец ${m.worst} €, най-добър +${m.best} €.<br>
+      <b>Извън правилата на майстора</b> (решение на собственика, 13.10): коефициент от 1.30 (той казва от 1.40) и шансът е смес на робота и пазара (той казва процентът да не е от коефициентите).
+      Без дерби и без „тото“ - както навсякъде.<br>
+      <span class="muted small">Цените на над/под 1.5 и 3.5 са оценка от пазара на 2.5 (назад грешка до 0.06) - провери истинските. Залагай при най-добрия коефициент, който намериш - на средна цена методът е на нула. Не е сигурен залог.</span>
+      ${Object.keys(A.monthly || {}).length ? `<table class="small" style="margin-top:6px"><tr><th>Месец</th><th>Тройки минали</th><th>При 30 €</th></tr>${Object.entries(A.monthly).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${f(v.passed, v.settled)}</td><td>${v.net30 >= 0 ? "+" : ""}${v.net30.toFixed(0)} €</td></tr>`).join("")}</table>` : ""}</div>
+      ${(A.past || []).length ? `<p class="small muted" style="margin:8px 0 4px">Минали дни на надстройката:</p>` + A.past.map(addonCard).join("") : ""}</details>`;
+}
+
 function renderColumns() {
   const C = DATA.columns || {}, rec = C.record || {columns: []}, el = document.getElementById("cl-body");
   const pr = C.params || {};
   const auto = rec.columns.filter(c => !c.manual);
   const todays0 = auto.filter(c => cDay(c) === C.today);
-  const sysAll = ((C.system || {}).all) || {};
+  const sysAll = ((C.system || {}).all) || {}, ad = C.addon || {}, adAll = ad.all || {}, adT = ad.today;
   let html = `<div class="ktiles">
-    <div class="tile"><div class="k">Днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? (todays0.every(c => c.passed != null || pstWaits(c)) ? "колонки, вече уредени" : "колонки, записани в 07:00") : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
-    <div class="tile"><div class="k">Минали</div><div class="v">${rec.n ? `${rec.passed}<span class="muted" style="font-size:14px">/${rec.n}</span>` : "–"}</div><div class="s">${rec.n ? `${pct(rec.passed / rec.n)} минали · назад ~${CBT ? pct(CBT.pass) : "29%"}` : "още няма уредени"}</div></div>
+    <div class="tile add"><div class="k">Надстройката</div><div class="v">${adAll.settled ? `${adAll.passed}<span class="muted" style="font-size:14px">/${adAll.settled}</span>` : adT && adT.legs && adT.legs.length ? "4" : "–"}</div><div class="s">${adAll.settled ? `тройки минали · при 30 €: ${adAll.net30 >= 0 ? "+" : ""}${adAll.net30.toFixed(0)} €` : adT && adT.legs && adT.legs.length ? "днес: 4 мача, 4 тройки" : "днес няма"}</div></div>
+    <div class="tile"><div class="k">Колонки днес</div><div class="v">${todays0.length}</div><div class="s">${todays0.length ? (todays0.every(c => c.passed != null || pstWaits(c)) ? "колонки, вече уредени" : "колонки, записани в 07:00") : C.locked ? "няма колонки" : "записват се в 07:00"}</div></div>
+    <div class="tile"><div class="k">Колонки досега</div><div class="v">${rec.n ? `${rec.passed}<span class="muted" style="font-size:14px">/${rec.n}</span>` : "–"}</div><div class="s">${rec.n ? `${pct(rec.passed / rec.n)} минали · назад ~${CBT ? pct(CBT.pass) : "29%"}` : "още няма уредени"}</div></div>
     <div class="tile"><div class="k">Системата</div><div class="v">${sysAll.settled ? `${sysAll.passed}<span class="muted" style="font-size:14px">/${sysAll.settled}</span>` : "–"}</div><div class="s">${sysAll.settled ? `${pct(sysAll.passed / sysAll.settled)} минали · при 30 €: ${sysAll.net30 >= 0 ? "+" : ""}${(sysAll.net30 || 0).toFixed(0)} €` : "от четвъртък 15.10"}</div></div></div>
-  <p class="small muted" style="margin:0 0 4px">Колонка = ${pr.size || 3} мача, които <b>всичките</b> трябва да излязат. Ден за ден, записани в 07:00, после не се променят. Не е сигурен залог: назад минават ~${CBT ? pct(CBT.pass) : "29%"} и връщат ${retTxt()} € от 1 €.</p>`;
+  <p class="small muted" style="margin:0 0 4px">Най-отгоре е <b>надстройката</b> - най-доброто от проверките назад, извън правилата на майстора. Под нея - <b>колонките по правилата на майстора</b>: по ${pr.size || 3} мача, които всичките трябва да излязат, ден за ден, записани в 07:00. Нищо не е сигурен залог.</p>`;
+  html += addonBlock(C.addon);
   const waits = rec.columns.filter(pstWaits).sort((a, b) => cDay(a).localeCompare(cDay(b)) || a.idx - b.idx);
   if (waits.length) html += `<div class="note"><b>Чака решение на собственика (${waits.length}):</b> колонка с мач, който не е игран докрай. Не се уреждава автоматично и не влиза в мерките, докато мачът няма резултат.
     <ul style="margin:6px 0 0;padding-left:18px">${waits.map(c => `<li>${c.manual ? esc(c.name || "Играна от теб") : "Колонка " + c.idx} за ${esc(colDay(c.manual ? c.day : cDay(c)))}: ${pstOf(c).map(l => `<b>${esc(l.home)} – ${esc(l.away)}</b> е ${esc(l.st[1] || "отложен")}`).join("; ")} (${pstOthers(c)}).</li>`).join("")}</ul>
@@ -1477,7 +1536,7 @@ function renderColumns() {
   const todaysAll = todays0.sort((a, b) => a.idx - b.idx);
   const doneDay = todaysAll.length > 0 && todaysAll.every(c => c.passed != null || pstWaits(c));
   const todays = doneDay ? [] : todaysAll;
-  html += `<div class="sect"><h2>Днес</h2><span class="cnt">${esc(colDay(C.today))}${todays.length ? ` · записани в <b>${esc(fmtTime(todays[0].locked_at))}</b>, не се променят` : ""}</span></div>`;
+  html += `<div class="sect"><h2>Колонките по правилата на майстора - днес</h2><span class="cnt">${esc(colDay(C.today))}${todays.length ? ` · записани в <b>${esc(fmtTime(todays[0].locked_at))}</b>, не се променят` : ""}</span></div>`;
   if (doneDay) { const w = todaysAll.filter(c => c.passed === 1).length, l = todaysAll.filter(c => c.passed === 0).length;
     html += `<div class="col"><div class="head"><span class="nm">Колонките за ${esc(colDay(C.today))} са уредени</span><span class="st"><span class="${w ? "y" : "muted"}">${w} минали</span>${l ? ` · <span class="n">${l} паднали</span>` : ""}${todaysAll.length - w - l ? ` · ${todaysAll.length - w - l} чака` : ""}</span><span class="dt">Следващите се записват в 07:00. Подробно - в „Минали“ по-долу.</span></div></div>`; }
   else if (todays.length) html += todays.map(c => colCard(c, true)).join("");
@@ -1488,7 +1547,7 @@ function renderColumns() {
   const past = rec.columns.filter(c => c.manual || cDay(c) !== C.today || doneDay);
   const days = [];
   past.forEach(c => { const d = c.manual ? c.day : cDay(c); let g = days.find(x => x.d === d); if (!g) { g = {d, cols: []}; days.push(g); } g.cols.push(c); });
-  html += `<div class="sect"><h2>Минали</h2><span class="cnt">${rec.n ? `<b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}) · роботът е казвал ${pct(rec.claimed)} · малка извадка` : "още няма уредени - записът ден за ден е от 09.10"}</span></div>`;
+  html += `<div class="sect"><h2>Колонките по правилата на майстора - минали</h2><span class="cnt">${rec.n ? `<b>${rec.passed} от ${rec.n}</b> минали (${pct(rec.passed / rec.n)}) · роботът е казвал ${pct(rec.claimed)} · малка извадка` : "още няма уредени - записът ден за ден е от 09.10"}</span></div>`;
   days.forEach((g, i) => {
     const settled = g.cols.filter(c => c.passed != null), won = settled.filter(c => c.passed === 1).length, waiting = g.cols.length - settled.length;
     html += `<details class="day"${i === 0 ? " open" : ""}><summary>${esc(colDay(g.d))}<span class="cnt">${g.cols.length} ${g.cols.length === 1 ? "колонка" : "колонки"} · <span class="${won ? "y" : ""}">${won} минали</span>${settled.length - won ? ` · ${settled.length - won} паднали` : ""}${waiting ? ` · ${waiting} чака` : ""}</span></summary>${g.cols.map(c => colCard(c, true)).join("")}</details>`;
