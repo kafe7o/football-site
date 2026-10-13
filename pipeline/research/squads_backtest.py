@@ -109,7 +109,7 @@ def match_rows(features):
             unmatched += 1
             continue
         f = best[1]
-        rows.append({"league": r["league"], "date": r["date"], "mi": f["mi"], "ml": f["ml"], "xh": rb["xg_home"], "xa": rb["xg_away"],
+        rows.append({"league": r["league"], "date": r["date"], "home": r["home"], "away": r["away"], "mi": f["mi"], "ml": f["ml"], "xh": rb["xg_home"], "xa": rb["xg_away"],
                      "hg": r["hg"], "ag": r["ag"], "market": p.get("market")})
     return rows, unmatched
 
