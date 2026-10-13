@@ -245,7 +245,8 @@ def day_text(conn, day, name, local_time):
     s0 = json.loads(m["summary_json"])
     stake = s0.get("stake", STAKE)
     n = len(tr)
-    money = (f"залог по правилото: {n} {UNIT_PL} по {stake:.2f} € = {n * stake:.2f} €, до -30 € за месеца остават {s0.get('room', MONTH_CAP):.2f} €" if stake > 0
+    money = (f"залог по правилото: фиш „Система {MEASURED['form']}“ - {n} {UNIT_PL} по {stake:.2f} € = {n * stake:.2f} €; ако някой мач в Mr Bit е под 1.30 - не залагай; "
+             f"до -30 € за месеца остават {s0.get('room', MONTH_CAP):.2f} €" if stake > 0
              else "ДНЕС БЕЗ ЗАЛОГ - месецът е на границата -30 €, записва се само за мерене")
     head = (f"НАДСТРОЙКАТА ЗА ДНЕС (извън правилата на майстора - решение на собственика; система {MEASURED['form']}: {n} {UNIT_PL} от тези {len(legs)} мача, "
             f"ако падне един мач, една {UNIT} пак минава; назад връща ~{MEASURED['return_best']:.2f} € от 1 € при най-добрия букмейкър, ~{MEASURED['return_avg']:.2f} при средния; "

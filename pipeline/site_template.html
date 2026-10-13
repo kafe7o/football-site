@@ -213,6 +213,10 @@ details.pend > .inner { padding: 0 10px 10px; }
 .col .leg .no { display: inline-block; min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 9px; background: var(--chip); font-size: 11px; font-weight: 600; margin-right: 4px; }
 .col .tr { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px; align-items: baseline; }
 .col .tr .od { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+ol.steps { margin: 8px 0 0; padding-left: 22px; }
+ol.steps li { margin: 0 0 8px; line-height: 1.45; }
+ol.steps li b.k { display: block; }
+.howline { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--chip); font-size: 13px; }
 .col .trh { margin-top: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 details.day { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
 details.day > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-weight: 600; }
@@ -1494,11 +1498,34 @@ function addonCard(D) {
       <span class="rs">${l.score ? `<span class="num">${l.score[0]}:${l.score[1]}</span>` : ""}${hit(l.hit)}</span></div>`).join("")}
     <div class="trh">${cap1(M.unit_pl)}: ${D.trebles.length} (система ${D.trebles.length && D.trebles[0].ids.length === 3 ? "3 от 4" : M.form}) - ако падне един мач, една пак минава</div>
     ${D.trebles.map(t => `<div class="tr"><span>${cap1(t.ids.length === 3 ? "тройка" : M.unit)} ${t.idx}: мачове ${t.ids.map(no).join(", ")}</span><span class="od">коеф. ${t.odds.toFixed(2)}</span><span>${t.passed === 1 ? `<span class="y">✓ МИНА</span>` : t.passed === 0 ? `<span class="n">✗</span>` : `<span class="muted">чака</span>`}</span></div>`).join("")}
-    ${colReviewBlock({legs: D.legs, day: D.day, locked_at: D.locked_at, passed: settled.length === 4 ? 1 : null, revKey: `add-${D.day}-0`})}
+    ${SK > 0 && settled.length < D.trebles.length && D.trebles.length && D.trebles[0].ids.length === 4 ? `<div class="howline"><b>Как:</b> в Mr Bit сложи и ${D.legs.length}-те мача в един фиш → тип <b>„Система 4 от 5“</b> →
+      <b>${SK.toFixed(2)} € на комбинация</b> (общо ${(D.trebles.length * SK).toFixed(2)} €). Ако някой мач там е под 1.30 - този ден не залагай. Подробно - „Как да залагам“ по-долу.</div>` : ""}
+    ${colReviewBlock({legs: D.legs, day: D.day, locked_at: D.locked_at, passed: settled.length === D.trebles.length ? 1 : null, revKey: `add-${D.day}-0`})}
     <div class="sum">${SK > 0 ? `<span>залог по правилото: ${D.trebles.length} ${M.unit_pl} по <b>${SK.toFixed(2)} €</b> = <b>${(D.trebles.length * SK).toFixed(2)} €</b>${D.room != null ? ` (до -30 € за месеца остават ${D.room.toFixed(2)} €)` : ""}</span>`
         : `<span class="n"><b>Днес без залог</b> - месецът е на границата -30 €; записва се само за мерене</span>`}${settled.length && SK > 0 ? `<span>за деня: <b>${net >= 0 ? "+" : ""}${net.toFixed(2)} €</b></span>` : ""}
       <span>Назад: ${M.unit} минава <b>${pct(M.pass)}</b>, връща <b>${(M.return_best || 0).toFixed(2)} €</b> от 1 € при най-добрия коефициент (${(M.return_avg || 0).toFixed(2)} при средния)</span></div></div>`;
 }
+// Как да залагам - стъпка по стъпка (собственикът, 14.10)
+function addonHowTo(m) {
+  const st = (m.stake || 6).toFixed(2);
+  return `<details class="how" open><summary>Как да залагам - стъпка по стъпка</summary><ol class="steps">
+    <li><b class="k">Сутрин след 07:10 погледни.</b> Известието на телефона (ред „НАДСТРОЙКАТА ЗА ДНЕС“) или тук, таб Колонки. Ако пише „Днес без надстройка“ или „Днес без залог“ - този ден не залагаш нищо.
+      Дните без надстройка са част от правилото (средно има в ~${m.days_per_month} дни на месец).</li>
+    <li><b class="k">Виж колко можеш да заложиш днес.</b> Редът „Този месец“ казва колко остават до границата -30 €. Картата на деня казва точния залог: обикновено ${st} € на комбинация, общо ${m.stake_day} €.
+      Ако месецът е близо до -30 €, залогът е по-малък - залагай точно колкото пише, не повече.</li>
+    <li><b class="k">Провери коефициентите в Mr Bit.</b> За всеки от ${m.legs}-те мача сравни коефициента с този на сайта („ср.“ е средният на букмейкърите). Ако Mr Bit дава колкото средния или повече - добре.
+      Ако за някой мач дава под 1.30 - този ден не залагай (излиза извън правилото). По-висок коефициент = повече пари: назад методът връща ${(m.return_best || 0).toFixed(2)} € от 1 € при най-добрата цена и ${(m.return_avg || 0).toFixed(2)} € при средната.</li>
+    <li><b class="k">Направи фиша.</b> Добави и ${m.legs}-те избора (например „под 3.5“) в един фиш → избери тип <b>„Система“ → „4 от 5“</b> (5 комбинации по 4 мача) → залог <b>${st} € на комбинация</b>.
+      Ако Mr Bit няма системи - направи 5 отделни фиша с по 4 мача, точно като „Четворка 1-5“ на картата, по ${st} € всеки.</li>
+    <li><b class="k">Залагай сутринта.</b> Цените, по които е мерено назад, са сутрешните; по-късно обикновено падат. Час преди първия мач идва „Преглед“ с пресни коефициенти и състави - той е само за информация, залогът вече е направен.</li>
+    <li><b class="k">След мачовете - нищо не правиш.</b> Ако падне един мач, една четворка пак минава и връща част от парите; ако паднат два или повече - денят е на минус. Сайтът сам смята резултата и месеца.
+      Отложен мач: по правилата на букмейкъра обикновено се брои с коефициент 1.00 - провери правилата на Mr Bit.</li>
+    <li><b class="k">Щом месецът стигне -30 € - спираш до края му.</b> Сайтът пише „до края на месеца без залог“. Следващия месец започваш отначало. Не удвоявай, не гони загуби, не залагай извън правилото.</li>
+    <li><b class="k">Какво да очакваш.</b> Повечето месеци завършват около -30 €, а добрите дават +100 до +300 €. Назад средно +${m.avg_month} € на месец при най-добрата цена (+${m.avg_month_avg} € при средната);
+      най-лошият месец е ${m.worst} €. Не е сигурен залог и не е потвърдено - мери се на живо.</li>
+  </ol></details>`;
+}
+
 function addonBlock(A) {
   if (!A) return "";
   const m = A.measured || {}, a = A.all || {}, T = A.today;
@@ -1513,6 +1540,7 @@ function addonBlock(A) {
   return `<div class="sect"><h2>Надстройката</h2><span class="cnt">най-доброто от всички проверки назад · система ${m.form} · извън правилата на майстора · ${live}</span></div>
     ${monthLine}
     ${today}
+    ${addonHowTo(m)}
     <details class="how"><summary>Какво е надстройката и колко е измерена</summary><div class="note">
       <b>Правило:</b> ${esc(A.rule)}.<br>Първенства: ${A.leagues.map(l => esc(title(l))).join(", ")}.<br>
       <b>Назад</b> (последните ${m.months} месеца, ${m.n} ${m.unit_pl} в ${m.days} дни): ${m.unit} минава ${pct(m.pass)}, ср. коеф. ${m.odds.toFixed(2)}, връща <b>${m.return_best.toFixed(2)} ± ${m.se.toFixed(2)} €</b>
