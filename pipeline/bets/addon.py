@@ -30,8 +30,29 @@ FROM = "2026-10-13T05:00:00+00:00"           # от 13.10 сутринта (ре
 LEAGUES = frozenset({"B1", "E3", "EC", "G1", "I2", "N1", "SC0", "SC3", "SP1", "T1"})
 GOALS = ("O15", "U15", "O", "U", "O35", "U35")
 MIN_P, FLOOR, AGREE, TOP_N, SIZE, MAX_RATIO = 0.65, 1.30, 0.05, 4, 3, 1.25
+# ПАРИТЕ - решение на собственика (13.10): „в най-лошия месец да губим не 300 €, а 30 €“ и „залагаме 30 €, точка“. 30 € на тройка (120 € на ден) не може да спре месеца
+# на -30 € - един лош ден е -120 €. Затова: 30 € на ДЕН с надстройка (по 7.50 € на тройка); щом месецът стигне -30 €, до края му - без залог; залогът за деня никога не е
+# повече от остатъка до -30 € (по уредените тройки на месеца; неуредените се броят като загубени). Назад (scratchpad stake_sim, 13.10): най-лош месец -30 €, средно
+# +11 €/месец в последните 12 (+47 € за всичките 32), на плюс в 4 от 12 (15 от 32), най-добър +182 € (+303 €); при 30 € на тройка без граница - най-лош -299 €.
+STAKE_DAY, MONTH_CAP = 30.0, 30.0
+STAKE = STAKE_DAY / 4
 MEASURED = {"n": 336, "pass": 0.396, "odds": 2.91, "return_best": 1.141, "se": 0.077, "return_avg": 0.968, "days_per_month": 5.6,
-            "avg_month": 110, "months_plus": 6, "months": 12, "worst": -300, "best": 729}
+            "stake_day": STAKE_DAY, "stake": STAKE, "cap": MONTH_CAP, "avg_month": 11, "avg_month_all": 47, "months_plus": 4, "months": 12,
+            "months_plus_all": 15, "months_all": 32, "worst": -30, "best": 182}
+
+
+def month_status(conn, day, include=False):
+    """(резултатът на месеца по уредените тройки, заложено в неуредени, остатък до -30 €) - по записаните залози на всяка тройка; днешният ден - ако include."""
+    net = pending = 0.0
+    op = "<=" if include else "<"
+    for r in conn.execute(f"SELECT passed, summary_json FROM columns_addon WHERE idx > 0 AND substr(day, 1, 7) = ? AND day {op} ?", (day[:7], day)):
+        s = json.loads(r["summary_json"])
+        stake = s.get("stake", STAKE)
+        if r["passed"] is None:
+            pending += stake
+        else:
+            net += (s["odds"] - 1) * stake if r["passed"] else -stake
+    return round(net, 2), round(pending, 2), round(MONTH_CAP + net - pending, 2)
 RULE = ("само голове (над/под 1.5, 2.5, 3.5); шансът е смес робот + пазар, двамата съгласни до 5 пункта, поне 65%; коефициент от 1.30; 10 първенства; "
         "по един мач от първенство; всеки ден 4-те най-добри мача (по шанс x най-добрата цена) и всички 4 тройки от тях - система 3 от 4")
 
@@ -134,14 +155,20 @@ def lock(conn, now=None):
         mark(f"само {len(legs)} мача по правилото от {len(rows)} записани в 10-те първенства - трябват 4 от различни първенства")
         log.info("Надстройката %s: без - %d мача по правилото", day, len(legs))
         return 0
+    net, pending, room = month_status(conn, day)
+    stake = math.floor(min(STAKE, max(room, 0) / TOP_N) * 2) / 2          # по 0.50 €, никога над остатъка до -30 €
     for k, trio in enumerate(combinations(range(TOP_N), SIZE), 1):
         ls = [legs[j] for j in trio]
         summary = {"cday": day, "odds": round(math.prod(l["odds"] for l in ls), 2), "odds_avg": round(math.prod(l["odds_avg"] for l in ls), 2),
-                   "claimed": round(math.prod(l["p"] for l in ls), 4), "book": all(l["src"] == "book" for l in ls)}
+                   "claimed": round(math.prod(l["p"] for l in ls), 4), "book": all(l["src"] == "book" for l in ls), "stake": stake}
         conn.execute("INSERT OR IGNORE INTO columns_addon (day, idx, legs_json, summary_json, locked_at) VALUES (?, ?, ?, ?, ?)",
                      (day, k, json.dumps(ls, ensure_ascii=False), json.dumps(summary), stamp))
-    mark("надстройка", legs)
-    log.info("Надстройката %s: %s", day, " | ".join(f"{l['home']} - {l['away']} {l['sel']} {l['p']:.0%} @{l['odds']:.2f}" for l in legs))
+    conn.execute("INSERT OR IGNORE INTO columns_addon (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, ?, ?, ?)",
+                 (day, json.dumps(legs, ensure_ascii=False), json.dumps({"cday": day, "note": "надстройка", "stake": stake, "month_net": net,
+                                                                          "pending": pending, "room": room}, ensure_ascii=False), stamp))
+    conn.commit()
+    log.info("Надстройката %s (залог %.2f € на тройка, остатък до -30 € за месеца %.2f €): %s", day, stake, room,
+             " | ".join(f"{l['home']} - {l['away']} {l['sel']} {l['p']:.0%} @{l['odds']:.2f}" for l in legs))
     return 4
 
 
@@ -173,20 +200,25 @@ def for_site(conn, now=None):
         if r["idx"] == 0:
             d["legs"] = _with_results(conn, json.loads(r["legs_json"]))
             d["note"] = s.get("note")
+            d["stake"] = s.get("stake", STAKE)
+            d["room"] = s.get("room")
         else:
             ids = [l["id"] for l in json.loads(r["legs_json"])]
-            d["trebles"].append({"idx": r["idx"], "ids": ids, "passed": r["passed"], **{k: s[k] for k in ("odds", "odds_avg", "claimed")}})
+            d["trebles"].append({"idx": r["idx"], "ids": ids, "passed": r["passed"], "stake": s.get("stake", STAKE),
+                                 **{k: s[k] for k in ("odds", "odds_avg", "claimed")}})
     settled = [t for d in days.values() for t in d["trebles"] if t["passed"] is not None]
     out["all"] = {"days": sum(1 for d in days.values() if d["trebles"]), "trebles": sum(len(d["trebles"]) for d in days.values()), "settled": len(settled),
                   "passed": sum(t["passed"] for t in settled), "return": (sum(t["odds"] for t in settled if t["passed"]) / len(settled)) if settled else None,
-                  "net30": round(sum((t["odds"] - 1) * 30 if t["passed"] else -30 for t in settled), 2)}
+                  "net": round(sum((t["odds"] - 1) * t["stake"] if t["passed"] else -t["stake"] for t in settled), 2)}
+    net, pending, room = month_status(conn, today, include=True)
+    out["month"] = {"m": today[:7], "net": net, "pending": pending, "room": room, "cap": MONTH_CAP}
     for d in days.values():
         for t in d["trebles"]:
             if t["passed"] is not None:
-                m = out["monthly"].setdefault(d["day"][:7], {"settled": 0, "passed": 0, "net30": 0.0})
+                m = out["monthly"].setdefault(d["day"][:7], {"settled": 0, "passed": 0, "net": 0.0})
                 m["settled"] += 1
                 m["passed"] += t["passed"]
-                m["net30"] = round(m["net30"] + ((t["odds"] - 1) * 30 if t["passed"] else -30), 2)
+                m["net"] = round(m["net"] + ((t["odds"] - 1) * t["stake"] if t["passed"] else -t["stake"]), 2)
     if today in days:
         out["today"] = days[today]
     out["past"] = [d for k, d in sorted(days.items(), reverse=True) if k != today and d["trebles"]][:30]
@@ -204,11 +236,15 @@ def day_text(conn, day, name, local_time):
         return f"Надстройката днес няма - {json.loads(m['summary_json']).get('note')}."
     tr = conn.execute("SELECT passed, summary_json FROM columns_addon WHERE day = ? AND idx > 0", (day,)).fetchall()
     done = [t for t in tr if t["passed"] is not None]
+    s0 = json.loads(m["summary_json"])
+    stake = s0.get("stake", STAKE)
+    money = (f"залог по правилото: 4 тройки по {stake:.2f} € = {4 * stake:.2f} €, до -30 € за месеца остават {s0.get('room', MONTH_CAP):.2f} €" if stake > 0
+             else "ДНЕС БЕЗ ЗАЛОГ - месецът е на границата -30 €, записва се само за мерене")
     head = (f"НАДСТРОЙКАТА ЗА ДНЕС (извън правилата на майстора - решение на собственика; система 3 от 4: 4 тройки от тези 4 мача; назад връща ~1.14 € от 1 € "
-            f"само при най-добрия букмейкър, при средна цена ~0.97; не е сигурен залог): ")
+            f"само при най-добрия букмейкър, при средна цена ~0.97; не е сигурен залог; {money}): ")
     body = "; ".join(f"{local_time(l['kickoff'])} {name(l['home'], l['away'])} {robot.label(l['sel'])} {l['p']:.0%} @{l['odds']:.2f}" for l in legs)
     if done:
         won = sum(t["passed"] for t in done)
-        net = sum((json.loads(t["summary_json"])["odds"] - 1) * 30 if t["passed"] else -30 for t in done)
-        return head + body + f" | уредени {len(done)} от 4 тройки, минали {won}; при 30 € на тройка: {net:+.0f} €"
+        net = sum((json.loads(t["summary_json"])["odds"] - 1) * stake if t["passed"] else -stake for t in done)
+        return head + body + f" | уредени {len(done)} от 4 тройки, минали {won}; по правилото: {net:+.2f} €"
     return head + body
