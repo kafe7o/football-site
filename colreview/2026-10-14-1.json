@@ -1,0 +1,154 @@
+{
+ "day": "2026-10-14",
+ "idx": 1,
+ "system": false,
+ "made_at": "2026-10-14T15:59:59+00:00",
+ "first": "2026-10-14T17:00+00:00",
+ "legs": [
+  {
+   "id": "53662d1de96e5adecc29ae6c3bc5e652",
+   "league": "D3",
+   "kickoff": "2026-10-14T17:00+00:00",
+   "home": "Wehen Wiesbaden",
+   "away": "Alemannia Aachen",
+   "sel": "X2",
+   "p": 0.6705,
+   "odds": 1.53,
+   "src": "book",
+   "odds_now": 1.5,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "SV Wehen",
+    "m": "Alemannia Aachen",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-14T15:59:59+00:00"
+   }
+  },
+  {
+   "id": "a6a5201c913ad65608fee5eb63532c62",
+   "league": "E1",
+   "kickoff": "2026-10-14T18:45+00:00",
+   "home": "Norwich City",
+   "away": "Southampton",
+   "sel": "O",
+   "p": 0.6872,
+   "odds": 1.5,
+   "src": "book",
+   "odds_now": 1.55,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Norwich",
+    "m": "Southampton",
+    "i": {
+     "h": [
+      [
+       "A. Ahmed",
+       "out",
+       "контузия"
+      ],
+      [
+       "P. A. Diallo",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Mahovo",
+       "out",
+       "контузия"
+      ],
+      [
+       "K. McLean",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Topic",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Toure",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "C. Bragg",
+       "out",
+       "наказан"
+      ]
+     ]
+    },
+    "ia": "2026-10-14T15:59:59+00:00"
+   }
+  },
+  {
+   "id": "cc998a2e7878480be780fc3782f58d0e",
+   "league": "USA",
+   "kickoff": "2026-10-14T23:30+00:00",
+   "home": "FC Cincinnati",
+   "away": "New England Revolution",
+   "sel": "GG",
+   "p": 0.7119,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "FC Cincinnati",
+    "m": "New England Revolution",
+    "i": {
+     "h": [
+      [
+       "Evander",
+       "out",
+       "контузия"
+      ],
+      [
+       "O. Nwobodo",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "M. Robinson",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "M. Fofana",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Harrison",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Yusuf",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Campana",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-14T15:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 2
+}
