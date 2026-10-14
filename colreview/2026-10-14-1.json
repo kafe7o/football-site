@@ -25,7 +25,72 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-14T15:59:59+00:00"
+    "ia": "2026-10-14T16:39:59+00:00",
+    "l": {
+     "h": null,
+     "a": {
+      "f": null,
+      "c": "M. Selimbegovic",
+      "xi": [
+       [
+        1,
+        "M. Riemann",
+        "G"
+       ],
+       [
+        7,
+        "L. Scepanik",
+        "D"
+       ],
+       [
+        37,
+        "J. da Silva Kiala",
+        "D"
+       ],
+       [
+        2,
+        "P. Bagalianis",
+        "D"
+       ],
+       [
+        4,
+        "D. Leonard",
+        "D"
+       ],
+       [
+        3,
+        "Matti Wagner",
+        "D"
+       ],
+       [
+        29,
+        "K. Koscierski",
+        "M"
+       ],
+       [
+        28,
+        "D. Wiebe",
+        "M"
+       ],
+       [
+        10,
+        "M. Loune",
+        "M"
+       ],
+       [
+        18,
+        "Ken Izekor",
+        "F"
+       ],
+       [
+        9,
+        "D. Starodid",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-14T16:39:59+00:00"
    }
   },
   {
@@ -150,5 +215,6 @@
   }
  ],
  "changed": 0,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-14T16:39:59+00:00"
 }
