@@ -1,0 +1,132 @@
+{
+ "day": "2026-10-16",
+ "idx": 4,
+ "system": false,
+ "made_at": "2026-10-16T16:59:59+00:00",
+ "first": "2026-10-16T18:00+00:00",
+ "legs": [
+  {
+   "id": "629893a6ea12183c2474ac48c4fbe2ee",
+   "league": "N1",
+   "kickoff": "2026-10-16T18:00+00:00",
+   "home": "Heerenveen",
+   "away": "Excelsior",
+   "sel": "U35",
+   "p": 0.6605,
+   "odds": 1.51,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 2: 4.81 -> 5.11",
+    "рисковата: 1 -> няма (нищо в границите)"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Heerenveen",
+    "m": "Excelsior",
+    "i": {
+     "h": [
+      [
+       "D. Proper",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "N. Naujoks",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-16T16:59:59+00:00"
+   }
+  },
+  {
+   "id": "19ee731602634e5c9e3106630e087464",
+   "league": "SP1",
+   "kickoff": "2026-10-16T19:00+00:00",
+   "home": "Deportivo La Coruña",
+   "away": "Levante",
+   "sel": "U35",
+   "p": 0.6649,
+   "odds": 1.5,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Deportivo La Coruna",
+    "m": "Levante",
+    "i": {
+     "h": [
+      [
+       "L. Amatucci",
+       "out",
+       "наказан"
+      ],
+      [
+       "P. Aubameyang",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Casado",
+       "out",
+       "контузия"
+      ],
+      [
+       "Z. Eddahchouri",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "K. Etta Eyong",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Primo",
+       "out",
+       "контузия"
+      ],
+      [
+       "H. Sotelo",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-16T16:59:59+00:00"
+   }
+  },
+  {
+   "id": "a16dd30c67c32f12e0b4879034895cf9",
+   "league": "MEX",
+   "kickoff": "2026-10-17T01:00+00:00",
+   "home": "Necaxa",
+   "away": "Atlas",
+   "sel": "1X",
+   "p": 0.6747,
+   "odds": 1.41,
+   "src": "book",
+   "odds_now": 1.45,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Necaxa",
+    "m": "Atlas",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-16T16:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 2
+}
