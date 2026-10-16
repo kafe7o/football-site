@@ -1,0 +1,83 @@
+{
+ "day": "2026-10-16",
+ "idx": 2,
+ "system": false,
+ "made_at": "2026-10-16T15:29:59+00:00",
+ "first": "2026-10-16T16:30+00:00",
+ "legs": [
+  {
+   "id": "150f424b7931458d08430ddeb256692f",
+   "league": "D2",
+   "kickoff": "2026-10-16T16:30+00:00",
+   "home": "Holstein Kiel",
+   "away": "Hertha Berlin",
+   "sel": "U35",
+   "p": 0.7072,
+   "odds": 1.41,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "рисковата: 1 -> 2 @2.25",
+    "по-сигурната: 1X -> X2 @1.41"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Holstein Kiel",
+    "m": "Hertha BSC",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-16T15:29:59+00:00"
+   }
+  },
+  {
+   "id": "8ac83e2cc04b2ce4ed6207a2a358e28c",
+   "league": "F2",
+   "kickoff": "2026-10-16T18:00+00:00",
+   "home": "Grenoble",
+   "away": "Boulogne",
+   "sel": "1X",
+   "p": 0.7392,
+   "odds": 1.41,
+   "src": "book",
+   "odds_now": 1.42,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Grenoble",
+    "m": "Boulogne",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-16T15:29:59+00:00"
+   }
+  },
+  {
+   "id": "0c80e33d52e3667e2fef17913401e11e",
+   "league": "IRL",
+   "kickoff": "2026-10-16T18:45+00:00",
+   "home": "Galway United",
+   "away": "Shamrock Rovers",
+   "sel": "O15",
+   "p": 0.703,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Galway United",
+    "m": "Shamrock Rovers",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-16T15:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 0
+}
