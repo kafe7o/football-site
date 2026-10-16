@@ -28,7 +28,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-16T15:29:59+00:00"
+    "ia": "2026-10-16T16:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-5-1",
+      "c": "T. Walter",
+      "xi": [
+       [
+        1,
+        "T. Weiner",
+        "G"
+       ],
+       [
+        32,
+        "H. Sekine",
+        "D"
+       ],
+       [
+        4,
+        "S. Schonlau",
+        "D"
+       ],
+       [
+        5,
+        "N. Madsen",
+        "D"
+       ],
+       [
+        40,
+        "Leon Parduzi",
+        "D"
+       ],
+       [
+        20,
+        "A. Kaprálik",
+        "M"
+       ],
+       [
+        8,
+        "G. Balzi",
+        "M"
+       ],
+       [
+        28,
+        "J. Meffert",
+        "M"
+       ],
+       [
+        43,
+        "T. Wiese",
+        "M"
+       ],
+       [
+        10,
+        "J. Therkelsen",
+        "M"
+       ],
+       [
+        19,
+        "P. Harres",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "S. Leitl",
+      "xi": [
+       [
+        35,
+        "M. Gersbeck",
+        "G"
+       ],
+       [
+        2,
+        "J. Eitschberger",
+        "D"
+       ],
+       [
+        44,
+        "L. Gechter",
+        "D"
+       ],
+       [
+        27,
+        "N. Kolbe",
+        "D"
+       ],
+       [
+        42,
+        "D. Zeefuik",
+        "D"
+       ],
+       [
+        30,
+        "P. Seguin",
+        "M"
+       ],
+       [
+        8,
+        "K. Sessa",
+        "M"
+       ],
+       [
+        19,
+        "O. Adewumi",
+        "M"
+       ],
+       [
+        23,
+        "J. Þorsteinsson",
+        "M"
+       ],
+       [
+        7,
+        "J. Brekalo",
+        "M"
+       ],
+       [
+        17,
+        "S. Grønning",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-16T16:09:59+00:00"
    }
   },
   {
@@ -79,5 +204,6 @@
   }
  ],
  "changed": 1,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-10-16T16:09:59+00:00"
 }
