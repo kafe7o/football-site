@@ -1,0 +1,210 @@
+{
+ "day": "2026-10-16",
+ "idx": 3,
+ "system": false,
+ "made_at": "2026-10-16T17:44:59+00:00",
+ "first": "2026-10-16T18:45+00:00",
+ "legs": [
+  {
+   "id": "66c168c030f3faad3983fcadc3060009",
+   "league": "F1",
+   "kickoff": "2026-10-16T18:45+00:00",
+   "home": "Le Mans FC",
+   "away": "Toulouse",
+   "sel": "U35",
+   "p": 0.6935,
+   "odds": 1.44,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Le Mans",
+    "m": "Toulouse",
+    "i": {
+     "h": [
+      [
+       "A. Bourabaa",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. Colas",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Eyoum",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "E. Quarshie",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "M. Rossignol",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": null
+    },
+    "ia": "2026-10-16T17:44:59+00:00"
+   }
+  },
+  {
+   "id": "33ca3a3f8d14ad19340c32dff45c749e",
+   "league": "E1",
+   "kickoff": "2026-10-16T19:00+00:00",
+   "home": "Burnley",
+   "away": "Wolverhampton Wanderers",
+   "sel": "U35",
+   "p": 0.6815,
+   "odds": 1.47,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Burnley",
+    "m": "Wolves",
+    "i": {
+     "h": [
+      [
+       "E. Agyei",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Ahmedhodzic",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Barnes",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Beyer",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Humphreys",
+       "out",
+       "контузия"
+      ],
+      [
+       "H. Mejbri",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Obafemi",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "A. Ramsey",
+       "out",
+       "контузия"
+      ],
+      [
+       "Z. Amdouni",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "J. Banel",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "J. Cullen",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "S. Sambo",
+       "doubt",
+       "не е в групата"
+      ],
+      [
+       "M. Tresor Ndayishimiye",
+       "doubt",
+       "не е в групата"
+      ]
+     ],
+     "a": [
+      [
+       "A. Armstrong",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Jimenez",
+       "out",
+       "контузия"
+      ],
+      [
+       "Y. Mosquera",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Traore",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Gomes",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "M. Ji",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-16T17:44:59+00:00"
+   }
+  },
+  {
+   "id": "f790decc9e73ba69db2d636a70afc110",
+   "league": "ARG",
+   "kickoff": "2026-10-17T00:30+00:00",
+   "home": "Boca Juniors",
+   "away": "Talleres",
+   "sel": "O15",
+   "p": 0.6791,
+   "odds": 1.47,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 1.65 -> 1.51",
+    "коефициентът на X: 3.56 -> 3.84",
+    "коефициентът на 2: 5.06 -> 6.31",
+    "букмейкърите за 1: 58% -> 64%",
+    "букмейкърите за 2: 17% -> 13%",
+    "по-сигурната 1: коеф. 1.65 -> 1.51"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Boca Juniors",
+    "m": "Talleres Cordoba",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-16T17:44:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 2
+}
