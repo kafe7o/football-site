@@ -40,7 +40,132 @@
       ]
      ]
     },
-    "ia": "2026-10-16T16:59:59+00:00"
+    "ia": "2026-10-16T17:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "R. Veldeman",
+      "xi": [
+       [
+        1,
+        "B. Klaverboer",
+        "G"
+       ],
+       [
+        45,
+        "O. Braude",
+        "D"
+       ],
+       [
+        4,
+        "S. Kersten",
+        "D"
+       ],
+       [
+        3,
+        "M. Willemsen",
+        "D"
+       ],
+       [
+        19,
+        "V. Zagaritis",
+        "D"
+       ],
+       [
+        16,
+        "M. Linday",
+        "M"
+       ],
+       [
+        8,
+        "N. Courtens",
+        "M"
+       ],
+       [
+        20,
+        "J. Trenskow",
+        "M"
+       ],
+       [
+        14,
+        "L. Smans",
+        "M"
+       ],
+       [
+        7,
+        "M. Rivera",
+        "M"
+       ],
+       [
+        9,
+        "D. Vente",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-3-3",
+      "c": "R. den Uil",
+      "xi": [
+       [
+        1,
+        "S. van Gassel",
+        "G"
+       ],
+       [
+        2,
+        "Eric Emanuel da Silva Moreira",
+        "D"
+       ],
+       [
+        4,
+        "C. Widell",
+        "D"
+       ],
+       [
+        14,
+        "J. Plug",
+        "D"
+       ],
+       [
+        15,
+        "S. Janssen",
+        "D"
+       ],
+       [
+        8,
+        "I. Yegoian",
+        "M"
+       ],
+       [
+        3,
+        "R. Meissen",
+        "M"
+       ],
+       [
+        20,
+        "L. Hartjes",
+        "M"
+       ],
+       [
+        7,
+        "A. Sliti",
+        "F"
+       ],
+       [
+        19,
+        "D. Garden",
+        "F"
+       ],
+       [
+        30,
+        "Á. Þorsteinsson",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-16T17:39:59+00:00"
    }
   },
   {
@@ -128,5 +253,6 @@
   }
  ],
  "changed": 1,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-16T17:39:59+00:00"
 }
