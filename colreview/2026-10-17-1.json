@@ -1,0 +1,80 @@
+{
+ "day": "2026-10-17",
+ "idx": 1,
+ "system": false,
+ "made_at": "2026-10-17T09:59:59+00:00",
+ "first": "2026-10-17T11:00+00:00",
+ "legs": [
+  {
+   "id": "5afa5f855063c25e75427ebcaf151614",
+   "league": "FIN",
+   "kickoff": "2026-10-17T11:00+00:00",
+   "home": "FC Lahti",
+   "away": "TPS Turku",
+   "sel": "U",
+   "p": 0.762,
+   "odds": 2.21,
+   "src": "book",
+   "odds_now": 2.25,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Lahti",
+    "m": "Turku PS",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-17T09:59:59+00:00"
+   }
+  },
+  {
+   "id": "4e7d1b70f3303f659ef3ef5521589615",
+   "league": "E2",
+   "kickoff": "2026-10-17T14:00+00:00",
+   "home": "Bradford City",
+   "away": "Stevenage",
+   "sel": "U",
+   "p": 0.7763,
+   "odds": 1.62,
+   "src": "book",
+   "odds_now": 1.61,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Bradford",
+    "m": "Stevenage",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-17T09:59:59+00:00"
+   }
+  },
+  {
+   "id": "fd:SC3:2026-10-17:Elgin:Edinburgh City",
+   "league": "SC3",
+   "kickoff": "2026-10-17T14:00+00:00",
+   "home": "Elgin",
+   "away": "Edinburgh City",
+   "sel": "O",
+   "p": 0.7399,
+   "odds": 1.57,
+   "src": "book",
+   "odds_now": 1.57,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Elgin City",
+    "m": "Edinburgh City",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-17T09:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 0
+}
