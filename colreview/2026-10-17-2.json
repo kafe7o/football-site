@@ -67,7 +67,132 @@
       ]
      ]
     },
-    "ia": "2026-10-17T12:29:59+00:00"
+    "ia": "2026-10-17T13:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "V. Wagner",
+      "xi": [
+       [
+        20,
+        "N. Kristof",
+        "G"
+       ],
+       [
+        30,
+        "J. Gyamerah",
+        "D"
+       ],
+       [
+        19,
+        "L. Pinckert",
+        "D"
+       ],
+       [
+        31,
+        "M. Rohr",
+        "D"
+       ],
+       [
+        21,
+        "L. Günther",
+        "D"
+       ],
+       [
+        43,
+        "F. Keidel",
+        "M"
+       ],
+       [
+        8,
+        "Ł. Poręba",
+        "M"
+       ],
+       [
+        25,
+        "L. Petkov",
+        "M"
+       ],
+       [
+        10,
+        "Noah Darvich",
+        "M"
+       ],
+       [
+        7,
+        "M. Krattenmacher",
+        "M"
+       ],
+       [
+        42,
+        "D. Mokwa",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "3-4-2-1",
+      "c": "M. Baum",
+      "xi": [
+       [
+        1,
+        "F. Dahmen",
+        "G"
+       ],
+       [
+        35,
+        "Abdulay Bah",
+        "D"
+       ],
+       [
+        5,
+        "C. Matsima",
+        "D"
+       ],
+       [
+        2,
+        "C. Brackelmann",
+        "D"
+       ],
+       [
+        27,
+        "M. Wolf",
+        "M"
+       ],
+       [
+        4,
+        "H. Massengo",
+        "M"
+       ],
+       [
+        32,
+        "F. Rieder",
+        "M"
+       ],
+       [
+        16,
+        "Hennes Behrens",
+        "M"
+       ],
+       [
+        19,
+        "R. Fellhauer",
+        "M"
+       ],
+       [
+        21,
+        "A. Ibrahimović",
+        "M"
+       ],
+       [
+        9,
+        "Rodrigo Ribeiro",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-17T13:09:59+00:00"
    }
   },
   {
@@ -120,5 +245,6 @@
   }
  ],
  "changed": 1,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-17T13:09:59+00:00"
 }
