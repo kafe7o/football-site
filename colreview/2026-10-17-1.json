@@ -25,7 +25,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-17T09:59:59+00:00"
+    "ia": "2026-10-17T10:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-3-3",
+      "c": "Gonçalo Pereira",
+      "xi": [
+       [
+        12,
+        "A. Hakala",
+        "G"
+       ],
+       [
+        7,
+        "D. Heikkinen",
+        "D"
+       ],
+       [
+        5,
+        "Nícolas",
+        "D"
+       ],
+       [
+        4,
+        "J. Muller",
+        "D"
+       ],
+       [
+        25,
+        "T. Inkinen",
+        "D"
+       ],
+       [
+        8,
+        "Tòfol Montiel",
+        "M"
+       ],
+       [
+        18,
+        "Y. Cassubie",
+        "M"
+       ],
+       [
+        14,
+        "E. Andersson",
+        "M"
+       ],
+       [
+        20,
+        "J. Ojanen",
+        "F"
+       ],
+       [
+        17,
+        "A. Belabid",
+        "F"
+       ],
+       [
+        11,
+        "Martim Ferreira",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "Ivan Piñol",
+      "xi": [
+       [
+        35,
+        "D. Lauri",
+        "G"
+       ],
+       [
+        2,
+        "O. Häggström",
+        "D"
+       ],
+       [
+        14,
+        "M. Hrádecký",
+        "D"
+       ],
+       [
+        15,
+        "C. Azongnitode",
+        "D"
+       ],
+       [
+        25,
+        "Abdoulie Tamba",
+        "D"
+       ],
+       [
+        26,
+        "L. Ikonen",
+        "M"
+       ],
+       [
+        28,
+        "T. Vakiparta",
+        "M"
+       ],
+       [
+        10,
+        "M. Könkkölä",
+        "M"
+       ],
+       [
+        29,
+        "A. Muzaci",
+        "M"
+       ],
+       [
+        20,
+        "M. Kauppila",
+        "M"
+       ],
+       [
+        44,
+        "N. Veinbergs",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-17T10:39:59+00:00"
    }
   },
   {
@@ -76,5 +201,6 @@
   }
  ],
  "changed": 0,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-10-17T10:39:59+00:00"
 }
