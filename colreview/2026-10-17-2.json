@@ -1,0 +1,124 @@
+{
+ "day": "2026-10-17",
+ "idx": 2,
+ "system": false,
+ "made_at": "2026-10-17T12:29:59+00:00",
+ "first": "2026-10-17T13:30+00:00",
+ "legs": [
+  {
+   "id": "0bf757f3bd903496ce2fa27bd0481869",
+   "league": "D1",
+   "kickoff": "2026-10-17T13:30+00:00",
+   "home": "Elversberg",
+   "away": "Augsburg",
+   "sel": "1X",
+   "p": 0.7244,
+   "odds": 1.48,
+   "src": "book",
+   "odds_now": 1.48,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "SV Elversberg",
+    "m": "FC Augsburg",
+    "i": {
+     "h": [
+      [
+       "C. Campbell",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Seifert",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Gyamerah",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "F. Onyeka",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "N. Banks",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Claude-Maurice",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Mounie",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Suso",
+       "out",
+       "не е в групата"
+      ]
+     ]
+    },
+    "ia": "2026-10-17T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "fd:SC3:2026-10-17:Dumbarton:Stirling",
+   "league": "SC3",
+   "kickoff": "2026-10-17T14:00+00:00",
+   "home": "Dumbarton",
+   "away": "Stirling",
+   "sel": "1X",
+   "p": 0.7224,
+   "odds": 1.4,
+   "src": "book",
+   "odds_now": 1.4,
+   "changes": [],
+   "flags": [
+    "коефициентът падна под 1.40 (1.40) - вече не е по правилото на майстора"
+   ],
+   "sq": {
+    "n": "Dumbarton",
+    "m": "Stirling Albion",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-17T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "fd:SC2:2026-10-17:East Fife:Alloa",
+   "league": "SC2",
+   "kickoff": "2026-10-17T14:00+00:00",
+   "home": "East Fife",
+   "away": "Alloa",
+   "sel": "X2",
+   "p": 0.7181,
+   "odds": 1.54,
+   "src": "book",
+   "odds_now": 1.54,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "East Fife",
+    "m": "Alloa Athletic",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-17T12:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 1
+}
