@@ -25,7 +25,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-17T12:59:59+00:00"
+    "ia": "2026-10-17T13:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-4-2",
+      "c": "Tom Cleverley",
+      "xi": [
+       [
+        1,
+        "M. Mahoney",
+        "G"
+       ],
+       [
+        45,
+        "W. Harding",
+        "D"
+       ],
+       [
+        15,
+        "A. Mitchell",
+        "D"
+       ],
+       [
+        22,
+        "A. Hartridge",
+        "D"
+       ],
+       [
+        3,
+        "Jack Mackenzie",
+        "D"
+       ],
+       [
+        11,
+        "R. Curtis",
+        "M"
+       ],
+       [
+        23,
+        "B. Ibrahim",
+        "M"
+       ],
+       [
+        7,
+        "H. White",
+        "M"
+       ],
+       [
+        17,
+        "C. Watts",
+        "M"
+       ],
+       [
+        9,
+        "W. Evans",
+        "F"
+       ],
+       [
+        27,
+        "A. Pepple",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "3-4-2-1",
+      "c": "Martin Drury",
+      "xi": [
+       [
+        1,
+        "M. Young",
+        "G"
+       ],
+       [
+        23,
+        "S. Roughan",
+        "D"
+       ],
+       [
+        5,
+        "J. Low",
+        "D"
+       ],
+       [
+        15,
+        "I. Bowat",
+        "D"
+       ],
+       [
+        22,
+        "I. Bronkhorst",
+        "M"
+       ],
+       [
+        8,
+        "A. Collins",
+        "M"
+       ],
+       [
+        20,
+        "C. Humphreys",
+        "M"
+       ],
+       [
+        19,
+        "B. Mumba",
+        "M"
+       ],
+       [
+        30,
+        "D. Sanches Fernandes",
+        "M"
+       ],
+       [
+        9,
+        "J. Taylor",
+        "M"
+       ],
+       [
+        25,
+        "B. Radulović",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-17T13:39:59+00:00"
    }
   },
   {
@@ -148,5 +273,6 @@
   }
  ],
  "changed": 0,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-17T13:39:59+00:00"
 }
