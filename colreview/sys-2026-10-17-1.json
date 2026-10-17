@@ -25,7 +25,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-17T12:59:59+00:00"
+    "ia": "2026-10-17T13:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "3-4-2-1",
+      "c": "M. Duff",
+      "xi": [
+       [
+        21,
+        "J. McCracken",
+        "G"
+       ],
+       [
+        28,
+        "M. Pennington",
+        "D"
+       ],
+       [
+        15,
+        "A. Baldwin",
+        "D"
+       ],
+       [
+        16,
+        "George Christopher John Pratt",
+        "D"
+       ],
+       [
+        19,
+        "K. Jackson",
+        "F"
+       ],
+       [
+        10,
+        "A. Sarcevic",
+        "M"
+       ],
+       [
+        6,
+        "C. Connolly",
+        "D"
+       ],
+       [
+        3,
+        "I. Touray",
+        "D"
+       ],
+       [
+        8,
+        "A. Phillips",
+        "M"
+       ],
+       [
+        23,
+        "B. Pointon",
+        "F"
+       ],
+       [
+        9,
+        "J. Beesley",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-4-1-1",
+      "c": "A. Revell",
+      "xi": [
+       [
+        1,
+        "T. Setford",
+        "G"
+       ],
+       [
+        2,
+        "L. James-Wildin",
+        "D"
+       ],
+       [
+        15,
+        "T. Vancooten",
+        "M"
+       ],
+       [
+        5,
+        "C. Piergianni",
+        "D"
+       ],
+       [
+        14,
+        "S. Earley",
+        "D"
+       ],
+       [
+        18,
+        "O. Sanderson",
+        "F"
+       ],
+       [
+        8,
+        "D. Phillips",
+        "M"
+       ],
+       [
+        24,
+        "M. Smith",
+        "M"
+       ],
+       [
+        25,
+        "Wanya Marçal",
+        "M"
+       ],
+       [
+        10,
+        "D. Kemp",
+        "M"
+       ],
+       [
+        9,
+        "J. Magennis",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-17T13:39:59+00:00"
    }
   },
   {
@@ -55,5 +180,6 @@
   }
  ],
  "changed": 1,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-10-17T13:39:59+00:00"
 }
