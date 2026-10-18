@@ -25,7 +25,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-18T11:29:59+00:00"
+    "ia": "2026-10-18T12:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "D. Röhl",
+      "xi": [
+       [
+        52,
+        "Christian Zawieschitzky",
+        "G"
+       ],
+       [
+        39,
+        "L. Morgalla",
+        "D"
+       ],
+       [
+        44,
+        "K. Boma",
+        "D"
+       ],
+       [
+        47,
+        "Valentin Zabransky",
+        "D"
+       ],
+       [
+        31,
+        "D. Schmid",
+        "M"
+       ],
+       [
+        32,
+        "A. Barry",
+        "D"
+       ],
+       [
+        15,
+        "B. Mazurek",
+        "M"
+       ],
+       [
+        35,
+        "J. Lindstrøm",
+        "M"
+       ],
+       [
+        30,
+        "G. Diakité",
+        "M"
+       ],
+       [
+        20,
+        "E. Baidoo",
+        "F"
+       ],
+       [
+        9,
+        "H. Tabaković",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "3-4-3",
+      "c": "O. Zaric",
+      "xi": [
+       [
+        1,
+        "D. Stojanovic",
+        "G"
+       ],
+       [
+        27,
+        "Filip Milojevic",
+        "D"
+       ],
+       [
+        23,
+        "B. Zech",
+        "D"
+       ],
+       [
+        17,
+        "L. Jäger",
+        "D"
+       ],
+       [
+        29,
+        "N. Niehoff",
+        "D"
+       ],
+       [
+        6,
+        "V. Demaku",
+        "M"
+       ],
+       [
+        39,
+        "Rodney Yombo Elongo",
+        "M"
+       ],
+       [
+        37,
+        "B. Böckle",
+        "D"
+       ],
+       [
+        28,
+        "Y. Massombo",
+        "M"
+       ],
+       [
+        10,
+        "O. Diawara",
+        "F"
+       ],
+       [
+        18,
+        "P. Greil",
+        "M"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-18T12:09:59+00:00"
    }
   },
   {
@@ -169,5 +294,6 @@
   }
  ],
  "changed": 0,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-18T12:09:59+00:00"
 }
