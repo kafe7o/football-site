@@ -246,8 +246,9 @@ def weekly_notify(new, total, out, old_bt, failed):
             lines.append("Над/под назад: " + ", ".join(parts) + ".")
     if failed:
         lines.append("ПРОБЛЕМ: " + ", ".join(failed) + " - виж Actions -> archive.")
-    notify.send("Седмичният анализ" + (" - с проблем" if failed else ""), "\n".join(lines),
-                tags="warning" if failed else "bar_chart", priority=4 if failed else 3)
+    if failed or not notify.ONLY_COLUMNS:                   # само колонки (собственикът, 18.10): успешният анализ не праща известие
+        notify.send("Седмичният анализ" + (" - с проблем" if failed else ""), "\n".join(lines),
+                    tags="warning" if failed else "bar_chart", priority=4 if failed else 3)
     if os.environ.get("RUNNER_TEMP"):          # в облака: archive.yml не праща второ известие
         (Path(os.environ["RUNNER_TEMP"]) / "weekly_notified").write_text("1", encoding="utf-8")
 

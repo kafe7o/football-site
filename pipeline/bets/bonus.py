@@ -308,6 +308,9 @@ def notify_slot(out, prefix=""):
     state = (f"промени в {len(changed)} от {len(out['matches'])}" if changed
              else f"първи анализ ({len(first)} мача)" if len(first) == len(out["matches"]) else "без промени")
     title = prefix + f"Бонус анализ за {local}: " + state
+    if notify.ONLY_COLUMNS:                                   # собственикът, 18.10: известия само за колонки - анализът остава на сайта
+        log.info("Бонус анализ за %s: %s (без известие - само колонки)", local, state)
+        return True
     return notify.send(title, "\n".join(lines), tags="stopwatch", priority=4 if changed else 3)
 
 

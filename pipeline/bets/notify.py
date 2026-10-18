@@ -49,6 +49,27 @@ def send(title, message, tags="soccer", priority=3):
         return False
 
 
+# Собственикът, 18.10: „ntfy да ми дава инфо само ако има колонка“ - известия само в дни с колонка на системата или надстройка:
+# сутрин - колонките (нищо друго), вечер - как са минали, понеделник - колонките за седмицата; нощният преглед, бонус анализите на
+# мачовете извън колонките и известието за успешен седмичен анализ спират. Остават: прегледът на колонката час преди първия ѝ мач,
+# нарушение на правилата (rules.check_and_alert) и сривове - това не е „информация“, а проблем.
+ONLY_COLUMNS = True
+
+
+def columns_of(conn, day):
+    """(колонката на системата за деня или None, записът на надстройката с мачове или None) - има ли изобщо колонка за деня."""
+    from . import addon, shadow
+    shadow.ensure(conn)
+    addon.ensure(conn)
+    sy = conn.execute("SELECT 1 FROM columns_system WHERE day = ? AND idx = 1", (day,)).fetchone()
+    ad = conn.execute("SELECT legs_json FROM columns_addon WHERE day = ? AND idx = 0", (day,)).fetchone()
+    return (sy is not None), bool(ad and json.loads(ad["legs_json"]))
+
+
+def has_column(conn, day):
+    return any(columns_of(conn, day))
+
+
 def once(conn, key, fn):
     """Пуска fn само веднъж за ключа (напр. сутрин:2026-10-10)."""
     if db.get_meta(conn, f"notified:{key}"):
@@ -162,7 +183,7 @@ def night(conn, upcoming, now=None):
     Снимката се пази в meta (night_preview:<ден>) - сутринта morning() я сравнява със записа и казва колко мача са се сменили."""
     now = now or datetime.now(timezone.utc)
     local = now.astimezone(SOFIA)
-    if not 4 <= local.hour < 7:
+    if ONLY_COLUMNS or not 4 <= local.hour < 7:      # само колонки (собственикът, 18.10): преглед преди записа няма
         return False
     target = local.date().isoformat()
     start = local.replace(hour=7, minute=0, second=0, microsecond=0)
@@ -227,6 +248,24 @@ def morning(conn, upcoming, now=None):
     day = local.date().isoformat()
 
     def build():
+        if ONLY_COLUMNS:
+            # само колонките (собственикът, 18.10): без колонка - без известие; с колонка - само тя
+            from . import addon, columns, shadow
+            today_d = columns.day_of(now.isoformat())
+            if not conn.execute("SELECT 1 FROM columns_system WHERE day = ? AND idx = 0", (today_d,)).fetchone():
+                return None                                   # записът в 07:00 още не е станал - следващото пускане
+            sy_has, ad_has = columns_of(conn, today_d)
+            if not (sy_has or ad_has):
+                return False
+            lines = []
+            if ad_has:
+                lines.append(addon.day_text(conn, today_d, name, local_time))
+            if sy_has:
+                lines.append(shadow.system_day_text(conn, today_d, name, local_time))
+            lines.append("Преглед на колонката (пресни коефициенти, отсъстващи, състави) - час преди първия ѝ мач, с отделно известие. "
+                         "Коефициентите са сутрешни; залага се сутринта.")
+            what = " + ".join(x for x, ok in (("надстройката", ad_has), ("системата", sy_has)) if ok)
+            return send(f"Колонка за {local.strftime('%d.%m')}: {what}", "\n".join(lines), tags="soccer", priority=4)
         end = (local.replace(hour=7, minute=0, second=0, microsecond=0) + timedelta(days=1)).astimezone(timezone.utc)
         today = [m for m in upcoming if datetime.fromisoformat(m["kickoff"]) <= end and m.get("basis")]
         start_y = (local.replace(hour=7, minute=0, second=0, microsecond=0) - timedelta(days=1)).astimezone(timezone.utc)
@@ -285,6 +324,13 @@ def morning(conn, upcoming, now=None):
             lines.append(score_text(yesterday, "Вчера"))
         return send(f"Прогнози за {local.strftime('%d.%m')}", "\n".join(lines), tags="soccer")
 
+    if ONLY_COLUMNS and db.get_meta(conn, f"notified:morning:{day}") is None:
+        # преди записа в 07:00 build връща None - не се отбелязва, за да се пробва пак в следващото пускане
+        r = build()
+        if r is None:
+            return False
+        db.set_meta(conn, f"notified:morning:{day}", datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        return r
     return once(conn, f"morning:{day}", build)
 
 
@@ -296,6 +342,19 @@ def evening(conn, now=None):
     day = local.date().isoformat()
 
     def build():
+        if ONLY_COLUMNS:
+            from . import addon, columns, shadow
+            today_d = columns.day_of(now.isoformat())
+            sy_has, ad_has = columns_of(conn, today_d)
+            if not (sy_has or ad_has):
+                return False
+            lines = []
+            if ad_has:
+                lines.append(addon.day_text(conn, today_d, name, local_time))
+            if sy_has:
+                lines.append(shadow.system_result_text(conn, today_d, name))
+            lines.append("Мач без резултат се урежда до сутринта; сайтът показва месеца.")
+            return send(f"Колонката {local.strftime('%d.%m')} - резултат", "\n".join(lines), tags="bar_chart")
         start = local.replace(hour=7, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
         rows = settled_between(conn, start, now)
         if not rows:
@@ -320,6 +379,25 @@ def weekly(conn, now=None):
     week = local.date().isoformat()
 
     def build():
+        if ONLY_COLUMNS:
+            from . import addon, shadow
+            shadow.ensure(conn)
+            addon.ensure(conn)
+            since = (local.date() - timedelta(days=7)).isoformat()
+            sy = conn.execute("SELECT COUNT(*), SUM(passed), SUM(CASE WHEN passed = 1 THEN (json_extract(summary_json, '$.odds') - 1) * 30 "
+                              "WHEN passed = 0 THEN -30 ELSE 0 END) FROM columns_system WHERE idx = 1 AND day >= ? AND day < ? AND json_extract(summary_json, '$.retro') IS NULL",
+                              (since, local.date().isoformat())).fetchone()
+            ad = conn.execute("SELECT COUNT(DISTINCT day), COUNT(*), SUM(passed), SUM(CASE WHEN passed = 1 THEN (json_extract(summary_json, '$.odds') - 1) * json_extract(summary_json, '$.stake') "
+                              "WHEN passed = 0 THEN -json_extract(summary_json, '$.stake') ELSE 0 END) FROM columns_addon WHERE idx > 0 AND day >= ? AND day < ?",
+                              (since, local.date().isoformat())).fetchone()
+            if not sy[0] and not ad[1]:
+                return False
+            lines = []
+            if sy[0]:
+                lines.append(f"Системата: {sy[0]} {'колонка' if sy[0] == 1 else 'колонки'}, минали {sy[1] or 0}; при 30 €: {sy[2] or 0:+.0f} €.")
+            if ad[1]:
+                lines.append(f"Надстройката: {ad[0]} дни, {ad[1]} {addon.UNIT_PL}, минали {ad[2] or 0}; по правилото: {ad[3] or 0:+.2f} €.")
+            return send("Колонките за седмицата", "\n".join(lines), tags="calendar")
         rows = settled_between(conn, now - timedelta(days=7), now)
         if not rows:
             return False

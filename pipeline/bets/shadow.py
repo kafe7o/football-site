@@ -333,6 +333,25 @@ def system_backfill(conn, now=None):
     return added
 
 
+def system_result_text(conn, day, name):
+    """Ред за вечерното известие: как е минала колонката на системата за деня (или None, ако няма колонка)."""
+    ensure(conn)
+    col = conn.execute("SELECT legs_json, summary_json, passed FROM columns_system WHERE day = ? AND idx = 1", (day,)).fetchone()
+    if not col:
+        return None
+    legs, s = json.loads(col["legs_json"]), json.loads(col["summary_json"])
+    parts = []
+    for l in legs:
+        t = conn.execute("SELECT hg, ag FROM tips WHERE fixture_id = ?", (l["id"],)).fetchone()
+        if t and t["hg"] is not None:
+            parts.append(f"{name(l['home'], l['away'])} {robot.label(l['sel'])} {t['hg']}:{t['ag']} {'✓' if robot.hit_any(l['sel'], t['hg'], t['ag']) else '✗'}")
+        else:
+            parts.append(f"{name(l['home'], l['away'])} {robot.label(l['sel'])} - чака")
+    state = (f"МИНА: при 30 € това са {(s['odds'] - 1) * 30:+.0f} €" if col["passed"] == 1 else "ПАДНА: -30 € при 30 €" if col["passed"] == 0
+             else "още чака резултат")
+    return f"СИСТЕМАТА ДНЕС (коеф. {s['odds']:.2f}) - {state}: " + "; ".join(parts)
+
+
 def system_day_text(conn, day, name, local_time):
     """Редът за сутрешното известие: колонката на системата за деня или защо няма."""
     ensure(conn)
