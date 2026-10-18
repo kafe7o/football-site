@@ -25,7 +25,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-18T12:59:59+00:00"
+    "ia": "2026-10-18T13:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "Y. Anastasiou",
+      "xi": [
+       [
+        23,
+        "V. Xenopoulos",
+        "G"
+       ],
+       [
+        35,
+        "C. Mavrias",
+        "D"
+       ],
+       [
+        2,
+        "G. Granath",
+        "D"
+       ],
+       [
+        49,
+        "N. Stajić",
+        "D"
+       ],
+       [
+        15,
+        "Christian Manrique",
+        "D"
+       ],
+       [
+        22,
+        "Diego Esteban",
+        "M"
+       ],
+       [
+        8,
+        "K. Thymianis",
+        "M"
+       ],
+       [
+        90,
+        "K. Opoku",
+        "M"
+       ],
+       [
+        10,
+        "A. Bassi",
+        "M"
+       ],
+       [
+        12,
+        "M. Djenepo",
+        "M"
+       ],
+       [
+        9,
+        "José Mateo Mejía Piedrahita",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "Imanol Alguacil",
+      "xi": [
+       [
+        1,
+        "S. Ortega",
+        "G"
+       ],
+       [
+        27,
+        "M. Pedersen",
+        "D"
+       ],
+       [
+        45,
+        "P. Retsos",
+        "D"
+       ],
+       [
+        5,
+        "L. Pirola",
+        "D"
+       ],
+       [
+        71,
+        "N. Tiknizyan",
+        "D"
+       ],
+       [
+        19,
+        "R. Freuler",
+        "M"
+       ],
+       [
+        15,
+        "G. Puerta",
+        "M"
+       ],
+       [
+        7,
+        "K. Fortounis",
+        "M"
+       ],
+       [
+        8,
+        "Gustavo Sá",
+        "M"
+       ],
+       [
+        73,
+        "Joel Roca",
+        "M"
+       ],
+       [
+        99,
+        "M. Mouandilmadji",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-18T13:39:59+00:00"
    }
   },
   {
@@ -122,5 +247,6 @@
   }
  ],
  "changed": 1,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-18T13:39:59+00:00"
 }
