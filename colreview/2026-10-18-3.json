@@ -32,7 +32,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-18T08:59:59+00:00"
+    "ia": "2026-10-18T09:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-4-2",
+      "c": null,
+      "xi": [
+       [
+        31,
+        "Guo Jiayu",
+        "G"
+       ],
+       [
+        5,
+        "Shenyuan Li",
+        "D"
+       ],
+       [
+        2,
+        "Guan He",
+        "D"
+       ],
+       [
+        11,
+        "Ang Li",
+        "D"
+       ],
+       [
+        4,
+        "Xu Haofeng",
+        "D"
+       ],
+       [
+        8,
+        "Jinxian Wang",
+        "M"
+       ],
+       [
+        18,
+        "Xiaobing Zhang",
+        "M"
+       ],
+       [
+        20,
+        "Adriano Firmino",
+        "M"
+       ],
+       [
+        10,
+        "Kilian Bevis",
+        "M"
+       ],
+       [
+        7,
+        "Gustavo Sauer",
+        "F"
+       ],
+       [
+        29,
+        "Jhonder Cádiz",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": null,
+      "xi": [
+       [
+        1,
+        "Qinghao Xue",
+        "G"
+       ],
+       [
+        16,
+        "Zexiang Yang",
+        "D"
+       ],
+       [
+        3,
+        "Jin Shunkai",
+        "D"
+       ],
+       [
+        5,
+        "Chenjie Zhu",
+        "D"
+       ],
+       [
+        13,
+        "Wilson Manafá",
+        "D"
+       ],
+       [
+        17,
+        "Tianyi Gao",
+        "M"
+       ],
+       [
+        15,
+        "Wu Xi",
+        "M"
+       ],
+       [
+        19,
+        "Luís Asué",
+        "M"
+       ],
+       [
+        10,
+        "João Carlos Teixeira",
+        "M"
+       ],
+       [
+        30,
+        "Xie Pengfei",
+        "M"
+       ],
+       [
+        9,
+        "Rafael Ratão",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-18T09:39:59+00:00"
    }
   },
   {
@@ -115,5 +240,6 @@
   }
  ],
  "changed": 1,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-18T09:39:59+00:00"
 }
