@@ -1,0 +1,137 @@
+{
+ "day": "2026-10-18",
+ "idx": 2,
+ "system": false,
+ "made_at": "2026-10-18T05:59:59+00:00",
+ "first": "2026-10-18T07:00+00:00",
+ "legs": [
+  {
+   "id": "8f113b5a468a9eab8b8c3f94542cc939",
+   "league": "JPN",
+   "kickoff": "2026-10-18T07:00+00:00",
+   "home": "FC Machida Zelvia",
+   "away": "Avispa Fukuoka",
+   "sel": "O15",
+   "p": 0.7149,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 2: 4.20 -> 4.53",
+    "по-сигурната: няма -> 1 @1.76"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Machida Zelvia",
+    "m": "Avispa Fukuoka",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T05:59:59+00:00"
+   }
+  },
+  {
+   "id": "3ea32a0aa44a5f0ef7fd088155430087",
+   "league": "I1",
+   "kickoff": "2026-10-18T13:00+00:00",
+   "home": "Fiorentina",
+   "away": "Como",
+   "sel": "U35",
+   "p": 0.7164,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Fiorentina",
+    "m": "Como",
+    "i": {
+     "h": [
+      [
+       "F. Parisi",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Sottil",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Atta",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "L. Ranieri",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "A. Diao",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Kean",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T05:59:59+00:00"
+   }
+  },
+  {
+   "id": "53f5fe7ed0ba0fbf6345c73270e4cd00",
+   "league": "F1",
+   "kickoff": "2026-10-18T15:15+00:00",
+   "home": "Lorient",
+   "away": "AS Monaco",
+   "sel": "U35",
+   "p": 0.7158,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Lorient",
+    "m": "Monaco",
+    "i": {
+     "h": [
+      [
+       "N. Mbamba",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "P. Brunner",
+       "out",
+       "наказан"
+      ],
+      [
+       "E. Dier",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "S. Idumbo",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T05:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 2
+}
