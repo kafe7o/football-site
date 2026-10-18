@@ -1,0 +1,119 @@
+{
+ "day": "2026-10-18",
+ "idx": 3,
+ "system": false,
+ "made_at": "2026-10-18T08:59:59+00:00",
+ "first": "2026-10-18T10:00+00:00",
+ "legs": [
+  {
+   "id": "d1e4b206ed6b847d891b59f206d58255",
+   "league": "CHN",
+   "kickoff": "2026-10-18T10:00+00:00",
+   "home": "Wuhan Three Towns",
+   "away": "Shanghai Shenhua FC",
+   "sel": "GG",
+   "p": 0.7144,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.65 -> 2.94",
+    "коефициентът на 2: 2.16 -> 2.01",
+    "букмейкърите за 1: 35% -> 31%",
+    "букмейкърите за 2: 43% -> 47%",
+    "рисковата: 2 -> 1 @2.94",
+    "по-сигурната: X2 -> 1X @1.70"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Wuhan Three Towns",
+    "m": "Shanghai Shenhua",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T08:59:59+00:00"
+   }
+  },
+  {
+   "id": "f58a22675a367dac000ffc5441c45b9a",
+   "league": "D3",
+   "kickoff": "2026-10-18T11:30+00:00",
+   "home": "TSG Hoffenheim II",
+   "away": "SC Verl",
+   "sel": "GG",
+   "p": 0.7117,
+   "odds": 1.41,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Hoffenheim II",
+    "m": "Verl",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T08:59:59+00:00"
+   }
+  },
+  {
+   "id": "49cbc9fa5dbb75b85a4e6e471706dbb7",
+   "league": "SWE",
+   "kickoff": "2026-10-18T12:00+00:00",
+   "home": "Västerås SK",
+   "away": "Mjällby AIF",
+   "sel": "U35",
+   "p": 0.712,
+   "odds": 1.4,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Vasteras SK FK",
+    "m": "Mjallby AIF",
+    "i": {
+     "h": [
+      [
+       "M. Diallo",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. Jager",
+       "out",
+       "наказан"
+      ],
+      [
+       "I. Lushaku",
+       "doubt",
+       "не е в групата"
+      ]
+     ],
+     "a": [
+      [
+       "V. Dalsgaard",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Isaksson",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "T. Stavitski",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T08:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 1
+}
