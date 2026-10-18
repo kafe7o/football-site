@@ -1,0 +1,126 @@
+{
+ "day": "2026-10-18",
+ "idx": 1,
+ "system": false,
+ "made_at": "2026-10-18T12:59:59+00:00",
+ "first": "2026-10-18T14:00+00:00",
+ "legs": [
+  {
+   "id": "14ad0630cf9b666642fab04814ff793f",
+   "league": "G1",
+   "kickoff": "2026-10-18T14:00+00:00",
+   "home": "Panetolikos Agrinio",
+   "away": "Olympiakos Piraeus",
+   "sel": "U",
+   "p": 0.7419,
+   "odds": 1.96,
+   "src": "book",
+   "odds_now": 1.95,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Panetolikos",
+    "m": "Olympiakos Piraeus",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T12:59:59+00:00"
+   }
+  },
+  {
+   "id": "8e6b78a63710f51d45f462ffa67a5d77",
+   "league": "NOR",
+   "kickoff": "2026-10-18T15:00+00:00",
+   "home": "Sandefjord",
+   "away": "Lillestrom",
+   "sel": "1X",
+   "p": 0.7599,
+   "odds": 1.5,
+   "src": "book",
+   "odds_now": 1.49,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Sandefjord",
+    "m": "Lillestrom",
+    "i": {
+     "h": [
+      [
+       "T. Borkeeiet",
+       "out",
+       "наказан"
+      ],
+      [
+       "D. Koswal",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Melchior",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Moller",
+       "out",
+       "контузия"
+      ],
+      [
+       "F. Loftesnes-Bjune",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "E. B. Garnas",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Jebara",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T12:59:59+00:00"
+   }
+  },
+  {
+   "id": "dd7b53a2fac297a4882221bbf2b5befe",
+   "league": "ARG",
+   "kickoff": "2026-10-18T21:00+00:00",
+   "home": "Estudiantes",
+   "away": "San Lorenzo",
+   "sel": "U",
+   "p": 0.7718,
+   "odds": 1.46,
+   "src": "book",
+   "odds_now": 1.55,
+   "changes": [
+    "коефициентът на 1: 2.17 -> 2.04",
+    "коефициентът на 2: 3.60 -> 3.87",
+    "букмейкърите за 1: 43% -> 46%",
+    "прогнозата под 2.5: коеф. 1.46 -> 1.55",
+    "рисковата 1: коеф. 2.17 -> 2.04",
+    "по-сигурната под 2.5: коеф. 1.46 -> 1.55"
+   ],
+   "flags": [
+    "коефициентът на избора е 1.46 -> 1.55"
+   ],
+   "sq": {
+    "n": "Estudiantes L.P.",
+    "m": "San Lorenzo",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T12:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 1,
+ "absent": 1
+}
