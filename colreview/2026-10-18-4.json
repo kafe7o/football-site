@@ -1,0 +1,173 @@
+{
+ "day": "2026-10-18",
+ "idx": 4,
+ "system": false,
+ "made_at": "2026-10-18T11:29:59+00:00",
+ "first": "2026-10-18T12:30+00:00",
+ "legs": [
+  {
+   "id": "7f8a31cfe70fd956f141cc66f50053e2",
+   "league": "AUT",
+   "kickoff": "2026-10-18T12:30+00:00",
+   "home": "RB Salzburg",
+   "away": "Rheindorf Altach",
+   "sel": "U35",
+   "p": 0.7062,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Red Bull Salzburg",
+    "m": "SCR Altach",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-18T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "31a5e341a643cd6612c66da770a6f236",
+   "league": "SWE",
+   "kickoff": "2026-10-18T14:30+00:00",
+   "home": "Halmstads BK",
+   "away": "Hammarby IF",
+   "sel": "U35",
+   "p": 0.7072,
+   "odds": 1.41,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Halmstad",
+    "m": "Hammarby FF",
+    "i": {
+     "h": null,
+     "a": [
+      [
+       "V. Eriksson",
+       "out",
+       "наказан"
+      ],
+      [
+       "B. Hedlof",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "d637845b9760bb02b55bbbaa32b5c21e",
+   "league": "F1",
+   "kickoff": "2026-10-18T15:15+00:00",
+   "home": "Le Havre",
+   "away": "Auxerre",
+   "sel": "O15",
+   "p": 0.7054,
+   "odds": 1.42,
+   "src": "robot",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Le Havre",
+    "m": "Auxerre",
+    "i": {
+     "h": [
+      [
+       "E. Jelert",
+       "out",
+       "контузия"
+      ],
+      [
+       "F. Mambimbi",
+       "out",
+       "контузия"
+      ],
+      [
+       "L. Mpasi-Nzau",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Pembele",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Seko",
+       "out",
+       "наказан"
+      ],
+      [
+       "A. Toure",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Zagadou",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Fofana",
+       "doubt",
+       "не е в групата"
+      ]
+     ],
+     "a": [
+      [
+       "A. Diousse",
+       "out",
+       "контузия"
+      ],
+      [
+       "S. Fofana",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Labeau Lascary",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Okoh",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Akpa",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "R. Mandengue",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "M. Senaya",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "T. Siwe",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-18T11:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 2
+}
