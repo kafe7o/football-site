@@ -174,12 +174,12 @@ def columns_data(conn, upcoming, now):
     locked = conn.execute("SELECT 1 FROM columns WHERE day = ? AND idx = 0", (today,)).fetchone() is not None
     bt = read_json("columns_backtest.json", {})
     return {"today": today, "locked": locked, "record": rec,
+            # колонките по правилата на майстора и на сянка са спрени на 18.10 (собственикът) - на сайта остава само равносметката им
+            "master_stop": columns.STOP,
             "params": {"min_p": columns.MIN_P, "size": columns.SIZE, "calibration": columns.CALIBRATION,
                        "per_day": columns.MAX_COLUMNS},
             # измереното назад: колонки по 3, по една на ден, само с топ шанс
             "bt": bt.get("p0.65_n3_league_sure") or bt.get("p0.65_n3_league"),
-            # колонки на сянка с поправен шанс (bets/shadow.py) - не се играят, мерят се срещу сегашните
-            "shadow": shadow.for_site(conn, now),
             # СИСТЕМАТА (bets/shadow.py system_lock) - най-доброто от проверките назад, само се мери
             "system": shadow.system_for_site(conn, now),
             # НАДСТРОЙКАТА (bets/addon.py) - голове, система 3 от 4, извън правилата на майстора (решение на собственика 13.10)

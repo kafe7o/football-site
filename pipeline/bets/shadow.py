@@ -16,7 +16,8 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+import math
+from datetime import datetime, timedelta, timezone
 
 from . import columns, config, robot, rules, sure
 
@@ -74,6 +75,8 @@ def lock(conn, now=None):
     if now.isoformat() < FROM:
         return 0
     day = columns.day_of(now.isoformat())
+    if day > columns.STOP:                              # спрени заедно с колонките на майстора (собственикът, 18.10)
+        return 0
     if conn.execute("SELECT 1 FROM columns_shadow WHERE day = ? AND idx = 0", (day,)).fetchone():
         return 0
     tbl = table()
@@ -209,38 +212,22 @@ def real_price(conn, fixture_id, league, sel, avg, probs, now, kickoff=None):
     return (est, "est") if est else (None, None)
 
 
-def system_lock(conn, now=None):
-    """Колонката на системата за деня - веднъж, след записа в 07:00; четвъртък-неделя; най-много една; дни без колонка са нормални. Връща 1 или 0."""
-    import math
-    ensure(conn)
-    now = now or datetime.now(timezone.utc)
-    if now.isoformat() < SYSTEM_FROM:
-        return 0
-    day = columns.day_of(now.isoformat())
-    if conn.execute("SELECT 1 FROM columns_system WHERE day = ? AND idx = 0", (day,)).fetchone():
-        return 0
-    stamp = now.isoformat(timespec="seconds")
-
-    def mark(note):
-        conn.execute("INSERT OR IGNORE INTO columns_system (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, '[]', ?, ?)",
-                     (day, json.dumps({"cday": day, "note": note}, ensure_ascii=False), stamp))
-        conn.commit()
-
+def system_pick(conn, day, now, fetch=True):
+    """Изборът на системата за деня от ЗАПИСАНИТЕ прогнози (tips) - същият за записа на живо и за дните назад.
+    -> (колонка или None, бележка). fetch=False: без odds API (дните назад - цената за над/под 1.5 / 3.5 е оценка от пазара над/под 2.5)."""
     if datetime.fromisoformat(day).weekday() not in SYSTEM_DAYS:
-        mark("не е четвъртък-неделя")
-        return 0
+        return None, "не е четвъртък-неделя"
     tbl = table()
     if not tbl:
         log.warning("Системата: няма data/calibration.json")
-        return 0
+        return None, "няма таблица на поправката"
     start, end = columns.day_bounds(day)
     q = ",".join("?" * len(SYSTEM_LEAGUES))
     rows = conn.execute(f"SELECT t.*, f.home_src, f.away_src FROM tips t LEFT JOIN fixtures f ON f.id = t.fixture_id WHERE t.kickoff >= ? "
                         f"AND t.kickoff < ? AND t.basis = 'model' AND t.league IN ({q})",
                         (max(start, now).isoformat(), end.isoformat(), *SYSTEM_LEAGUES)).fetchall()
     if not rows:
-        mark("няма записани прогнози в 11-те първенства")
-        return 0
+        return None, "няма записани прогнози в 11-те първенства"
     cands = []
     for r in rows:
         picks, flags = json.loads(r["picks_json"]), json.loads(r["flags_json"] or "{}")
@@ -263,7 +250,13 @@ def system_lock(conn, now=None):
     for c in top:
         if c["league"] in lgs:
             continue
-        price, src = real_price(conn, c["id"], c["league"], c["sel"], c["avg"], c["probs"], now, c["kickoff"])
+        if fetch:
+            price, src = real_price(conn, c["id"], c["league"], c["sel"], c["avg"], c["probs"], now, c["kickoff"])
+        elif c["sel"] in c["avg"]:
+            price, src = round(c["avg"][c["sel"]], 2), "book"
+        else:
+            est = estimated_price(c["sel"], c["avg"], c["probs"])
+            price, src = (est, "est") if est else (None, None)
         checked += 1
         if price is None or price < SYSTEM_FLOOR or robot.toto_blocked(c["league"], c["sel"], price):
             continue
@@ -272,54 +265,134 @@ def system_lock(conn, now=None):
         if len(col) == SYSTEM_SIZE:
             break
     if len(col) < SYSTEM_SIZE:
-        mark(f"не стигат мачове по правилата ({len(top)} с топ шанс, {checked} с проверена цена)")
-        log.info("Системата %s: без колонка - %d кандидати", day, len(top))
-        return 0
+        return None, f"не стигат мачове по правилата ({len(top)} с топ шанс, {checked} с проверена цена)"
     chance = math.prod(c["p"] for c in col)
     if chance < SYSTEM_MIN_COL:
-        mark(f"шансът на колонката {chance:.1%} е под 50% - без колонка")
-        log.info("Системата %s: без колонка - шанс %.0f%%", day, chance * 100)
+        return None, f"шансът на колонката {chance:.2%} е под 50% - без колонка"
+    return col, "колонка"
+
+
+def _system_write(conn, day, col, note, stamp, retro=False):
+    """Записът в columns_system: idx 1 - колонката (ако има), idx 0 - маркерът на деня с бележката. retro - дните назад (system_backfill)."""
+    if col:
+        odds, chance = math.prod(c["odds"] for c in col), math.prod(c["p"] for c in col)
+        summary = {"odds": round(odds, 2), "claimed": round(chance, 4), "honest": round(chance, 4), "return": round(chance * odds, 3),
+                   "book": all(c["src"] == "book" for c in col), "cday": day, **({"retro": True} if retro else {})}
+        conn.execute("INSERT OR IGNORE INTO columns_system (day, idx, legs_json, summary_json, locked_at) VALUES (?, 1, ?, ?, ?)",
+                     (day, json.dumps(col, ensure_ascii=False), json.dumps(summary), stamp))
+    conn.execute("INSERT OR IGNORE INTO columns_system (day, idx, legs_json, summary_json, locked_at) VALUES (?, 0, '[]', ?, ?)",
+                 (day, json.dumps({"cday": day, "note": note, **({"retro": True} if retro else {})}, ensure_ascii=False), stamp))
+    conn.commit()
+
+
+def system_lock(conn, now=None):
+    """Колонката на системата за деня - веднъж, след записа в 07:00; четвъртък-неделя; най-много една; дни без колонка са нормални. Връща 1 или 0."""
+    ensure(conn)
+    now = now or datetime.now(timezone.utc)
+    if now.isoformat() < SYSTEM_FROM:
         return 0
-    odds = math.prod(c["odds"] for c in col)
-    summary = {"odds": round(odds, 2), "claimed": round(chance, 4), "honest": round(chance, 4), "return": round(chance * odds, 3),
-               "book": all(c["src"] == "book" for c in col), "cday": day}
-    conn.execute("INSERT OR IGNORE INTO columns_system (day, idx, legs_json, summary_json, locked_at) VALUES (?, 1, ?, ?, ?)",
-                 (day, json.dumps(col, ensure_ascii=False), json.dumps(summary), stamp))
-    mark("колонка")
-    log.info("Системата %s: колонка %s (шанс %.0f%%, коеф. %.2f)", day, " + ".join(f"{c['home']} {c['sel']}" for c in col), chance * 100, summary["odds"])
-    return 1
+    day = columns.day_of(now.isoformat())
+    if conn.execute("SELECT 1 FROM columns_system WHERE day = ? AND idx = 0", (day,)).fetchone():
+        return 0
+    col, note = system_pick(conn, day, now, fetch=True)
+    _system_write(conn, day, col, note, now.isoformat(timespec="seconds"))
+    if col:
+        log.info("Системата %s: колонка %s (коеф. %.2f)", day, " + ".join(f"{c['home']} {c['sel']}" for c in col), math.prod(c["odds"] for c in col))
+    else:
+        log.info("Системата %s: без колонка - %s", day, note)
+    return 1 if col else 0
+
+
+BACKFILL_FROM = "2026-10-01"
+
+
+def system_backfill(conn, now=None):
+    """Системата НАЗАД от началото на месеца (собственикът, 18.10: „вкарай тия от началото на месеца“) - веднъж (meta system_backfill:<от>).
+    За всеки ден от BACKFILL_FROM до деня преди първия запис на живо: същият избор (system_pick) от записаните СУТРИНТА прогнози за деня,
+    както ако записът беше в 07:00, без odds API (цените на над/под 1.5 / 3.5 са оценка). Белег retro: не е запис на живо - правилото е
+    избрано на 12.10 и тези дни са участвали в избора му; на сайта и в мерките стоят ОТДЕЛНО от живите. Връща броя добавени дни."""
+    from . import db
+    ensure(conn)
+    now = now or datetime.now(timezone.utc)
+    key = f"system_backfill:{BACKFILL_FROM}"
+    if db.get_meta(conn, key):
+        return 0
+    first_live = (conn.execute("SELECT MIN(day) FROM columns_system WHERE idx = 0 AND locked_at >= ?", (SYSTEM_FROM,)).fetchone()[0]
+                  or columns.day_of(now.isoformat()))
+    d, added = datetime.fromisoformat(BACKFILL_FROM).date(), 0
+    while d.isoformat() < first_live:
+        day = d.isoformat()
+        if not conn.execute("SELECT 1 FROM columns_system WHERE day = ? AND idx = 0", (day,)).fetchone():
+            lock_at = columns.day_bounds(day)[0]                       # 07:00 българско време - часът, в който би бил записът
+            col, note = system_pick(conn, day, lock_at, fetch=False)
+            _system_write(conn, day, col, note, lock_at.isoformat(timespec="seconds"), retro=True)
+            added += 1
+            log.info("Системата назад %s: %s", day, ("колонка " + " + ".join(f"{c['home']} {c['sel']}" for c in col)) if col else note)
+        d += timedelta(days=1)
+    db.set_meta(conn, key, now.isoformat(timespec="seconds"))
+    return added
+
+
+def system_day_text(conn, day, name, local_time):
+    """Редът за сутрешното известие: колонката на системата за деня или защо няма."""
+    ensure(conn)
+    row = conn.execute("SELECT summary_json FROM columns_system WHERE day = ? AND idx = 0", (day,)).fetchone()
+    if not row:
+        return None
+    col = conn.execute("SELECT legs_json, summary_json FROM columns_system WHERE day = ? AND idx = 1", (day,)).fetchone()
+    if not col:
+        return (f"СИСТЕМАТА ЗА ДНЕС: без колонка - {json.loads(row['summary_json']).get('note') or 'не стигат мачове по правилата'}. "
+                "Дни без колонка са част от правилото (~7 колонки на месец).")
+    legs, s = json.loads(col["legs_json"]), json.loads(col["summary_json"])
+    return ("СИСТЕМАТА ЗА ДНЕС (записана, не се променя; назад минава 51% и връща 1.09 € от 1 € на средна цена): "
+            + " + ".join(f"{local_time(l['kickoff'])} {name(l['home'], l['away'])} {robot.label(l['sel'])} @{l['odds']:.2f}"
+                         + ("" if l.get("src") == "book" else " (оценка - провери)") for l in legs)
+            + f" [коеф. {s['odds']:.2f}, шанс {s['claimed']:.0%}]. Ако в Mr Bit някой мач е под 1.40 - не залагай.")
 
 
 def system_for_site(conn, now=None):
     """За сайта: днешната колонка на системата (или защо няма), всички досега, колко са минали и парите при 30 €, по месеци."""
     ensure(conn)
     now = now or datetime.now(timezone.utc)
-    days = [r[0] for r in conn.execute("SELECT DISTINCT day FROM columns_system WHERE idx = 0 ORDER BY day")]
+    # само дните на живо (без retro - дните назад от system_backfill)
+    days = [r[0] for r in conn.execute("SELECT DISTINCT day FROM columns_system WHERE idx = 0 AND json_extract(summary_json, '$.retro') IS NULL ORDER BY day")]
     today = columns.day_of(now.isoformat())
     out = {"today": [], "days": len(days), "from": days[0] if days else SYSTEM_FROM[:10], "rule": SYSTEM_RULE, "leagues": sorted(SYSTEM_LEAGUES),
            "note": None, "measured": {"return_avg": 1.09, "return_best": 1.16, "pass": 0.51, "per_month": 7, "n": 78}}
     m = conn.execute("SELECT summary_json FROM columns_system WHERE day = ? AND idx = 0", (today,)).fetchone()
     if m:
-        out["note"] = json.loads(m["summary_json"]).get("note")
-    for r in conn.execute("SELECT idx, legs_json, summary_json, locked_at, passed FROM columns_system WHERE day = ? AND idx > 0", (today,)):
-        legs = json.loads(r["legs_json"])
+        note = json.loads(m["summary_json"]).get("note")
+        # записът от 18.10 е с една цифра след запетаята („50.0% е под 50%“ - звучи като грешка); новите са с две
+        out["note"] = note.replace("50.0% е под 50%", "малко под 50% (50.0% закръглено) е под 50%") if note else note
+    def with_hits(legs):
         for leg in legs:
             t = conn.execute("SELECT hg, ag FROM tips WHERE fixture_id = ?", (leg["id"],)).fetchone()
             settled = bool(t and t["hg"] is not None)
             leg["hit"] = bool(robot.hit_any(leg["sel"], t["hg"], t["ag"])) if settled else None
             leg["score"] = [t["hg"], t["ag"]] if settled else None
-        out["today"].append({"idx": r["idx"], "day": today, "legs": legs, "passed": r["passed"], "locked_at": r["locked_at"], **json.loads(r["summary_json"])})
+        return legs
+    for r in conn.execute("SELECT idx, legs_json, summary_json, locked_at, passed FROM columns_system WHERE day = ? AND idx > 0", (today,)):
+        out["today"].append({"idx": r["idx"], "day": today, "legs": with_hits(json.loads(r["legs_json"])), "passed": r["passed"], "locked_at": r["locked_at"],
+                             **json.loads(r["summary_json"])})
     rows = conn.execute("SELECT day, legs_json, summary_json, passed FROM columns_system WHERE idx > 0 ORDER BY day DESC").fetchall()
-    settled = [r for r in rows if r["passed"] is not None]
-    ret = sum(json.loads(r["summary_json"])["odds"] if r["passed"] else 0.0 for r in settled)
-    out["all"] = {"cols": len(rows), "settled": len(settled), "passed": sum(r["passed"] for r in settled),
-                  "return": ret / len(settled) if settled else None,
-                  "net30": round(sum((json.loads(r["summary_json"])["odds"] - 1) * 30 if r["passed"] else -30 for r in settled), 2)}
-    out["past"] = [{"day": r["day"], "legs": json.loads(r["legs_json"]), "passed": r["passed"], **json.loads(r["summary_json"])}
-                   for r in rows[:40] if r["day"] != today]
-    for r in conn.execute("SELECT substr(day, 1, 7) AS m, COUNT(*) AS n, SUM(passed) AS p FROM columns_system WHERE idx > 0 AND passed IS NOT NULL "
-                          "GROUP BY m ORDER BY m"):
-        out.setdefault("monthly", {})[r["m"]] = {"settled": r["n"], "passed": r["p"]}
+
+    def measure(rs):
+        settled = [r for r in rs if r["passed"] is not None]
+        ret = sum(json.loads(r["summary_json"])["odds"] if r["passed"] else 0.0 for r in settled)
+        return {"cols": len(rs), "settled": len(settled), "passed": sum(r["passed"] for r in settled),
+                "return": ret / len(settled) if settled else None,
+                "net30": round(sum((json.loads(r["summary_json"])["odds"] - 1) * 30 if r["passed"] else -30 for r in settled), 2)}
+    live = [r for r in rows if not json.loads(r["summary_json"]).get("retro")]
+    retro = [r for r in rows if json.loads(r["summary_json"]).get("retro")]
+    out["all"] = measure(live)                      # само записаните на живо
+    # назад от началото на месеца (system_backfill): изчислени от записаните сутрешни прогнози, НЕ записани в деня - отделно от живите
+    n_retro_days = conn.execute("SELECT COUNT(*) FROM columns_system WHERE idx = 0 AND json_extract(summary_json, '$.retro') = 1").fetchone()[0]
+    out["retro"] = {**measure(retro), "from": BACKFILL_FROM, "days": n_retro_days} if n_retro_days else None
+    out["past"] = [{"day": r["day"], "legs": with_hits(json.loads(r["legs_json"])), "passed": r["passed"], **json.loads(r["summary_json"])}
+                   for r in rows[:60] if r["day"] != today]
+    for r in conn.execute("SELECT substr(day, 1, 7) AS m, COALESCE(json_extract(summary_json, '$.retro'), 0) AS retro, COUNT(*) AS n, SUM(passed) AS p "
+                          "FROM columns_system WHERE idx > 0 AND passed IS NOT NULL GROUP BY m, retro ORDER BY m"):
+        out.setdefault("monthly", {}).setdefault(r["m"], {})["retro" if r["retro"] else "live"] = {"settled": r["n"], "passed": r["p"]}
     return out
 
 
