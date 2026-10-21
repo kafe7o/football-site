@@ -1464,6 +1464,29 @@ function systemBlock(S) {
     ${pastRetro.length ? `<details class="day"><summary>Назад от ${esc(fmtDate(R.from + "T12:00:00"))} - изчислени, не записани в деня<span class="cnt">${pastRetro.length}</span></summary>${pastRetro.map(c => colCard({...c, shadow: true, idx: "системата"}, true)).join("")}</details>` : ""}`;
 }
 
+// БАНКАТА (bets/bank.py, майсторът 22.10): банка, период и цел; планът (дял от банката на колонка), залогът за днес, честният шанс за целта, банката ден по ден
+function bankBlock(B) {
+  if (!B) return "";
+  const c = B.cfg, eur = v => `${v >= 0 ? "" : "-"}${Math.abs(v).toFixed(2)} €`, ch = B.chance, st = B.stake;
+  const running = B.state === "върви" || B.state.startsWith("започва");
+  const tiles = `<div class="ktiles">
+    <div class="tile"><div class="k">Банката сега</div><div class="v">${eur(B.bank)}</div><div class="s">от ${c.bank.toFixed(0)} € · цел <b>${c.target.toFixed(0)} €</b> до ${esc(fmtDate(c.end + "T12:00:00"))}${B.pending ? ` · ${eur(B.pending)} чакат мачове` : ""}</div></div>
+    <div class="tile"><div class="k">Планът</div><div class="v">${pct(B.share)}</div><div class="s">от банката на колонка на системата и на ден с надстройка (5 четворки)</div></div>
+    <div class="tile"><div class="k">Днес по плана</div><div class="v">${st ? eur(st.system) : "–"}</div><div class="s">${st ? `на колонка на системата; надстройката ${eur(st.addon_day)} = 5 × ${eur(st.addon_each)}` : esc(B.state)}</div></div>
+    <div class="tile"><div class="k">Шанс за целта оттук</div><div class="v">${ch ? pct(ch.edge.target) : "–"}</div><div class="s">${ch ? `при измереното назад; ${pct(ch.zero.target)} ако предимство няма · срив под ${(0.2 * c.bank).toFixed(0)} €: ${pct(ch.edge.bust)} / ${pct(ch.zero.bust)}` : esc(B.state)}</div></div></div>`;
+  const days = (B.days || []).slice().reverse();
+  const rows = days.map(d => `<tr><td>${esc(fmtDate(d.day + "T12:00:00"))}</td><td>${eur(d.before)}</td><td>${d.items.map(i => `${esc(i.what)} ${eur(i.stake)} @${i.odds.toFixed(2)} ${i.net == null ? `<span class="muted">чака</span>` : i.net >= 0 ? `<span class="y">+${i.net.toFixed(2)}</span>` : `<span class="n">${i.net.toFixed(2)}</span>`}`).join("<br>")}</td><td><b>${eur(d.after)}</b></td></tr>`).join("");
+  const table = (B.table || []).map(r => `<tr><td>${pct(r.share)}</td><td>${pct(r.target)}</td><td>${pct(r.bust)}</td><td>${r.median.toFixed(0)} €</td><td>${pct(r.zero.target)}</td><td>${pct(r.zero.bust)}</td></tr>`).join("");
+  return `<div class="sect"><h2>Банката</h2><span class="cnt">майсторът, 22.10 · ${esc(fmtDate(c.start + "T12:00:00"))} - ${esc(fmtDate(c.end + "T12:00:00"))} · ${esc(B.state)}</span></div>
+    ${tiles}
+    <p class="small muted" style="margin:0 0 8px">Как да процедираш: всяка сутрин залагаш по плана - ${pct(B.share)} от текущата банка на колонката на системата и ${pct(B.share)} на деня с надстройка, разделени на петте четворки.
+      Банката се води по уредените колонки със залозите по плана. Стигне ли целта - спираш. ${running ? "" : ""}Целта „по две за месец“ не е обещание: назад двете логики връщат ~1.08-1.09 € от 1 € (± 0.1), а предимството в прогнозата е нула (печалбата е от цената) - затова до всяко число стои и шансът без предимство.</p>
+    ${rows ? `<details class="day" open><summary>Банката ден по ден<span class="cnt">${days.length}</span></summary><table class="small"><tr><th>Ден</th><th>Преди</th><th>Залози по плана</th><th>След</th></tr>${rows}</table></details>` : ""}
+    ${table ? `<details class="how"><summary>Какъв дял на колонка и защо ${pct(B.share)}</summary><div class="note">Монте Карло върху измереното назад (research/bank_backtest.py): шансът за целта само расте с дяла, но расте и шансът за срив - планът е делът с най-голяма разлика между двете.
+      <table class="small" style="margin-top:6px"><tr><th>Дял</th><th>Цел (назад)</th><th>Срив (назад)</th><th>Медиана</th><th>Цел (без предимство)</th><th>Срив (без предимство)</th></tr>${table}</table>
+      Смяна на банката/целта: <code>python run.py bank 200 2026-11-01 2026-12-01 400</code> и качване.</div></details>` : ""}`;
+}
+
 // НАДСТРОЙКАТА (bets/addon.py): голове, система 4 от 5 (от 14.10; до тогава 3 от 4) - най-доброто от проверките назад; извън правилата на майстора (решение на собственика)
 function addonCard(D) {
   const M = AM();
@@ -1550,6 +1573,7 @@ function renderColumns() {
     <div class="tile"><div class="k">Системата досега</div><div class="v">${sysAll.settled ? `${sysAll.passed}<span class="muted" style="font-size:14px">/${sysAll.settled}</span>` : "–"}</div><div class="s">${sysAll.settled ? `${pct(sysAll.passed / sysAll.settled)} минали · при 30 €: ${sysAll.net30 >= 0 ? "+" : ""}${(sysAll.net30 || 0).toFixed(0)} €` : "на живо от 15.10"}</div></div></div>
   <p class="small muted" style="margin:0 0 4px">Две неща, по решение на собственика (18.10): <b>надстройката</b> (най-доброто от проверките назад, извън правилата на майстора) и <b>системата</b> (най-доброто вътре в правилата на майстора).
     Колонките по правилата на майстора по 3 мача и колонките на сянка не се записват от 19.10${rec.n ? ` (09-18.10: <b>${rec.passed} от ${rec.n}</b> минали, ${pct(rec.passed / rec.n)}; записите са в базата)` : ""}. Нищо не е сигурен залог.</p>`;
+  html += bankBlock(C.bank);
   html += addonBlock(C.addon);
   html += systemBlock(C.system);
   el.innerHTML = html;

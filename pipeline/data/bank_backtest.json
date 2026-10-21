@@ -1,0 +1,97 @@
+{
+ "rows": [
+  {
+   "share": 0.05,
+   "target": 0.0055,
+   "bust": 0.0,
+   "median": 215.23,
+   "zero": {
+    "target": 0.00075,
+    "bust": 0.0,
+    "median": 192.6
+   }
+  },
+  {
+   "share": 0.1,
+   "target": 0.123,
+   "bust": 0.0,
+   "median": 223.73,
+   "zero": {
+    "target": 0.04775,
+    "bust": 0.0,
+    "median": 179.93
+   }
+  },
+  {
+   "share": 0.15,
+   "target": 0.24575,
+   "bust": 0.0,
+   "median": 225.37,
+   "zero": {
+    "target": 0.12,
+    "bust": 0.00625,
+    "median": 165.71
+   }
+  },
+  {
+   "share": 0.2,
+   "target": 0.32275,
+   "bust": 0.0135,
+   "median": 220.76,
+   "zero": {
+    "target": 0.176,
+    "bust": 0.04,
+    "median": 146.12
+   }
+  },
+  {
+   "share": 0.25,
+   "target": 0.38875,
+   "bust": 0.04025,
+   "median": 224.73,
+   "zero": {
+    "target": 0.23425,
+    "bust": 0.1055,
+    "median": 127.46
+   }
+  },
+  {
+   "share": 0.3,
+   "target": 0.40925,
+   "bust": 0.0985,
+   "median": 205.81,
+   "zero": {
+    "target": 0.24775,
+    "bust": 0.2045,
+    "median": 107.79
+   }
+  },
+  {
+   "share": 0.4,
+   "target": 0.44375,
+   "bust": 0.20325,
+   "median": 219.38,
+   "zero": {
+    "target": 0.29,
+    "bust": 0.37125,
+    "median": 72.86
+   }
+  },
+  {
+   "share": 0.5,
+   "target": 0.4625,
+   "bust": 0.31925,
+   "median": 189.56,
+   "zero": {
+    "target": 0.31225,
+    "bust": 0.4945,
+    "median": 42.95
+   }
+  }
+ ],
+ "best": 0.25,
+ "bank": 200.0,
+ "start": "2026-11-01",
+ "end": "2026-12-01",
+ "target": 400.0
+}

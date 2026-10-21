@@ -264,8 +264,8 @@ def local(log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus", "watch", "ask"])
-    parser.add_argument("names", nargs="*", help="за ask: домакин и гост (както са в базата, латиница)")
+    parser.add_argument("command", choices=["cloud", "weekly", "local", "seed", "site", "status", "bonus", "watch", "ask", "bank"])
+    parser.add_argument("names", nargs="*", help="за ask: домакин и гост (както са в базата, латиница); за bank: банка начало край цел (напр. 200 2026-11-01 2026-12-01 400)")
     parser.add_argument("--league", default=None, help="за ask: кодът на първенството (иначе се намира само)")
     parser.add_argument("--kickoff", default=None, help="за ask: начало, българско време („2026-10-10 19:00“ или „19:00“)")
     parser.add_argument("--offline", action="store_true", help="за ask: без връзка с облака - местното копие на базата")
@@ -282,6 +282,15 @@ def main():
     if args.command == "ask":
         from bets import ask
         return ask.main(args.names, args.league, args.kickoff, args.offline)
+    if args.command == "bank":
+        # БАНКАТА (bets/bank.py, майсторът 22.10): банка, период и цел -> data/bank.json (качва се с git; облакът чете оттам) + таблицата по дялове
+        from bets import bank
+        from research import bank_backtest
+        if len(args.names) != 4:
+            raise SystemExit("bank БАНКА НАЧАЛО КРАЙ ЦЕЛ - напр. bank 200 2026-11-01 2026-12-01 400")
+        cfg = bank.save(*args.names)
+        print("Записано:", json.dumps(cfg, ensure_ascii=False))
+        return bank_backtest.main(args.names)
     log = setup_logging()
     log.info("===== Старт: %s %s =====", args.command, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     if args.command == "cloud":

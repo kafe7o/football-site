@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from . import addon, apifootball, config, db, live, robot, rules, season, shadow, sure, tips
+from . import addon, apifootball, bank, config, db, live, robot, rules, season, shadow, sure, tips
 from .leagues import LEAGUES
 
 log = logging.getLogger(__name__)
@@ -183,7 +183,9 @@ def columns_data(conn, upcoming, now):
             # СИСТЕМАТА (bets/shadow.py system_lock) - най-доброто от проверките назад, само се мери
             "system": shadow.system_for_site(conn, now),
             # НАДСТРОЙКАТА (bets/addon.py) - голове, система 3 от 4, извън правилата на майстора (решение на собственика 13.10)
-            "addon": addon.for_site(conn, now)}
+            "addon": addon.for_site(conn, now),
+            # БАНКАТА (bets/bank.py, майсторът 22.10): банка, период, цел - планът, залогът за днес и честният шанс за целта
+            "bank": bank.for_site(conn, now)}
 
 
 def backtest_summary():

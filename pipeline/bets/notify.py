@@ -262,6 +262,11 @@ def morning(conn, upcoming, now=None):
                 lines.append(addon.day_text(conn, today_d, name, local_time))
             if sy_has:
                 lines.append(shadow.system_day_text(conn, today_d, name, local_time))
+            # БАНКАТА (bets/bank.py, майсторът 22.10): залогът по плана за днешните колонки и честният шанс за целта
+            from . import bank
+            bank_line = bank.day_text(conn, now)
+            if bank_line:
+                lines.append(bank_line)
             lines.append("Преглед на колонката (пресни коефициенти, отсъстващи, състави) - час преди първия ѝ мач, с отделно известие. "
                          "Коефициентите са сутрешни; залага се сутринта.")
             what = " + ".join(x for x, ok in (("надстройката", ad_has), ("системата", sy_has)) if ok)
