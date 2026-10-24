@@ -1,0 +1,573 @@
+{
+ "from": "2024-01",
+ "select_end": "2025-07-01",
+ "bank": 200.0,
+ "target": 400.0,
+ "share": 0.25,
+ "books": {
+  "max": {
+   "months": [
+    {
+     "month": "2024-01",
+     "end": 57.07,
+     "net": -142.93,
+     "target": false,
+     "bust": false,
+     "columns": 32,
+     "period": "избор"
+    },
+    {
+     "month": "2024-02",
+     "end": 172.69,
+     "net": -27.31,
+     "target": false,
+     "bust": false,
+     "columns": 49,
+     "period": "избор"
+    },
+    {
+     "month": "2024-03",
+     "end": 68.17,
+     "net": -131.83,
+     "target": false,
+     "bust": false,
+     "columns": 40,
+     "period": "избор"
+    },
+    {
+     "month": "2024-04",
+     "end": 96.46,
+     "net": -103.54,
+     "target": false,
+     "bust": false,
+     "columns": 35,
+     "period": "избор"
+    },
+    {
+     "month": "2024-05",
+     "end": 499.66,
+     "net": 299.66,
+     "target": true,
+     "bust": false,
+     "columns": 15,
+     "period": "избор"
+    },
+    {
+     "month": "2024-08",
+     "end": 156.9,
+     "net": -43.1,
+     "target": false,
+     "bust": false,
+     "columns": 24,
+     "period": "избор"
+    },
+    {
+     "month": "2024-09",
+     "end": 412.36,
+     "net": 212.36,
+     "target": true,
+     "bust": false,
+     "columns": 34,
+     "period": "избор"
+    },
+    {
+     "month": "2024-10",
+     "end": 212.59,
+     "net": 12.59,
+     "target": false,
+     "bust": false,
+     "columns": 36,
+     "period": "избор"
+    },
+    {
+     "month": "2024-11",
+     "end": 140.32,
+     "net": -59.68,
+     "target": false,
+     "bust": false,
+     "columns": 41,
+     "period": "избор"
+    },
+    {
+     "month": "2024-12",
+     "end": 408.77,
+     "net": 208.77,
+     "target": true,
+     "bust": false,
+     "columns": 18,
+     "period": "избор"
+    },
+    {
+     "month": "2025-01",
+     "end": 552.56,
+     "net": 352.56,
+     "target": true,
+     "bust": false,
+     "columns": 7,
+     "period": "избор"
+    },
+    {
+     "month": "2025-02",
+     "end": 440.35,
+     "net": 240.35,
+     "target": true,
+     "bust": false,
+     "columns": 12,
+     "period": "избор"
+    },
+    {
+     "month": "2025-03",
+     "end": 883.92,
+     "net": 683.92,
+     "target": true,
+     "bust": false,
+     "columns": 30,
+     "period": "избор"
+    },
+    {
+     "month": "2025-04",
+     "end": 552.83,
+     "net": 352.83,
+     "target": true,
+     "bust": false,
+     "columns": 7,
+     "period": "избор"
+    },
+    {
+     "month": "2025-05",
+     "end": 279.9,
+     "net": 79.9,
+     "target": false,
+     "bust": false,
+     "columns": 25,
+     "period": "избор"
+    },
+    {
+     "month": "2025-08",
+     "end": 474.02,
+     "net": 274.02,
+     "target": true,
+     "bust": false,
+     "columns": 25,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-09",
+     "end": 441.98,
+     "net": 241.98,
+     "target": true,
+     "bust": false,
+     "columns": 24,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-10",
+     "end": 450.67,
+     "net": 250.67,
+     "target": true,
+     "bust": false,
+     "columns": 6,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-11",
+     "end": 38.36,
+     "net": -161.64,
+     "target": false,
+     "bust": true,
+     "columns": 42,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-12",
+     "end": 431.33,
+     "net": 231.33,
+     "target": true,
+     "bust": false,
+     "columns": 12,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-01",
+     "end": 38.89,
+     "net": -161.11,
+     "target": false,
+     "bust": true,
+     "columns": 28,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-02",
+     "end": 142.88,
+     "net": -57.12,
+     "target": false,
+     "bust": false,
+     "columns": 39,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-03",
+     "end": 864.7,
+     "net": 664.7,
+     "target": true,
+     "bust": false,
+     "columns": 30,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-04",
+     "end": 477.3,
+     "net": 277.3,
+     "target": true,
+     "bust": false,
+     "columns": 26,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-05",
+     "end": 103.72,
+     "net": -96.28,
+     "target": false,
+     "bust": false,
+     "columns": 29,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-08",
+     "end": 292.91,
+     "net": 92.91,
+     "target": false,
+     "bust": false,
+     "columns": 22,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-09",
+     "end": 98.96,
+     "net": -101.04,
+     "target": false,
+     "bust": false,
+     "columns": 24,
+     "period": "чиста"
+    }
+   ],
+   "summary": {
+    "избор": {
+     "months": 15,
+     "net": 1934.55,
+     "target": 7,
+     "bust": 0,
+     "plus": 9,
+     "avg": 128.97,
+     "worst": -142.93,
+     "best": 683.92
+    },
+    "чиста": {
+     "months": 12,
+     "net": 1455.72,
+     "target": 6,
+     "bust": 2,
+     "plus": 7,
+     "avg": 121.31,
+     "worst": -161.64,
+     "best": 664.7
+    },
+    "всичко": {
+     "months": 27,
+     "net": 3390.27,
+     "target": 13,
+     "bust": 2,
+     "plus": 16,
+     "avg": 125.57,
+     "worst": -161.64,
+     "best": 683.92
+    }
+   },
+   "continuous": 381.17,
+   "sys_cols": 194,
+   "addon_fours": 745
+  },
+  "avg": {
+   "months": [
+    {
+     "month": "2024-01",
+     "end": 166.39,
+     "net": -33.61,
+     "target": false,
+     "bust": false,
+     "columns": 42,
+     "period": "избор"
+    },
+    {
+     "month": "2024-02",
+     "end": 748.46,
+     "net": 548.46,
+     "target": true,
+     "bust": false,
+     "columns": 24,
+     "period": "избор"
+    },
+    {
+     "month": "2024-03",
+     "end": 67.1,
+     "net": -132.9,
+     "target": false,
+     "bust": false,
+     "columns": 45,
+     "period": "избор"
+    },
+    {
+     "month": "2024-04",
+     "end": 73.65,
+     "net": -126.35,
+     "target": false,
+     "bust": false,
+     "columns": 45,
+     "period": "избор"
+    },
+    {
+     "month": "2024-05",
+     "end": 418.67,
+     "net": 218.67,
+     "target": true,
+     "bust": false,
+     "columns": 9,
+     "period": "избор"
+    },
+    {
+     "month": "2024-08",
+     "end": 123.17,
+     "net": -76.83,
+     "target": false,
+     "bust": false,
+     "columns": 24,
+     "period": "избор"
+    },
+    {
+     "month": "2024-09",
+     "end": 437.13,
+     "net": 237.13,
+     "target": true,
+     "bust": false,
+     "columns": 39,
+     "period": "избор"
+    },
+    {
+     "month": "2024-10",
+     "end": 175.71,
+     "net": -24.29,
+     "target": false,
+     "bust": false,
+     "columns": 36,
+     "period": "избор"
+    },
+    {
+     "month": "2024-11",
+     "end": 120.44,
+     "net": -79.56,
+     "target": false,
+     "bust": false,
+     "columns": 41,
+     "period": "избор"
+    },
+    {
+     "month": "2024-12",
+     "end": 12.58,
+     "net": -187.42,
+     "target": false,
+     "bust": true,
+     "columns": 46,
+     "period": "избор"
+    },
+    {
+     "month": "2025-01",
+     "end": 483.55,
+     "net": 283.55,
+     "target": true,
+     "bust": false,
+     "columns": 12,
+     "period": "избор"
+    },
+    {
+     "month": "2025-02",
+     "end": 494.96,
+     "net": 294.96,
+     "target": true,
+     "bust": false,
+     "columns": 25,
+     "period": "избор"
+    },
+    {
+     "month": "2025-03",
+     "end": 589.23,
+     "net": 389.23,
+     "target": true,
+     "bust": false,
+     "columns": 24,
+     "period": "избор"
+    },
+    {
+     "month": "2025-04",
+     "end": 111.9,
+     "net": -88.1,
+     "target": false,
+     "bust": false,
+     "columns": 44,
+     "period": "избор"
+    },
+    {
+     "month": "2025-05",
+     "end": 222.1,
+     "net": 22.1,
+     "target": false,
+     "bust": false,
+     "columns": 30,
+     "period": "избор"
+    },
+    {
+     "month": "2025-08",
+     "end": 623.73,
+     "net": 423.73,
+     "target": true,
+     "bust": false,
+     "columns": 13,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-09",
+     "end": 420.59,
+     "net": 220.59,
+     "target": true,
+     "bust": false,
+     "columns": 29,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-10",
+     "end": 413.01,
+     "net": 213.01,
+     "target": true,
+     "bust": false,
+     "columns": 6,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-11",
+     "end": 57.42,
+     "net": -142.58,
+     "target": false,
+     "bust": false,
+     "columns": 42,
+     "period": "чиста"
+    },
+    {
+     "month": "2025-12",
+     "end": 78.2,
+     "net": -121.8,
+     "target": false,
+     "bust": false,
+     "columns": 37,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-01",
+     "end": 32.01,
+     "net": -167.99,
+     "target": false,
+     "bust": true,
+     "columns": 38,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-02",
+     "end": 52.62,
+     "net": -147.38,
+     "target": false,
+     "bust": false,
+     "columns": 49,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-03",
+     "end": 673.63,
+     "net": 473.63,
+     "target": true,
+     "bust": false,
+     "columns": 30,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-04",
+     "end": 54.45,
+     "net": -145.55,
+     "target": false,
+     "bust": false,
+     "columns": 43,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-05",
+     "end": 409.37,
+     "net": 209.37,
+     "target": true,
+     "bust": false,
+     "columns": 19,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-08",
+     "end": 201.88,
+     "net": 1.88,
+     "target": false,
+     "bust": false,
+     "columns": 22,
+     "period": "чиста"
+    },
+    {
+     "month": "2026-09",
+     "end": 125.75,
+     "net": -74.25,
+     "target": false,
+     "bust": false,
+     "columns": 29,
+     "period": "чиста"
+    }
+   ],
+   "summary": {
+    "избор": {
+     "months": 15,
+     "net": 1245.04,
+     "target": 6,
+     "bust": 1,
+     "plus": 7,
+     "avg": 83.0,
+     "worst": -187.42,
+     "best": 548.46
+    },
+    "чиста": {
+     "months": 12,
+     "net": 742.66,
+     "target": 5,
+     "bust": 1,
+     "plus": 6,
+     "avg": 61.89,
+     "worst": -167.99,
+     "best": 473.63
+    },
+    "всичко": {
+     "months": 27,
+     "net": 1987.7,
+     "target": 11,
+     "bust": 2,
+     "plus": 13,
+     "avg": 73.62,
+     "worst": -187.42,
+     "best": 548.46
+    }
+   },
+   "continuous": 0.91,
+   "sys_cols": 194,
+   "addon_fours": 845
+  }
+ }
+}
