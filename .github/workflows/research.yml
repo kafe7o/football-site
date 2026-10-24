@@ -1,6 +1,6 @@
 # Проверка назад ПО ЗАЯВКА на сървърите на GitHub (24.10): пуска един скрипт от pipeline/research върху архива (всички лиги от 2012,
-# шифрован в изданието „archive“) и връща резултата като артефакт на пускането. НИЩО не се качва в хранилището и роботът не се пипа.
-# Пускане: Actions -> research -> Run workflow -> името на скрипта без .py (напр. bank_history_backtest); резултатът - в „Artifacts“ на пускането.
+# шифрован в изданието „archive“) и записва резултата в хранилището: data/<име>.json и research/out/<име>.txt (изходът на скрипта,
+# и при грешка). Роботът не се пипа. Пускане: Actions -> research -> Run workflow -> името на скрипта без .py (напр. bank_history_backtest).
 name: research
 
 on:
@@ -12,7 +12,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   research:
@@ -43,15 +43,23 @@ jobs:
           test -f "pipeline/research/$SCRIPT.py" || { echo "няма pipeline/research/$SCRIPT.py"; exit 1; }
           cd pipeline
           python -c "from bets import archive, config; archive.pull_db(config.DB_PATH)"
-          python -m "research.$SCRIPT" 2>&1 | tee "$RUNNER_TEMP/research.txt"
+          mkdir -p research/out
+          python -m "research.$SCRIPT" 2>&1 | tee "research/out/$SCRIPT.txt"
           test "${PIPESTATUS[0]}" -eq 0
 
-      - name: Резултатът като артефакт
+      - name: Записване на резултата
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: research-${{ inputs.script }}
-          path: |
-            pipeline/data/${{ inputs.script }}.json
-            ${{ runner.temp }}/research.txt
-          if-no-files-found: warn
+        env:
+          SCRIPT: ${{ inputs.script }}
+        run: |
+          git config user.name "football-bot"
+          git config user.email "football-bot@users.noreply.github.com"
+          git add -f "pipeline/research/out/$SCRIPT.txt"
+          test -f "pipeline/data/$SCRIPT.json" && git add "pipeline/data/$SCRIPT.json"
+          git diff --staged --quiet && exit 0
+          git commit -m "Проверка назад: $SCRIPT"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push && exit 0
+            sleep 20
+          done
+          exit 1
