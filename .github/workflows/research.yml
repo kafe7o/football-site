@@ -1,0 +1,57 @@
+# Проверка назад ПО ЗАЯВКА на сървърите на GitHub (24.10): пуска един скрипт от pipeline/research върху архива (всички лиги от 2012,
+# шифрован в изданието „archive“) и връща резултата като артефакт на пускането. НИЩО не се качва в хранилището и роботът не се пипа.
+# Пускане: Actions -> research -> Run workflow -> името на скрипта без .py (напр. bank_history_backtest); резултатът - в „Artifacts“ на пускането.
+name: research
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: "Скриптът от pipeline/research без .py (пише data/<име>.json)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - run: pip install -r pipeline/requirements.txt
+
+      - name: Архивът и скриптът
+        env:
+          SCRIPT: ${{ inputs.script }}
+          ARCHIVE_KEY: ${{ secrets.ARCHIVE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          FOOTBALL_DB: ${{ runner.temp }}/football.db
+          FOOTBALL_LOGS: ${{ runner.temp }}/logs
+          FOOTBALL_CACHE: ${{ runner.temp }}/cache
+          PYTHONIOENCODING: utf-8
+        run: |
+          case "$SCRIPT" in *[!a-z0-9_]*|"") echo "лошо име на скрипт"; exit 1;; esac
+          test -f "pipeline/research/$SCRIPT.py" || { echo "няма pipeline/research/$SCRIPT.py"; exit 1; }
+          cd pipeline
+          python -c "from bets import archive, config; archive.pull_db(config.DB_PATH)"
+          python -m "research.$SCRIPT" 2>&1 | tee "$RUNNER_TEMP/research.txt"
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Резултатът като артефакт
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-${{ inputs.script }}
+          path: |
+            pipeline/data/${{ inputs.script }}.json
+            ${{ runner.temp }}/research.txt
+          if-no-files-found: warn
