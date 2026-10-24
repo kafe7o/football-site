@@ -1,0 +1,57 @@
+{
+ "day": "2026-10-24",
+ "idx": 1,
+ "system": true,
+ "made_at": "2026-10-24T10:29:59+00:00",
+ "first": "2026-10-24T11:30+00:00",
+ "legs": [
+  {
+   "id": "255686b0c83c233efdd58c5f3068c185",
+   "league": "I2",
+   "kickoff": "2026-10-24T13:00+00:00",
+   "home": "Südtirol",
+   "away": "Sampdoria",
+   "sel": "1X",
+   "p": 0.7167788596099449,
+   "odds": 1.43,
+   "src": "book",
+   "odds_now": 1.43,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Sudtirol",
+    "m": "Sampdoria",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:29:59+00:00"
+   }
+  },
+  {
+   "id": "fd:EC:2026-10-24:Eastleigh:Boston Utd",
+   "league": "EC",
+   "kickoff": "2026-10-24T11:30+00:00",
+   "home": "Eastleigh",
+   "away": "Boston Utd",
+   "sel": "U35",
+   "p": 0.7138323473079379,
+   "odds": 1.47,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Eastleigh",
+    "m": "Boston United",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 0
+}
