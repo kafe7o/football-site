@@ -144,10 +144,136 @@
       ]
      ]
     },
-    "ia": "2026-10-24T10:59:59+00:00"
+    "ia": "2026-10-24T11:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-3-3",
+      "c": "Beñat San José",
+      "xi": [
+       [
+        25,
+        "E. Audero",
+        "G"
+       ],
+       [
+        20,
+        "I. Balliu",
+        "D"
+       ],
+       [
+        24,
+        "F. Lejeune",
+        "D"
+       ],
+       [
+        15,
+        "Mujaid Sadick",
+        "D"
+       ],
+       [
+        17,
+        "Adrià Pedrosa",
+        "D"
+       ],
+       [
+        4,
+        "Pedro Díaz",
+        "M"
+       ],
+       [
+        6,
+        "P. Ciss",
+        "M"
+       ],
+       [
+        8,
+        "Unai López",
+        "M"
+       ],
+       [
+        19,
+        "Jorge de Frutos",
+        "F"
+       ],
+       [
+        10,
+        "Sergio Camello",
+        "F"
+       ],
+       [
+        18,
+        "Álvaro García",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-3-3",
+      "c": "M. Anselmi",
+      "xi": [
+       [
+        1,
+        "M. Dituro",
+        "G"
+       ],
+       [
+        2,
+        "Buba Sangaré",
+        "D"
+       ],
+       [
+        5,
+        "F. Redondo",
+        "D"
+       ],
+       [
+        23,
+        "Víctor Chust",
+        "D"
+       ],
+       [
+        3,
+        "R. Revivo",
+        "D"
+       ],
+       [
+        12,
+        "Gonzalo Villar",
+        "M"
+       ],
+       [
+        47,
+        "J. Morcillo",
+        "M"
+       ],
+       [
+        18,
+        "T. Lemar",
+        "M"
+       ],
+       [
+        21,
+        "L. Cepeda",
+        "F"
+       ],
+       [
+        14,
+        "Fer Niño",
+        "F"
+       ],
+       [
+        11,
+        "Germán Valera",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-24T11:39:59+00:00"
    }
   }
  ],
  "changed": 0,
- "absent": 1
+ "absent": 1,
+ "lineups_at": "2026-10-24T11:39:59+00:00"
 }
