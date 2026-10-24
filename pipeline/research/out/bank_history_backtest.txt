@@ -1,0 +1,17 @@
+мачове: 21149
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/runner/work/football-site/football-site/pipeline/research/bank_history_backtest.py", line 142, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/football-site/football-site/pipeline/research/bank_history_backtest.py", line 106, in main
+    legs = ab.legs_all()
+           ^^^^^^^^^^^^^
+  File "/home/runner/work/football-site/football-site/pipeline/research/adaptive_columns_backtest.py", line 71, in legs_all
+    prices = pp.load_prices()
+             ^^^^^^^^^^^^^^^^
+  File "/home/runner/work/football-site/football-site/pipeline/research/pro_price_backtest.py", line 44, in load_prices
+    for r in c.execute("SELECT id, league, date, home_team, away_team FROM matches WHERE date >= '2023-07-01'"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: matches
