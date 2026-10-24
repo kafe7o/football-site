@@ -1,0 +1,153 @@
+{
+ "day": "2026-10-24",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-10-24T10:59:59+00:00",
+ "first": "2026-10-24T12:00+00:00",
+ "legs": [
+  {
+   "id": "fd:EC:2026-10-24:Yeovil:Altrincham",
+   "league": "EC",
+   "kickoff": "2026-10-24T14:00+00:00",
+   "home": "Yeovil",
+   "away": "Altrincham",
+   "sel": "U35",
+   "p": 0.6878,
+   "odds": 1.48,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Yeovil Town",
+    "m": "Altrincham",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:59:59+00:00"
+   }
+  },
+  {
+   "id": "5dffb05d9e6e4d7079223811d3683f81",
+   "league": "E3",
+   "kickoff": "2026-10-24T14:00+00:00",
+   "home": "Crawley Town",
+   "away": "Tranmere Rovers",
+   "sel": "U35",
+   "p": 0.7038,
+   "odds": 1.43,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Crawley Town",
+    "m": "Tranmere",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:59:59+00:00"
+   }
+  },
+  {
+   "id": "f65f0fd660c19b681e7a22034fb8a390",
+   "league": "I2",
+   "kickoff": "2026-10-24T13:00+00:00",
+   "home": "Virtus Entella",
+   "away": "Mantova",
+   "sel": "O15",
+   "p": 0.7176,
+   "odds": 1.4,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Virtus Entella",
+    "m": "Mantova",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:59:59+00:00"
+   }
+  },
+  {
+   "id": "3df8b7b32387782e62875983921a9fd7",
+   "league": "B1",
+   "kickoff": "2026-10-24T18:45+00:00",
+   "home": "RAAL La Louvière",
+   "away": "SV Zulte-Waregem",
+   "sel": "U35",
+   "p": 0.724,
+   "odds": 1.38,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "RAAL La Louvière",
+    "m": "Zulte Waregem",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-24T10:59:59+00:00"
+   }
+  },
+  {
+   "id": "734ad601156f5f4e6bc42317e5141516",
+   "league": "SP1",
+   "kickoff": "2026-10-24T12:00+00:00",
+   "home": "Rayo Vallecano",
+   "away": "Elche CF",
+   "sel": "U35",
+   "p": 0.6873,
+   "odds": 1.42,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Rayo Vallecano",
+    "m": "Elche",
+    "i": {
+     "h": [
+      [
+       "A. Batalla",
+       "out",
+       "контузия"
+      ],
+      [
+       "Luiz Felipe",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Nteka",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Ratiu",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "M. Aguado",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-24T10:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 0,
+ "absent": 1
+}
