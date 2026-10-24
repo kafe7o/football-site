@@ -34,7 +34,7 @@ jobs:
           SCRIPT: ${{ inputs.script }}
           ARCHIVE_KEY: ${{ secrets.ARCHIVE_KEY }}
           GH_TOKEN: ${{ github.token }}
-          FOOTBALL_DB: ${{ runner.temp }}/football.db
+          FOOTBALL_DB: ${{ github.workspace }}/pipeline/football.db   # някои проверки (pro_price_backtest) отварят pipeline/football.db направо
           FOOTBALL_LOGS: ${{ runner.temp }}/logs
           FOOTBALL_CACHE: ${{ runner.temp }}/cache
           PYTHONIOENCODING: utf-8
