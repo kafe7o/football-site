@@ -13,6 +13,9 @@
   3. Мери се по месеци: крайна банка, стигната ли е целта, срив (под 40 €); сборът на резултатите (всеки месец наново 200 €) - общо и за периодите
      ИЗБОР (до 2025-07-01: правилата са избрани по тези данни - оптимистично) и ЧИСТА (от 2025-07-01: истинската оценка) отделно.
   4. За сведение: без цел и без наново - 200 € на 01.01.2024 с дял 25% до края (едно-единствено минало; разсейването е огромно).
+  5. (25.10, собственикът: „ако е с цените, дето Mr Bit е имал“) Цени на Mr Bit в данните НЯМА (football-data пази B365, Pinnacle, средна, най-добра). Най-близкото честно:
+     bet365 - ЕДИН истински букмейкър (не „най-добрият от всички“), и за системата, и за надстройката; над/под 1.5 / 3.5 - оценката, мащабирана с цената му на над/под 2.5
+     (pro_price_backtest.price_at); мач без цена на bet365 - средната.
 Нищо в правилата не се сменя. Резултат: data/bank_history_backtest.json. Пуска се в облака (research.yml), защото иска архива.
 """
 
@@ -25,8 +28,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import numpy as np                                                # noqa: E402
+
+from bets import robot                                            # noqa: E402
 from research import adaptive_columns_backtest as ab              # noqa: E402
 from research import master_rules_backtest as mr                  # noqa: E402
+from research import pro_price_backtest as pp                     # noqa: E402
 from research import master_v2_system as ms                       # noqa: E402
 from research import variations_backtest as vb                    # noqa: E402
 
@@ -36,8 +43,14 @@ BANK, TARGET, SHARE, BUST = 200.0, 400.0, 0.25, 40.0
 DAYS = (3, 4, 5, 6)                                                # четвъртък-неделя
 
 
-def system_columns(rows):
-    """{ден: [(минала, коефициент)]} - колонката на системата по правилото на живо (най-много една на ден)."""
+def book_price(row, sel, base, prices, book):
+    """Цената на избора при букмейкъра (B365) или средната, ако той няма цена за мача."""
+    p = pp.price_at(row, sel, base, prices.get((row["league"], row["day"], row["home"], row["away"])) or {}, book)
+    return p if p else base
+
+
+def system_columns(rows, prices=None, book=None):
+    """{ден: [(минала, коефициент)]} - колонката на системата по правилото на живо (най-много една на ден); book - цената на един букмейкър вместо средната."""
     picks = mr.master_picks(rows, "вариант 2", False, False, floor=1.40)
     by_day = ms.top_picks(rows, picks, 0.65)
     leagues = ms.best_leagues(ms.leg_stats(rows, picks, by_day, "league"))
@@ -51,7 +64,37 @@ def system_columns(rows):
                 col.append(i)
                 lgs.add(rows[i]["league"])
         if len(col) == 2 and math.prod(picks[i][1] for i in col) >= 0.5:
-            out[day].append((all(picks[i][3] for i in col), math.prod(picks[i][2] for i in col)))
+            odds = math.prod((book_price(rows[i], picks[i][0], picks[i][2], prices, book) if book else picks[i][2]) for i in col)
+            out[day].append((all(picks[i][3] for i in col), odds))
+    return out
+
+
+def addon_legs(rows, prices):
+    """Мачовете на надстройката като research/adaptive_columns_backtest.legs_all, но и с цената на bet365 („b365“)."""
+    A = vb.arrays(rows)
+    P, Q, R, H = A["P"], A["Q"], A["R"], A["H"]
+    n = len(rows)
+    toto = np.zeros((n, len(vb.EV)), dtype=bool)
+    for i, row in enumerate(rows):
+        if row["league"] in robot.TOTO_LEAGUES:
+            for k, e in enumerate(vb.EV):
+                toto[i, k] = robot.toto_blocked(row["league"], e, R[i, k])
+    S = (P + Q) / 2
+    with np.errstate(invalid="ignore"):
+        valid = ~np.isnan(R) & (R >= 1.30) & ~np.isnan(S) & np.array([e in ab.GOALS for e in vb.EV])[None, :] & ~np.isnan(Q) & (np.abs(P - Q) <= 0.05)
+    valid &= ~A["derby"][:, None] & ~toto
+    Sm = np.where(valid, S, -np.inf)
+    best = Sm.argmax(axis=1)
+    score = Sm[np.arange(n), best]
+    out = []
+    for i in np.nonzero(np.isfinite(score) & (score >= 0.65))[0]:
+        k = best[i]
+        row = rows[i]
+        r = float(R[i, k])
+        pm = prices.get((row["league"], row["day"], row["home"], row["away"])) or {}
+        m = pp.price_at(row, vb.EV[k], r, pm, "MAX")
+        out.append({"day": row["day"], "league": row["league"], "sel": vb.EV[k], "p": float(score[i]), "avg": r,
+                    "max": m if (m is not None and r <= m <= r * 1.25) else r, "b365": book_price(row, vb.EV[k], r, prices, "B365"), "hit": bool(H[i, k])})
     return out
 
 
@@ -102,10 +145,11 @@ def continuous(days, sys_cols, add_cols):
 def main():
     rows = vb.build()
     print("мачове:", len(rows), flush=True)
-    sys_cols = system_columns(rows)
-    legs = ab.legs_all()
+    prices = pp.load_prices()
+    legs = addon_legs(rows, prices)
     res = {"from": FROM, "select_end": SELECT_END, "bank": BANK, "target": TARGET, "share": SHARE, "books": {}}
-    for book in ("max", "avg"):
+    for book in ("max", "avg", "b365"):
+        sys_cols = system_columns(rows, prices, "B365") if book == "b365" else system_columns(rows)
         add_cols = addon_columns(legs, book)
         all_days = sorted(d for d in set(sys_cols) | set(add_cols) if d >= FROM)
         months = sorted({d[:7] for d in all_days})
@@ -123,8 +167,8 @@ def main():
                              "worst": min(r["net"] for r in t), "best": max(r["net"] for r in t)}
         res["books"][book] = {"months": table, "summary": summ, "continuous": continuous(all_days, sys_cols, add_cols),
                               "sys_cols": sum(len(v) for d, v in sys_cols.items() if d >= FROM), "addon_fours": sum(len(v) for d, v in add_cols.items() if d >= FROM)}
-        label = "най-добрият букмейкър" if book == "max" else "средната цена"
-        print(f"\n=== НАДСТРОЙКАТА ПРИ {label.upper()} (системата винаги на средна цена) ===")
+        label = {"max": "НАЙ-ДОБРИЯТ БУКМЕЙКЪР (системата на средна цена)", "avg": "СРЕДНАТА ЦЕНА", "b365": "BET365 - ЕДИН ИСТИНСКИ БУКМЕЙКЪР, И ЗА ДВЕТЕ (най-близкото до Mr Bit)"}[book]
+        print(f"\n=== {label} ===")
         print(f"колонки на системата: {res['books'][book]['sys_cols']}, четворки на надстройката: {res['books'][book]['addon_fours']}")
         print(f"{'месец':8} {'период':6} {'колонки':>7} {'край':>8} {'резултат':>9}  цел  срив")
         for r in table:

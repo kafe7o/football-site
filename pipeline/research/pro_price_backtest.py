@@ -32,7 +32,7 @@ from research import variations_backtest as vb                    # noqa: E402
 
 OUT = ROOT / "data" / "pro_price_backtest.json"
 SELECT_END = vb.SELECT_END
-BOOKS = ("AVG", "MAX", "PS", "AVGC", "MAXC")
+BOOKS = ("AVG", "MAX", "PS", "AVGC", "MAXC", "B365")       # B365 - за research/bank_history_backtest.py (един истински букмейкър вместо Mr Bit)
 
 
 def load_prices():
