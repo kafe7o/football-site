@@ -216,10 +216,136 @@
       ]
      ]
     },
-    "ia": "2026-10-25T12:29:59+00:00"
+    "ia": "2026-10-25T13:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "3-4-2-1",
+      "c": "Dick Schreuder",
+      "xi": [
+       [
+        1,
+        "G. Crettaz",
+        "G"
+       ],
+       [
+        4,
+        "P. Schuurs",
+        "D"
+       ],
+       [
+        22,
+        "A. Kaplan",
+        "D"
+       ],
+       [
+        24,
+        "Deveron Fonville",
+        "D"
+       ],
+       [
+        34,
+        "Kevin Kers",
+        "M"
+       ],
+       [
+        6,
+        "D. Nejašmić",
+        "M"
+       ],
+       [
+        35,
+        "Jamiro Monteiro",
+        "M"
+       ],
+       [
+        99,
+        "Clement Bischoff",
+        "M"
+       ],
+       [
+        9,
+        "T. Chery",
+        "M"
+       ],
+       [
+        20,
+        "N. Lebreton",
+        "M"
+       ],
+       [
+        30,
+        "B. Linssen",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "D. Lukkien",
+      "xi": [
+       [
+        1,
+        "E. Vaessen",
+        "G"
+       ],
+       [
+        5,
+        "M. Rente",
+        "D"
+       ],
+       [
+        3,
+        "T. Blokzijl",
+        "D"
+       ],
+       [
+        4,
+        "M. Csinger",
+        "D"
+       ],
+       [
+        33,
+        "H. Hateboer",
+        "D"
+       ],
+       [
+        8,
+        "T. de Jonge",
+        "M"
+       ],
+       [
+        24,
+        "P. Clement",
+        "M"
+       ],
+       [
+        17,
+        "D. van der Werff",
+        "M"
+       ],
+       [
+        26,
+        "T. van Bergen",
+        "M"
+       ],
+       [
+        14,
+        "J. Schreuders",
+        "M"
+       ],
+       [
+        9,
+        "B. Willumsson",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-25T13:09:59+00:00"
    }
   }
  ],
  "changed": 2,
- "absent": 2
+ "absent": 2,
+ "lineups_at": "2026-10-25T13:09:59+00:00"
 }
