@@ -1,0 +1,225 @@
+{
+ "day": "2026-10-25",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-10-25T12:29:59+00:00",
+ "first": "2026-10-25T13:30+00:00",
+ "legs": [
+  {
+   "id": "2013e3955186ebe5258e85eb741a7553",
+   "league": "SP1",
+   "kickoff": "2026-10-25T15:15+00:00",
+   "home": "Celta Vigo",
+   "away": "Real Betis",
+   "sel": "U35",
+   "p": 0.6958,
+   "odds": 1.46,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Celta Vigo",
+    "m": "Real Betis",
+    "i": {
+     "h": [
+      [
+       "J. El Abdellaoui",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Iglesias",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Nunez",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Roman",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Starfelt",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "F. Bernal",
+       "out",
+       "наказан"
+      ],
+      [
+       "J. Firpo",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Hernandez",
+       "out",
+       "контузия"
+      ],
+      [
+       "I. Losada",
+       "out",
+       "не е в групата"
+      ]
+     ]
+    },
+    "ia": "2026-10-25T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "407bec2230563a6460ed26377fbd692a",
+   "league": "SC0",
+   "kickoff": "2026-10-25T14:00+00:00",
+   "home": "Motherwell",
+   "away": "Hearts",
+   "sel": "U35",
+   "p": 0.6635,
+   "odds": 1.5,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Motherwell",
+    "m": "Heart Of Midlothian",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-25T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "7da4e4e9cc508df1421dc9d4b2618056",
+   "league": "G1",
+   "kickoff": "2026-10-25T17:30+00:00",
+   "home": "Aris Thessaloniki",
+   "away": "Atromitos Athens",
+   "sel": "O15",
+   "p": 0.7125,
+   "odds": 1.37,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Aris Thessalonikis",
+    "m": "Atromitos",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-25T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "851ffb3bcb733e33e0b7dc1dcc2beac6",
+   "league": "B1",
+   "kickoff": "2026-10-25T17:30+00:00",
+   "home": "Gent",
+   "away": "Anderlecht",
+   "sel": "O15",
+   "p": 0.7174,
+   "odds": 1.36,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.26 -> 2.38",
+    "коефициентът на 2: 3.06 -> 2.91"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Gent",
+    "m": "Anderlecht",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-25T12:29:59+00:00"
+   }
+  },
+  {
+   "id": "c655584661b81e424d8979da8b040c46",
+   "league": "N1",
+   "kickoff": "2026-10-25T13:30+00:00",
+   "home": "NEC Nijmegen",
+   "away": "Groningen",
+   "sel": "O",
+   "p": 0.668,
+   "odds": 1.4,
+   "src": "book",
+   "odds_now": 1.36,
+   "changes": [
+    "коефициентът на 2: 2.80 -> 2.96",
+    "прогнозата: над 2.5 -> двата вкарват @1.50",
+    "рисковата: 1 -> 2 @2.96",
+    "по-сигурната: над 2.5 -> X2 @1.67"
+   ],
+   "flags": [
+    "коефициентът падна под 1.40 (1.36) - вече не е по правилото на майстора"
+   ],
+   "sq": {
+    "n": "NEC Nijmegen",
+    "m": "Groningen",
+    "i": {
+     "h": [
+      [
+       "B. Nuytinck",
+       "out",
+       "контузия"
+      ],
+      [
+       "P. Sandler",
+       "out",
+       "контузия"
+      ],
+      [
+       "D. Tadic",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. Mor",
+       "doubt",
+       "контузия"
+      ],
+      [
+       "Y. Moslih",
+       "doubt",
+       "не е в групата"
+      ]
+     ],
+     "a": [
+      [
+       "M. Jeng",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Mercera",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. van der Laan",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-25T12:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 2,
+ "absent": 2
+}
