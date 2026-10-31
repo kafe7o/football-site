@@ -28,7 +28,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-10-31T13:59:59+00:00"
+    "ia": "2026-10-31T14:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": "D. Stendel",
+      "xi": [
+       [
+        1,
+        "C. Slicker",
+        "G"
+       ],
+       [
+        2,
+        "A. Kay",
+        "D"
+       ],
+       [
+        4,
+        "S. Gale",
+        "D"
+       ],
+       [
+        5,
+        "J. Shepherd",
+        "D"
+       ],
+       [
+        3,
+        "Z. Larkeche",
+        "D"
+       ],
+       [
+        8,
+        "C. McGeehan",
+        "M"
+       ],
+       [
+        48,
+        "L. Connell",
+        "M"
+       ],
+       [
+        45,
+        "Vimal Yoganathan",
+        "M"
+       ],
+       [
+        22,
+        "Patrick Kelly",
+        "M"
+       ],
+       [
+        19,
+        "R. Cleary",
+        "M"
+       ],
+       [
+        7,
+        "T. Adeyemo",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": "A. Ramsey",
+      "xi": [
+       [
+        1,
+        "J. Cumming",
+        "G"
+       ],
+       [
+        15,
+        "B. Spencer",
+        "D"
+       ],
+       [
+        6,
+        "M. Helik",
+        "D"
+       ],
+       [
+        2,
+        "S. Long",
+        "D"
+       ],
+       [
+        26,
+        "J. Currie",
+        "D"
+       ],
+       [
+        4,
+        "Kai Andrews",
+        "M"
+       ],
+       [
+        32,
+        "L. Sibley",
+        "M"
+       ],
+       [
+        20,
+        "L. Lynch",
+        "M"
+       ],
+       [
+        11,
+        "T. Goodrham",
+        "M"
+       ],
+       [
+        23,
+        "S. Dembélé",
+        "M"
+       ],
+       [
+        9,
+        "M. Harris",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-10-31T14:39:59+00:00"
    }
   },
   {
@@ -56,5 +181,6 @@
   }
  ],
  "changed": 1,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-10-31T14:39:59+00:00"
 }
