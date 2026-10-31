@@ -1,0 +1,182 @@
+{
+ "day": "2026-10-31",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-10-31T11:29:59+00:00",
+ "first": "2026-10-31T12:30+00:00",
+ "legs": [
+  {
+   "id": "fd:SC3:2026-10-31:Edinburgh City:Dumbarton",
+   "league": "SC3",
+   "kickoff": "2026-10-31T15:00+00:00",
+   "home": "Edinburgh City",
+   "away": "Dumbarton",
+   "sel": "U35",
+   "p": 0.6509,
+   "odds": 1.58,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Edinburgh City",
+    "m": "Dumbarton",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-31T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "2626c07eae859f2bb05066923d619e31",
+   "league": "SC0",
+   "kickoff": "2026-10-31T15:00+00:00",
+   "home": "Kilmarnock",
+   "away": "St Johnstone",
+   "sel": "U35",
+   "p": 0.6712,
+   "odds": 1.5,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Kilmarnock",
+    "m": "ST Johnstone",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-31T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "fd:EC:2026-10-31:Halifax:Yeovil",
+   "league": "EC",
+   "kickoff": "2026-10-31T12:30+00:00",
+   "home": "Halifax",
+   "away": "Yeovil",
+   "sel": "U35",
+   "p": 0.673,
+   "odds": 1.49,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "FC Halifax Town",
+    "m": "Yeovil Town",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-31T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "49b60988890ff98563c1aca1e4468d14",
+   "league": "I2",
+   "kickoff": "2026-10-31T16:15+00:00",
+   "home": "US Catanzaro 1929",
+   "away": "Padova",
+   "sel": "U35",
+   "p": 0.6988,
+   "odds": 1.43,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "съдия: Niccolo Turrini"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Catanzaro",
+    "m": "Padova",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-10-31T11:29:59+00:00"
+   }
+  },
+  {
+   "id": "77383723574e3d39c7aba22eec6c4ce3",
+   "league": "SP1",
+   "kickoff": "2026-10-31T15:15+00:00",
+   "home": "Rayo Vallecano",
+   "away": "Celta Vigo",
+   "sel": "O15",
+   "p": 0.7036,
+   "odds": 1.42,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "съдия: Manuel Jesus Orellana Cid"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Rayo Vallecano",
+    "m": "Celta Vigo",
+    "i": {
+     "h": [
+      [
+       "A. Batalla",
+       "out",
+       "контузия"
+      ],
+      [
+       "P. Ciss",
+       "out",
+       "наказан"
+      ],
+      [
+       "Luiz Felipe",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Ratiu",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "H. F. Cuenca Martinez",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. El Abdellaoui",
+       "out",
+       "контузия"
+      ],
+      [
+       "B. Iglesias",
+       "out",
+       "контузия"
+      ],
+      [
+       "A. Nunez",
+       "out",
+       "контузия"
+      ],
+      [
+       "M. Roman",
+       "out",
+       "контузия"
+      ],
+      [
+       "C. Starfelt",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-10-31T11:29:59+00:00"
+   }
+  }
+ ],
+ "changed": 2,
+ "absent": 1
+}
