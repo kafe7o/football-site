@@ -1,0 +1,241 @@
+{
+ "day": "2026-11-01",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-11-01T11:59:59+00:00",
+ "first": "2026-11-01T13:00+00:00",
+ "legs": [
+  {
+   "id": "ed2ef578ae4e95bdcd81e662dfec5381",
+   "league": "B1",
+   "kickoff": "2026-11-01T18:15+00:00",
+   "home": "Charleroi",
+   "away": "RAAL La Louvière",
+   "sel": "U35",
+   "p": 0.6948,
+   "odds": 1.46,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на X: 4.24 -> 4.03",
+    "коефициентът на 2: 6.06 -> 5.57",
+    "букмейкърите за 1: 66% -> 63%"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Charleroi",
+    "m": "RAAL La Louvière",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-01T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "ddf34214255ae2add9e6b1341df87729",
+   "league": "G1",
+   "kickoff": "2026-11-01T16:00+00:00",
+   "home": "Panetolikos Agrinio",
+   "away": "OFI Crete",
+   "sel": "O15",
+   "p": 0.7266,
+   "odds": 1.39,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Panetolikos",
+    "m": "OFI",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-01T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "5262991e389930615bec34b642428c93",
+   "league": "SP1",
+   "kickoff": "2026-11-01T17:30+00:00",
+   "home": "Elche CF",
+   "away": "Valencia",
+   "sel": "U35",
+   "p": 0.7197,
+   "odds": 1.37,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Elche",
+    "m": "Valencia",
+    "i": {
+     "h": [
+      [
+       "M. Aguado",
+       "out",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "S. Canos",
+       "out",
+       "контузия"
+      ],
+      [
+       "J. Copete",
+       "out",
+       "не е в групата"
+      ],
+      [
+       "H. Elliott",
+       "out",
+       "наказан"
+      ],
+      [
+       "D. Lopez",
+       "out",
+       "контузия"
+      ],
+      [
+       "D. Otorbi",
+       "out",
+       "контузия"
+      ],
+      [
+       "K. van Oevelen",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-11-01T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "961d9c9f07b1f911e211cd6a750cddba",
+   "league": "N1",
+   "kickoff": "2026-11-01T15:45+00:00",
+   "home": "Groningen",
+   "away": "Sparta Rotterdam",
+   "sel": "O",
+   "p": 0.6645,
+   "odds": 1.43,
+   "src": "book",
+   "odds_now": 1.42,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Groningen",
+    "m": "Sparta Rotterdam",
+    "i": {
+     "h": [
+      [
+       "M. Jeng",
+       "out",
+       "контузия"
+      ],
+      [
+       "T. Mercera",
+       "out",
+       "контузия"
+      ],
+      [
+       "E. van der Laan",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "S. Mito",
+       "out",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-11-01T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "cd2960ff2b4d605144a83562b0085400",
+   "league": "T1",
+   "kickoff": "2026-11-01T13:00+00:00",
+   "home": "Trabzonspor",
+   "away": "Gazişehir Gaziantep",
+   "sel": "O",
+   "p": 0.6847,
+   "odds": 1.35,
+   "src": "book",
+   "odds_now": 1.3,
+   "changes": [
+    "коефициентът на X: 5.96 -> 6.30",
+    "коефициентът на 2: 8.49 -> 9.12"
+   ],
+   "flags": [
+    "коефициентът падна под 1.40 (1.30) - вече не е по правилото на майстора"
+   ],
+   "sq": {
+    "n": "Trabzonspor",
+    "m": "Gaziantep FK",
+    "i": {
+     "h": [
+      [
+       "A. Batagov",
+       "out",
+       "контузия"
+      ],
+      [
+       "O. Cevikkan",
+       "out",
+       "контузия"
+      ],
+      [
+       "R. Malinovskyi",
+       "out",
+       "контузия"
+      ],
+      [
+       "O. Yokuslu",
+       "out",
+       "контузия"
+      ],
+      [
+       "P. Onuachu",
+       "doubt",
+       "контузия"
+      ]
+     ],
+     "a": [
+      [
+       "M. Abena",
+       "out",
+       "наказан"
+      ],
+      [
+       "F. Bavuk",
+       "out",
+       "контузия"
+      ],
+      [
+       "N. Sangare",
+       "out",
+       "контузия"
+      ],
+      [
+       "U. Meleke",
+       "doubt",
+       "контузия"
+      ]
+     ]
+    },
+    "ia": "2026-11-01T11:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 2,
+ "absent": 3
+}
