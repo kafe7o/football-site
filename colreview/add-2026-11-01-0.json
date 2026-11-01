@@ -232,10 +232,136 @@
       ]
      ]
     },
-    "ia": "2026-11-01T11:59:59+00:00"
+    "ia": "2026-11-01T12:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-1-4-1",
+      "c": null,
+      "xi": [
+       [
+        24,
+        "André Onana",
+        "G"
+       ],
+       [
+        20,
+        "Wagner Pina",
+        "D"
+       ],
+       [
+        27,
+        "Chibuike Nwaiwu",
+        "D"
+       ],
+       [
+        15,
+        "Stefan Savić",
+        "D"
+       ],
+       [
+        55,
+        "Sidny Lopes Cabral",
+        "D"
+       ],
+       [
+        6,
+        "Fabinho",
+        "M"
+       ],
+       [
+        10,
+        "Mohamed Salah",
+        "M"
+       ],
+       [
+        57,
+        "Melih Kabasakal",
+        "M"
+       ],
+       [
+        7,
+        "Ernest Muçi",
+        "M"
+       ],
+       [
+        70,
+        "Noah Saviolo",
+        "M"
+       ],
+       [
+        30,
+        "Paul Onuachu",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-1-4-1",
+      "c": null,
+      "xi": [
+       [
+        35,
+        "Ataberk Dadakdeniz",
+        "G"
+       ],
+       [
+        2,
+        "Luis Pérez",
+        "D"
+       ],
+       [
+        21,
+        "Abakar Sylla",
+        "D"
+       ],
+       [
+        5,
+        "Efe Sarıkaya",
+        "D"
+       ],
+       [
+        23,
+        "Kerim Çalhanoğlu",
+        "D"
+       ],
+       [
+        7,
+        "Juninho Bacuna",
+        "M"
+       ],
+       [
+        18,
+        "Deian Sorescu",
+        "M"
+       ],
+       [
+        8,
+        "Gidado Victor Ntino-Emo",
+        "M"
+       ],
+       [
+        3,
+        "Drissa Camara",
+        "M"
+       ],
+       [
+        10,
+        "Kacper Kozłowski",
+        "M"
+       ],
+       [
+        9,
+        "Trivante Stewart",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-11-01T12:39:59+00:00"
    }
   }
  ],
  "changed": 2,
- "absent": 3
+ "absent": 3,
+ "lineups_at": "2026-11-01T12:39:59+00:00"
 }
