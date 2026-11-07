@@ -1,0 +1,136 @@
+{
+ "day": "2026-11-07",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-11-07T11:59:59+00:00",
+ "first": "2026-11-07T13:00+00:00",
+ "legs": [
+  {
+   "id": "f796c10282bb7bd80ea9889d03d2066d",
+   "league": "SC0",
+   "kickoff": "2026-11-07T15:00+00:00",
+   "home": "St Johnstone",
+   "away": "Dundee FC",
+   "sel": "U35",
+   "p": 0.6958,
+   "odds": 1.48,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.42 -> 2.63",
+    "коефициентът на 2: 2.69 -> 2.51",
+    "букмейкърите за 1: 39% -> 35%",
+    "рисковата 1: коеф. 2.42 -> 2.63"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "ST Johnstone",
+    "m": "Dundee",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-07T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "e9d86b71a5b34883469614ff2c2cd68c",
+   "league": "G1",
+   "kickoff": "2026-11-07T15:00+00:00",
+   "home": "Volos FC",
+   "away": "AE Kifisia FC",
+   "sel": "U35",
+   "p": 0.7393,
+   "odds": 1.39,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.88 -> 3.05",
+    "рисковата 1: коеф. 2.88 -> 3.05"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Volos NFC",
+    "m": "Kifisia",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-07T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "605767f0e7114a23442d92831c12c767",
+   "league": "T1",
+   "kickoff": "2026-11-07T13:00+00:00",
+   "home": "Samsunspor",
+   "away": "Torku Konyaspor",
+   "sel": "U35",
+   "p": 0.7435,
+   "odds": 1.38,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Samsunspor",
+    "m": "Konyaspor",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-07T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "71ca5141a1c532e390c6fa14e080d8bd",
+   "league": "SP1",
+   "kickoff": "2026-11-07T17:30+00:00",
+   "home": "CA Osasuna",
+   "away": "Athletic Bilbao",
+   "sel": "O15",
+   "p": 0.7163,
+   "odds": 1.42,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "съдия: Miguel Sesma Espinosa"
+   ],
+   "flags": [],
+   "sq": {
+    "n": "Osasuna",
+    "m": "Athletic Club",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-07T11:59:59+00:00"
+   }
+  },
+  {
+   "id": "fd:SC3:2026-11-07:Forfar:Edinburgh City",
+   "league": "SC3",
+   "kickoff": "2026-11-07T15:00+00:00",
+   "home": "Forfar",
+   "away": "Edinburgh City",
+   "sel": "U35",
+   "p": 0.6756,
+   "odds": 1.5,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": {
+    "n": "Forfar Athletic",
+    "m": "Edinburgh City",
+    "i": {
+     "h": null,
+     "a": null
+    },
+    "ia": "2026-11-07T11:59:59+00:00"
+   }
+  }
+ ],
+ "changed": 3,
+ "absent": 0
+}
