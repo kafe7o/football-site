@@ -79,7 +79,132 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-11-07T11:59:59+00:00"
+    "ia": "2026-11-07T12:39:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-2-3-1",
+      "c": null,
+      "xi": [
+       [
+        25,
+        "Bilal Bayazit",
+        "G"
+       ],
+       [
+        2,
+        "Josafat Mendes",
+        "D"
+       ],
+       [
+        16,
+        "Strahinja Eraković",
+        "D"
+       ],
+       [
+        3,
+        "Igor Drapiński",
+        "D"
+       ],
+       [
+        17,
+        "Logi Tomasson",
+        "D"
+       ],
+       [
+        4,
+        "Elliot Watt",
+        "M"
+       ],
+       [
+        8,
+        "Samed Onur",
+        "M"
+       ],
+       [
+        10,
+        "Tanguy Coulibaly",
+        "M"
+       ],
+       [
+        42,
+        "Antoine Sekongo",
+        "M"
+       ],
+       [
+        77,
+        "Afonso Sousa",
+        "M"
+       ],
+       [
+        18,
+        "Mohamed Bayo",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "4-2-3-1",
+      "c": null,
+      "xi": [
+       [
+        13,
+        "Bahadır Han Güngördü",
+        "G"
+       ],
+       [
+        5,
+        "Uğurcan Yazğılı",
+        "D"
+       ],
+       [
+        15,
+        "Chidozie Awaziem",
+        "D"
+       ],
+       [
+        22,
+        "Rayyan Baniya",
+        "D"
+       ],
+       [
+        26,
+        "Arthur Masuaku",
+        "D"
+       ],
+       [
+        66,
+        "Rajmund Tóth",
+        "M"
+       ],
+       [
+        77,
+        "Melih İbrahimoğlu",
+        "M"
+       ],
+       [
+        19,
+        "Ebrima Colley",
+        "M"
+       ],
+       [
+        7,
+        "Diogo Gonçalves",
+        "M"
+       ],
+       [
+        91,
+        "Jean-Luc Dompé",
+        "M"
+       ],
+       [
+        42,
+        "Mostafa Mohamed",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-11-07T12:39:59+00:00"
    }
   },
   {
@@ -132,5 +257,6 @@
   }
  ],
  "changed": 3,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-11-07T12:39:59+00:00"
 }
