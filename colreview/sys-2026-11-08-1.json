@@ -48,10 +48,136 @@
      "h": null,
      "a": null
     },
-    "ia": "2026-11-08T11:29:59+00:00"
+    "ia": "2026-11-08T12:09:59+00:00",
+    "l": {
+     "h": {
+      "f": "4-3-3",
+      "c": "P. Sander",
+      "xi": [
+       [
+        1,
+        "D. Reimann",
+        "G"
+       ],
+       [
+        28,
+        "P. Nadjombe",
+        "D"
+       ],
+       [
+        5,
+        "T. Müller",
+        "D"
+       ],
+       [
+        3,
+        "A. MacNulty",
+        "D"
+       ],
+       [
+        17,
+        "A. Nollenberger",
+        "D"
+       ],
+       [
+        26,
+        "T. Müsel",
+        "M"
+       ],
+       [
+        38,
+        "L. Hyryläinen",
+        "M"
+       ],
+       [
+        33,
+        "Leon Mergner",
+        "M"
+       ],
+       [
+        8,
+        "E. Iyoha",
+        "F"
+       ],
+       [
+        22,
+        "M. Żukowski",
+        "F"
+       ],
+       [
+        23,
+        "B. Atik",
+        "F"
+       ]
+      ]
+     },
+     "a": {
+      "f": "3-4-1-2",
+      "c": "M. Rapp",
+      "xi": [
+       [
+        1,
+        "B. Voll",
+        "G"
+       ],
+       [
+        4,
+        "D. Nemeth",
+        "D"
+       ],
+       [
+        8,
+        "E. Smith",
+        "D"
+       ],
+       [
+        21,
+        "L. Ritzka",
+        "D"
+       ],
+       [
+        11,
+        "A. Pyrka",
+        "M"
+       ],
+       [
+        20,
+        "M. Rasmussen",
+        "M"
+       ],
+       [
+        16,
+        "J. Fujita",
+        "M"
+       ],
+       [
+        23,
+        "L. Oppie",
+        "M"
+       ],
+       [
+        10,
+        "B. Hrgota",
+        "M"
+       ],
+       [
+        24,
+        "C. Metcalfe",
+        "F"
+       ],
+       [
+        9,
+        "Abdoulie Ceesay",
+        "F"
+       ]
+      ]
+     }
+    },
+    "la": "2026-11-08T12:09:59+00:00"
    }
   }
  ],
  "changed": 0,
- "absent": 0
+ "absent": 0,
+ "lineups_at": "2026-11-08T12:09:59+00:00"
 }
