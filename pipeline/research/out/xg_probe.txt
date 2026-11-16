@@ -1,0 +1,24 @@
+https://understat.com/league/EPL/2026
+  статус 200, 26719 байта, тип text/html, сървър nginx/1.24.0 (Ubuntu)
+  начало: <!DOCTYPE html> <html>     <head> 		<title>Understat.com</title>         <meta charset="UTF-8" />         <meta name="viewport" content="width=device-width,maximum-scale=1.0,initial-scale=1.0">         <link href="/css/errors.css" rel="stylesheet" media="screen">     </head>     <body class="theme-d
+  в страницата „getLeagueData“: False
+  в страницата „datesData“: False
+  в страницата „JSON.parse“: False
+  в страницата „cf-chl“: False
+  в страницата „captcha“: False
+https://understat.com/getLeagueData/EPL/2026
+  статус 200, 26719 байта, тип text/html, сървър nginx/1.24.0 (Ubuntu)
+  начало: <!DOCTYPE html> <html>     <head> 		<title>Understat.com</title>         <meta charset="UTF-8" />         <meta name="viewport" content="width=device-width,maximum-scale=1.0,initial-scale=1.0">         <link href="/css/errors.css" rel="stylesheet" media="screen">     </head>     <body class="theme-d
+  xg.fetch ГРЕШКА: Understat EPL 2026: Expecting value: line 1 column 1 (char 0)
+https://understat.com/league/Bundesliga/2026
+  статус 200, 26719 байта, тип text/html, сървър nginx/1.24.0 (Ubuntu)
+  начало: <!DOCTYPE html> <html>     <head> 		<title>Understat.com</title>         <meta charset="UTF-8" />         <meta name="viewport" content="width=device-width,maximum-scale=1.0,initial-scale=1.0">         <link href="/css/errors.css" rel="stylesheet" media="screen">     </head>     <body class="theme-d
+  в страницата „getLeagueData“: False
+  в страницата „datesData“: False
+  в страницата „JSON.parse“: False
+  в страницата „cf-chl“: False
+  в страницата „captcha“: False
+https://understat.com/getLeagueData/Bundesliga/2026
+  статус 200, 26719 байта, тип text/html, сървър nginx/1.24.0 (Ubuntu)
+  начало: <!DOCTYPE html> <html>     <head> 		<title>Understat.com</title>         <meta charset="UTF-8" />         <meta name="viewport" content="width=device-width,maximum-scale=1.0,initial-scale=1.0">         <link href="/css/errors.css" rel="stylesheet" media="screen">     </head>     <body class="theme-d
+  xg.fetch ГРЕШКА: Understat Bundesliga 2026: Expecting value: line 1 column 1 (char 0)
