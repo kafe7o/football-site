@@ -27,8 +27,11 @@ FROM = "2026-10-08T04:00:00+00:00"            # първият запис (07:00
 
 
 def day_of(kickoff_iso):
-    """„Денят“ на прогнозите започва в 07:00 българско време - като в bets/tips.py и bets/columns.py."""
-    local = datetime.fromisoformat(kickoff_iso).astimezone(SOFIA) - timedelta(hours=7)
+    """„Денят“ на прогнозите започва в 07:00 българско време - като в bets/tips.py и bets/columns.py.
+    Мач ТОЧНО в 07:00 е от предишния ден (16.11): записът го взема предната сутрин (tips.lock: kickoff <= края) и
+    tips.mark_sure го отбелязва с онази група; иначе одиторът събираше две групи в една и викаше „нарушено правило“
+    за японските мачове в 14:00 тяхно време (= 07:00 българско зимно)."""
+    local = datetime.fromisoformat(kickoff_iso).astimezone(SOFIA) - timedelta(hours=7, seconds=1)
     return local.date().isoformat()
 
 
