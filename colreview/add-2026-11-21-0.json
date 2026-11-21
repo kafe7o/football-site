@@ -1,0 +1,93 @@
+{
+ "day": "2026-11-21",
+ "idx": 0,
+ "system": "add",
+ "made_at": "2026-11-21T11:29:59+00:00",
+ "first": "2026-11-21T12:30+00:00",
+ "legs": [
+  {
+   "id": "fd:EC:2026-11-21:Sutton:Boston Utd",
+   "league": "EC",
+   "kickoff": "2026-11-21T15:00+00:00",
+   "home": "Sutton",
+   "away": "Boston Utd",
+   "sel": "U35",
+   "p": 0.7131,
+   "odds": 1.43,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "897f4fab3b843d48bd848f4b355f8985",
+   "league": "E3",
+   "kickoff": "2026-11-21T12:30+00:00",
+   "home": "Newport County",
+   "away": "Swindon Town",
+   "sel": "U35",
+   "p": 0.7092,
+   "odds": 1.43,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "2816b19dccf28767830d9dd57ece3cac",
+   "league": "B1",
+   "kickoff": "2026-11-21T19:45+00:00",
+   "home": "SV Zulte-Waregem",
+   "away": "Royal Antwerp",
+   "sel": "U35",
+   "p": 0.6757,
+   "odds": 1.48,
+   "src": "est",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 1: 2.10 -> 2.29",
+    "коефициентът на 2: 3.10 -> 2.84",
+    "букмейкърите за 1: 45% -> 41%",
+    "букмейкърите за 2: 29% -> 32%",
+    "рисковата 2: коеф. 3.10 -> 2.84",
+    "по-сигурната X2: коеф. 1.63 -> 1.54"
+   ],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "fd:SC3:2026-11-21:Annan Athletic:Forfar",
+   "league": "SC3",
+   "kickoff": "2026-11-21T15:00+00:00",
+   "home": "Annan Athletic",
+   "away": "Forfar",
+   "sel": "U35",
+   "p": 0.7065,
+   "odds": 1.4,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "3a846a90333580e43fbc580ce6fd1e17",
+   "league": "SC0",
+   "kickoff": "2026-11-21T15:00+00:00",
+   "home": "Falkirk F.C.",
+   "away": "St Johnstone",
+   "sel": "U35",
+   "p": 0.6818,
+   "odds": 1.45,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  }
+ ],
+ "changed": 1,
+ "absent": 0
+}
