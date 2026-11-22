@@ -1,0 +1,43 @@
+{
+ "day": "2026-11-22",
+ "idx": 1,
+ "system": true,
+ "made_at": "2026-11-22T10:29:59+00:00",
+ "first": "2026-11-22T11:30+00:00",
+ "legs": [
+  {
+   "id": "1d645b37ee998c72af8ad7d2c48a9d6c",
+   "league": "G1",
+   "kickoff": "2026-11-22T14:00+00:00",
+   "home": "Levadiakos",
+   "away": "Atromitos Athens",
+   "sel": "O15",
+   "p": 0.7437768261644184,
+   "odds": 1.44,
+   "src": "book",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "be2fcabc408be29ca01ce92ab266f8b7",
+   "league": "I1",
+   "kickoff": "2026-11-22T11:30+00:00",
+   "home": "Juventus",
+   "away": "Venezia",
+   "sel": "U35",
+   "p": 0.6951323473079378,
+   "odds": 1.49,
+   "src": "book",
+   "odds_now": null,
+   "changes": [
+    "коефициентът на 2: 8.25 -> 7.73"
+   ],
+   "flags": [],
+   "sq": null
+  }
+ ],
+ "changed": 1,
+ "absent": 0
+}
