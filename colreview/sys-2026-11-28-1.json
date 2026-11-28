@@ -1,0 +1,41 @@
+{
+ "day": "2026-11-28",
+ "idx": 1,
+ "system": true,
+ "made_at": "2026-11-28T13:59:59+00:00",
+ "first": "2026-11-28T15:00+00:00",
+ "legs": [
+  {
+   "id": "9cd8c682c6864b59a7f1a58964083e08",
+   "league": "E1",
+   "kickoff": "2026-11-28T15:00+00:00",
+   "home": "Wrexham AFC",
+   "away": "Portsmouth",
+   "sel": "O15",
+   "p": 0.7297768261644184,
+   "odds": 1.42,
+   "src": "book",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  },
+  {
+   "id": "fd:EC:2026-11-28:Hornchurch:Solihull",
+   "league": "EC",
+   "kickoff": "2026-11-28T15:00+00:00",
+   "home": "Hornchurch",
+   "away": "Solihull",
+   "sel": "U35",
+   "p": 0.7113323473079378,
+   "odds": 1.42,
+   "src": "est",
+   "odds_now": null,
+   "changes": [],
+   "flags": [],
+   "sq": null
+  }
+ ],
+ "changed": 0,
+ "absent": 0
+}
